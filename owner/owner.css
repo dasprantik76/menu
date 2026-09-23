@@ -1523,6 +1523,17 @@ body.pending-mode #pendingView {
 /* ==========================================================================
    Auth View (Login Page) - Cinematic Staggered Entrance Animation
    ========================================================================== */
+#authView:not(.fade-in-active) .auth-hero-menu-banner,
+#authView:not(.fade-in-active) .auth-hero-logo-sub,
+#authView:not(.fade-in-active) .card-section,
+#authView:not(.fade-in-active) .login-title,
+#authView:not(.fade-in-active) .login-subtitle,
+#authView:not(.fade-in-active) .google-btn-wrapper,
+#authView:not(.fade-in-active) .google-setup-notice,
+#authView:not(.fade-in-active) .pizza-img {
+  animation: none !important;
+}
+
 #authView,
 #authView.fade-in-active {
   animation: pendingPageFadeIn 2.4s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -1571,6 +1582,16 @@ body.pending-mode #pendingView {
 /* ==========================================================================
    Register View (Registration Page) - Cinematic Staggered Entrance Animation
    ========================================================================== */
+#registerView:not(.fade-in-active) .canopy-container,
+#registerView:not(.fade-in-active) .register-container,
+#registerView:not(.fade-in-active) .register-title,
+#registerView:not(.fade-in-active) .form-group,
+#registerView:not(.fade-in-active) #submitRegisterBtn,
+#registerView:not(.fade-in-active) #registerLogoutBtn,
+#registerView:not(.fade-in-active) .vegetables-img {
+  animation: none !important;
+}
+
 #registerView,
 #registerView.fade-in-active {
   animation: pendingPageFadeIn 2.4s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -1581,39 +1602,57 @@ body.pending-mode #pendingView {
   animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
 }
 
+#registerView .register-container,
+#registerView.fade-in-active .register-container {
+  animation: pendingPageFadeIn 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
 #registerView .register-title,
 #registerView.fade-in-active .register-title {
-  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
 }
 
+#registerView .form-group,
+#registerView.fade-in-active .form-group {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+}
+
+#registerView .form-group:nth-child(2),
+#registerView.fade-in-active .form-group:nth-child(2),
 #registerView .form-group:nth-of-type(1),
 #registerView.fade-in-active .form-group:nth-of-type(1) {
-  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.42s both;
+  animation-delay: 0.35s;
 }
 
+#registerView .form-group:nth-child(3),
+#registerView.fade-in-active .form-group:nth-child(3),
 #registerView .form-group:nth-of-type(2),
 #registerView.fade-in-active .form-group:nth-of-type(2) {
-  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.52s both;
+  animation-delay: 0.45s;
 }
 
+#registerView .form-group:nth-child(4),
+#registerView.fade-in-active .form-group:nth-child(4),
 #registerView .form-group:nth-of-type(3),
 #registerView.fade-in-active .form-group:nth-of-type(3) {
-  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.62s both;
+  animation-delay: 0.55s;
 }
 
+#registerView .form-group:nth-child(5),
+#registerView.fade-in-active .form-group:nth-child(5),
 #registerView .form-group:nth-of-type(4),
 #registerView.fade-in-active .form-group:nth-of-type(4) {
-  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.72s both;
+  animation-delay: 0.65s;
 }
 
 #registerView #submitRegisterBtn,
 #registerView.fade-in-active #submitRegisterBtn {
-  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.82s both;
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.75s both;
 }
 
 #registerView #registerLogoutBtn,
 #registerView.fade-in-active #registerLogoutBtn {
-  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.92s both;
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.85s both;
 }
 
 #registerView .vegetables-img,

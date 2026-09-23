@@ -71,40 +71,81 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // 2. Multi-Tenant Restaurant Route (/r/:slug or /menu)
+  // 2. Explicit Root / Login Route (/ or /index.html)
+  if (pathname === "/" || pathname === "/index.html") {
+    const indexPath = path.join(__dirname, "index.html");
+    const cwdIndexPath = path.join(process.cwd(), "index.html");
+    const target = fs.existsSync(indexPath) ? indexPath : (fs.existsSync(cwdIndexPath) ? cwdIndexPath : null);
+    if (target) {
+      const content = fs.readFileSync(target, "utf8");
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      return res.end(content);
+    }
+  }
+
+  // 2b. Multi-Tenant Restaurant Route (/r/:slug or /menu)
   if (pathname.startsWith("/r/") || pathname === "/menu" || pathname === "/menu.html") {
     if (pathname.startsWith("/r/")) {
       const slug = pathname.replace(/^\/r\//, "").split("/")[0];
       req.query.restaurant = slug;
     }
     const menuPath = path.join(__dirname, "menu.html");
-    const content = fs.readFileSync(menuPath, "utf8");
-    res.setHeader("Content-Type", "text/html");
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    return res.end(content);
+    const cwdMenuPath = path.join(process.cwd(), "menu.html");
+    const target = fs.existsSync(menuPath) ? menuPath : (fs.existsSync(cwdMenuPath) ? cwdMenuPath : null);
+    if (target) {
+      const content = fs.readFileSync(target, "utf8");
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      return res.end(content);
+    }
   }
 
-  // 2b. Owner Portal URL Canonicalization (/owner -> /)
+  // 2c. Owner Portal URL Canonicalization (/owner -> /)
   if (pathname === "/owner" || pathname === "/owner/") {
     const search = parsedUrl.search || "";
     res.writeHead(302, { Location: "/" + search });
     return res.end();
   }
 
-  // 3. Static Files
-  let filePath = path.join(__dirname, pathname === "/" ? "index.html" : pathname);
-
-  // If path is a directory, look for index.html
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
-    filePath = path.join(filePath, "index.html");
+  // 2d. Admin Route (/admin or /admin/)
+  if (pathname === "/admin" || pathname === "/admin/" || pathname === "/admin/index.html") {
+    const adminPath = path.join(__dirname, "admin/index.html");
+    const cwdAdminPath = path.join(process.cwd(), "admin/index.html");
+    const target = fs.existsSync(adminPath) ? adminPath : (fs.existsSync(cwdAdminPath) ? cwdAdminPath : null);
+    if (target) {
+      const content = fs.readFileSync(target, "utf8");
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      return res.end(content);
+    }
   }
 
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || "application/octet-stream";
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    return fs.createReadStream(filePath).pipe(res);
+  // 3. Static Files with multi-path resolution
+  const relPath = pathname.startsWith("/") ? pathname.slice(1) : pathname;
+  const candidates = [
+    path.join(__dirname, relPath),
+    path.join(process.cwd(), relPath)
+  ];
+
+  for (let candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      if (fs.statSync(candidate).isDirectory()) {
+        const subIndex = path.join(candidate, "index.html");
+        if (fs.existsSync(subIndex) && fs.statSync(subIndex).isFile()) {
+          candidate = subIndex;
+        } else {
+          continue;
+        }
+      }
+      if (fs.statSync(candidate).isFile()) {
+        const ext = path.extname(candidate).toLowerCase();
+        const contentType = MIME_TYPES[ext] || "application/octet-stream";
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        return fs.createReadStream(candidate).pipe(res);
+      }
+    }
   }
 
   // Fallback 404

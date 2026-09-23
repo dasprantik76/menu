@@ -445,7 +445,11 @@ async function setupGoogleButton() {
     if (googleSignInBtn && !googleSignInBtn.dataset.bound) {
       googleSignInBtn.dataset.bound = "true";
       googleSignInBtn.addEventListener("click", () => {
-        showNotification("Please set GOOGLE_CLIENT_ID in .env to activate live Google Sign-In.", "error");
+        const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        const msg = isLocal
+          ? "Please set GOOGLE_CLIENT_ID in .env to activate live Google Sign-In."
+          : "Please set GOOGLE_CLIENT_ID in your Vercel Project Environment Variables to activate live Google Sign-In.";
+        showNotification(msg, "error");
       });
     }
   }

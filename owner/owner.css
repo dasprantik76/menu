@@ -845,13 +845,15 @@ body.register-mode #registerView,
   flex-shrink: 0;
   position: relative;
   z-index: 2;
+  background: transparent !important;
 }
 
 .canopy-awning {
   width: 100%;
   display: flex;
   align-items: flex-start;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.15));
+  background: transparent !important;
+  filter: none !important;
 }
 
 .canopy-desktop {

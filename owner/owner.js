@@ -360,11 +360,9 @@ async function fetchAuthConfig() {
 }
 
 let isGisInitialized = false;
-let googleTokenClient = null;
 
 /**
- * Initialize Google Sign-In using Google Identity Services (GIS)
- * Opens the Google Account Chooser list on click of the login bar
+ * Initialize Google Sign-In in Redirect Mode (Full page navigation, no popups)
  */
 async function setupGoogleButton() {
   const config = await fetchAuthConfig();
@@ -377,96 +375,74 @@ async function setupGoogleButton() {
   if (config.isConfigured && config.googleClientId) {
     if (googleSetupNotice) googleSetupNotice.style.display = "none";
 
-    const initClients = () => {
+    const initRedirectGis = () => {
       if (isGisInitialized) return;
-      if (!window.google || !window.google.accounts) return;
+      if (!window.google || !window.google.accounts || !window.google.accounts.id) return;
 
       try {
-        // 1. Initialize OAuth2 Token Client for custom button click (Forces Google Account List popup)
-        if (window.google.accounts.oauth2 && window.google.accounts.oauth2.initTokenClient) {
-          googleTokenClient = window.google.accounts.oauth2.initTokenClient({
-            client_id: config.googleClientId,
-            scope: "openid email profile",
-            prompt: "select_account",
-            callback: async (tokenResponse) => {
-              if (tokenResponse && tokenResponse.access_token) {
-                try {
-                  const res = await fetch("/api/auth/google", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ accessToken: tokenResponse.access_token })
-                  });
-                  const data = await res.json();
-                  if (data.success) {
-                    checkSession();
-                  } else {
-                    showView(authView);
-                    showNotification(data.error || "Google authentication failed.", "error");
-                  }
-                } catch (err) {
-                  console.error("Auth request error:", err);
-                  showNotification("Failed to authenticate with server.", "error");
-                }
-              } else if (tokenResponse && tokenResponse.error) {
-                console.warn("Google login prompt dismissed or error:", tokenResponse.error);
-              }
-            }
-          });
+        const loginUri = window.location.origin + "/api/auth/google";
+
+        // Initialize Google Identity Services in Redirect Mode
+        window.google.accounts.id.initialize({
+          client_id: config.googleClientId,
+          ux_mode: "redirect",
+          login_uri: loginUri,
+          auto_select: false
+        });
+
+        const wrapper = document.querySelector(".google-btn-wrapper") || googleBtnSlot;
+        let redirectContainer = document.getElementById("gisRedirectContainer");
+        if (!redirectContainer) {
+          redirectContainer = document.createElement("div");
+          redirectContainer.id = "gisRedirectContainer";
+          redirectContainer.className = "gis-redirect-container";
+          redirectContainer.style.cssText = "display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;";
+          wrapper.appendChild(redirectContainer);
         }
 
-        // 2. Also initialize Google ID Token service for One Tap / credentials
-        if (window.google.accounts.id) {
-          window.google.accounts.id.initialize({
-            client_id: config.googleClientId,
-            callback: handleGoogleCredentialResponse,
-            auto_select: false
-          });
+        redirectContainer.innerHTML = "";
+        window.google.accounts.id.renderButton(redirectContainer, {
+          type: "standard",
+          shape: "pill",
+          theme: "outline",
+          text: "continue_with",
+          size: "large",
+          width: 320,
+          logo_alignment: "left"
+        });
+
+        // Hide the custom fallback button once native GIS redirect button is mounted
+        if (googleSignInBtn) {
+          googleSignInBtn.style.display = "none";
         }
 
         isGisInitialized = true;
       } catch (e) {
-        console.warn("Google GIS initialization error:", e.message);
+        console.warn("Google GIS redirect initialization error:", e.message);
       }
     };
 
-    if (window.google && window.google.accounts) {
-      initClients();
+    if (window.google && window.google.accounts && window.google.accounts.id) {
+      initRedirectGis();
     } else {
       let attempts = 0;
       const interval = setInterval(() => {
         attempts++;
-        if (window.google && window.google.accounts) {
+        if (window.google && window.google.accounts && window.google.accounts.id) {
           clearInterval(interval);
-          initClients();
+          initRedirectGis();
         } else if (attempts > 30) {
           clearInterval(interval);
         }
       }, 100);
     }
 
+    // Direct OAuth redirect fallback if custom button is clicked
     if (googleSignInBtn && !googleSignInBtn.dataset.bound) {
       googleSignInBtn.dataset.bound = "true";
       googleSignInBtn.addEventListener("click", () => {
-        // Ensure initialized if not already
-        if (!isGisInitialized) {
-          initClients();
-        }
-
-        // Priority 1: OAuth2 Token Client (opens Google account chooser popup modal)
-        if (googleTokenClient) {
-          googleTokenClient.requestAccessToken({ prompt: "select_account" });
-          return;
-        }
-
-        // Priority 2: Google ID Prompt (One Tap)
-        if (window.google && window.google.accounts && window.google.accounts.id) {
-          window.google.accounts.id.prompt();
-          return;
-        }
-
-        // Priority 3: Fallback direct OAuth URL navigation
         const redirectUri = window.location.origin + "/api/auth/google";
-        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(config.googleClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent("openid email profile")}&prompt=select_account`;
+        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(config.googleClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent("openid email profile")}&prompt=select_account`;
       });
     }
   } else {

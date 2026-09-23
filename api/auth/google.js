@@ -10,6 +10,19 @@ const { signSessionToken, setSessionCookie } = require("../_lib/auth");
  */
 module.exports = async function handler(req, res) {
   if (req.method === "GET") {
+    const host = req.headers.host || "localhost";
+    const proto = req.headers["x-forwarded-proto"] || "http";
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(req.url, `${proto}://${host}`);
+    } catch (e) {
+      parsedUrl = { searchParams: new Map() };
+    }
+    const authErr = (parsedUrl.searchParams && parsedUrl.searchParams.get("error")) || (req.query && req.query.error);
+    if (authErr) {
+      res.writeHead(302, { Location: "/?auth_error=" + encodeURIComponent(authErr) });
+      return res.end();
+    }
     res.writeHead(302, { Location: "/" });
     return res.end();
   }
@@ -27,6 +40,9 @@ module.exports = async function handler(req, res) {
 
   // Parse body if not already parsed by serverless runtime
   let body = req.body;
+  if (Buffer.isBuffer(body)) {
+    body = body.toString("utf8");
+  }
   if (typeof body === "string") {
     try {
       body = JSON.parse(body);

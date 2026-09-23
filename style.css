@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Jost:wght@200;300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Jost:wght@200;300;400;500;600;700;800&display=swap');
 
 /* ==========================================================================
    ROYAL FOOD CORNER - Minimalist Clean Menu
@@ -130,18 +130,24 @@ body {
 }
 
 .brand-title {
-  font-family: 'Pacifico', cursive, sans-serif;
-  font-size: 1.78rem;
-  font-weight: 400;
-  letter-spacing: 0.5px;
-  color: #ffffff; /* 'Royal' & 'Corner' in white */
+  font-family: 'Jost', sans-serif;
+  font-size: clamp(1.4rem, 5.2vw, 1.8rem);
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: #ffffff;
   text-transform: none;
   margin: 0;
-  line-height: 1.25;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 92vw;
 }
 
 .brand-accent {
-  color: #f9931c; /* 'Food' in #f9931c */
+  color: #f9931c; /* Accent word in #f9931c */
+  font-family: inherit;
+  font-weight: inherit;
 }
 
 /* 2. MAIN CONTENT AREA (STAGE FOR CATEGORY BLOCKS) */

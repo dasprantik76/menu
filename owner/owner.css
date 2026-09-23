@@ -1508,26 +1508,49 @@ body.register-mode #registerView,
   padding: 24px 16px 36px !important;
 }
 
+html.pending-mode,
 body.pending-mode {
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
+  height: 100% !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 body.pending-mode .main-container {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 !important;
+  height: calc(100% - 82px) !important;
+  height: calc(100vh - 82px) !important;
+  height: calc(100dvh - 82px) !important;
+  max-height: calc(100dvh - 82px) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  padding: 24px 20px 32px !important;
 }
 
 body.pending-mode #pendingView {
   display: flex !important;
-  flex-direction: column;
-  flex: 1;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column !important;
+  flex: 1 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+  width: 100% !important;
+  align-items: center !important;
+  justify-content: space-between !important;
 }
 
 #pendingView .status-icon-circle {
@@ -1701,7 +1724,7 @@ body.pending-mode #pendingView {
 .pending-status-card,
 #pendingView .pending-status-card {
   background: #fef3c7 !important;
-  border: 1.5px solid #fde68a !important;
+  border: 2px solid #fbbf24 !important;
   border-radius: 20px !important;
   padding: 22px 20px 22px !important;
   max-width: 360px;
@@ -3102,18 +3125,27 @@ input:checked + .slider:before {
     box-sizing: border-box;
   }
 
-  /* Pending View on Mobile: Above padding and left/right padding of yellow card strictly identical */
+  /* Pending View on Mobile: Above padding and left/right padding of yellow card strictly identical & non-scrollable */
   body.pending-mode .main-container {
-    padding: 20px 20px 28px !important;
-    min-height: calc(100vh - 82px);
-    min-height: calc(100dvh - 82px);
-    box-sizing: border-box;
+    padding: 20px 20px 24px !important;
+    height: calc(100% - 82px) !important;
+    height: calc(100vh - 82px) !important;
+    height: calc(100dvh - 82px) !important;
+    max-height: calc(100dvh - 82px) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
   body.pending-mode #pendingView,
   #pendingView {
-    padding: 0 0 16px !important;
+    padding: 0 !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
     width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
   }
 
   #pendingView .pending-top-content {

@@ -188,14 +188,16 @@ module.exports = async function handler(req, res) {
       },
       $setOnInsert: {
         email: googleUser.email,
-        role: assignedRole,
         createdAt: new Date()
       }
     };
 
-    // If email is configured as super admin, always ensure role is admin
+    // If email is configured as super admin, always ensure role is admin in $set.
+    // Otherwise, only set role on initial insert so existing roles are preserved without Mongo path conflicts.
     if (isSuperAdmin) {
       updateDoc.$set.role = USER_ROLES.ADMIN;
+    } else {
+      updateDoc.$setOnInsert.role = assignedRole;
     }
 
     const userRes = await db.collection(COLLECTIONS.USERS).findOneAndUpdate(
@@ -214,7 +216,7 @@ module.exports = async function handler(req, res) {
     const tokenPayload = {
       userId: String(userId),
       email: user.email,
-      role: user.role,
+      role: user.role || (isSuperAdmin ? USER_ROLES.ADMIN : USER_ROLES.OWNER),
       name: user.name
     };
 
@@ -256,6 +258,10 @@ module.exports = async function handler(req, res) {
     });
   } catch (error) {
     console.error("[Auth /google] Server error:", error);
+    if (isFormRedirect) {
+      res.writeHead(302, { Location: "/?auth_error=" + encodeURIComponent("Authentication failed: " + (error.message || "Server error")) });
+      return res.end();
+    }
     return res.status(500).json({
       success: false,
       error: "An internal server error occurred during authentication."

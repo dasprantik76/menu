@@ -167,10 +167,10 @@ body {
   display: inline-block;
   background: #deb103;
   clip-path: polygon(0% 8%, 100% 28%, 100% 100%, 0% 100%);
-  padding: 6px 16px 3px 12px;
+  padding: 7px 18px 4px 14px;
   color: #710d1d !important;
   font-family: 'Pacifico', cursive, sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.45rem;
   line-height: 1;
   letter-spacing: -0.3px;
   user-select: none;
@@ -183,7 +183,7 @@ body {
 
 .brand-by-text {
   font-family: 'Jost', sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #64748b;
   letter-spacing: 0.2px;
@@ -1455,7 +1455,7 @@ body.register-mode #registerView,
 }
 
 #pendingView,
-#pendingView * {
+#pendingView *:not(.pending-phone-number):not(.pending-phone-number *) {
   font-family: 'Jost', sans-serif !important;
 }
 
@@ -1520,10 +1520,111 @@ body.pending-mode #pendingView {
   animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.95s both;
 }
 
+/* ==========================================================================
+   Auth View (Login Page) - Cinematic Staggered Entrance Animation
+   ========================================================================== */
+#authView,
+#authView.fade-in-active {
+  animation: pendingPageFadeIn 2.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#authView .auth-hero-menu-banner,
+#authView.fade-in-active .auth-hero-menu-banner {
+  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+}
+
+#authView .auth-hero-logo-sub,
+#authView.fade-in-active .auth-hero-logo-sub {
+  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+}
+
+#authView .card-section,
+#authView.fade-in-active .card-section {
+  animation: pendingPageFadeIn 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+#authView .login-title,
+#authView.fade-in-active .login-title {
+  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+}
+
+#authView .login-subtitle,
+#authView.fade-in-active .login-subtitle {
+  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+}
+
+#authView .google-btn-wrapper,
+#authView.fade-in-active .google-btn-wrapper {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.65s both;
+}
+
+#authView .google-setup-notice,
+#authView.fade-in-active .google-setup-notice {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.75s both;
+}
+
+#authView .pizza-img,
+#authView.fade-in-active .pizza-img {
+  animation: itemFadeSlideUp 2.4s cubic-bezier(0.16, 1, 0.3, 1) 0.85s both;
+}
+
+/* ==========================================================================
+   Register View (Registration Page) - Cinematic Staggered Entrance Animation
+   ========================================================================== */
+#registerView,
+#registerView.fade-in-active {
+  animation: pendingPageFadeIn 2.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#registerView .canopy-container,
+#registerView.fade-in-active .canopy-container {
+  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+#registerView .register-title,
+#registerView.fade-in-active .register-title {
+  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+#registerView .form-group:nth-of-type(1),
+#registerView.fade-in-active .form-group:nth-of-type(1) {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.42s both;
+}
+
+#registerView .form-group:nth-of-type(2),
+#registerView.fade-in-active .form-group:nth-of-type(2) {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.52s both;
+}
+
+#registerView .form-group:nth-of-type(3),
+#registerView.fade-in-active .form-group:nth-of-type(3) {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.62s both;
+}
+
+#registerView .form-group:nth-of-type(4),
+#registerView.fade-in-active .form-group:nth-of-type(4) {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.72s both;
+}
+
+#registerView #submitRegisterBtn,
+#registerView.fade-in-active #submitRegisterBtn {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.82s both;
+}
+
+#registerView #registerLogoutBtn,
+#registerView.fade-in-active #registerLogoutBtn {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.92s both;
+}
+
+#registerView .vegetables-img,
+#registerView.fade-in-active .vegetables-img {
+  animation: itemFadeSlideUp 2.4s cubic-bezier(0.16, 1, 0.3, 1) 0.65s both;
+}
+
 /* Yellowish Pending Status Card (Clock Icon + ACCOUNT ON HOLD + Activation Details) */
 .pending-status-card,
 #pendingView .pending-status-card {
-  background: #fffbeb !important;
+  background: #fef3c7 !important;
   border: 1.5px solid #fde68a !important;
   border-radius: 20px !important;
   padding: 22px 20px 22px !important;
@@ -1531,7 +1632,7 @@ body.pending-mode #pendingView {
   width: 100%;
   margin: 0 auto;
   text-align: center !important;
-  box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.08), 0 4px 10px -2px rgba(217, 119, 6, 0.04);
+  box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.12), 0 4px 10px -2px rgba(217, 119, 6, 0.05);
   box-sizing: border-box;
 }
 
@@ -1556,15 +1657,15 @@ body.pending-mode #pendingView {
 }
 
 .pending-status-card .status-badge.pending {
-  background: #fef3c7;
-  color: #b45309;
-  border: 1px solid #fde68a;
+  background: #fde68a;
+  color: #92400e;
+  border: 1px solid #fcd34d;
   font-family: 'Jost', sans-serif !important;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.7px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 1.1px;
   text-transform: uppercase;
-  padding: 6px 16px;
+  padding: 5px 14px;
   border-radius: 9999px;
   display: inline-block;
   margin-bottom: 14px;
@@ -1625,8 +1726,9 @@ body.pending-mode #pendingView {
   transform: scale(1.12);
 }
 
-.pending-phone-number {
-  font-family: 'Jost', sans-serif !important;
+.pending-phone-number,
+#pendingView .pending-phone-number {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif !important;
   font-size: 1.45rem;
   font-weight: 800;
   letter-spacing: 0.8px;
@@ -1652,7 +1754,7 @@ body.pending-mode #pendingView {
   letter-spacing: 1.2px;
   text-transform: uppercase;
   color: #94a3b8;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
   line-height: 1;
   text-align: center;
 }
@@ -1660,15 +1762,16 @@ body.pending-mode #pendingView {
 #pendingBizName.pending-biz-name-outside,
 #pendingView #pendingBizName,
 .pending-biz-name-outside {
-  font-family: 'Jost', system-ui, -apple-system, sans-serif !important;
-  font-size: 2.6rem !important;
+  font-family: 'Jost', sans-serif !important;
+  font-size: 3.38rem !important;
   font-weight: 800 !important;
   color: #991e2e !important;
   margin: 0 auto !important;
   line-height: 1.15 !important;
   text-align: center !important;
-  max-width: 90vw !important;
+  max-width: 95vw !important;
   letter-spacing: -0.4px !important;
+  white-space: nowrap !important;
 }
 
 .timing-pulse-dot {
@@ -2892,7 +2995,12 @@ input:checked + .slider:before {
   }
 
   .brand-logo-text {
-    font-size: 1.15rem;
+    font-size: 1.32rem;
+    padding: 6px 16px 3px 12px;
+  }
+
+  .brand-by-text {
+    font-size: 0.76rem;
   }
 
   .brand-tag {
@@ -2933,12 +3041,12 @@ input:checked + .slider:before {
 
   .pending-status-card,
   #pendingView .pending-status-card {
-    padding: 20px 18px 20px !important;
+    padding: 20px 20px 20px !important;
   }
 
   .pending-contact-text,
   #pendingView .pending-contact-text {
-    margin: 0 auto 23px !important;
+    margin: 0 auto 22px !important;
     line-height: 1.4 !important;
     font-family: 'Jost', sans-serif !important;
   }
@@ -2953,7 +3061,8 @@ input:checked + .slider:before {
 
   #pendingBizName.pending-biz-name-outside,
   #pendingView #pendingBizName {
-    font-size: 2.15rem !important;
+    font-size: 2.8rem !important;
+    white-space: nowrap !important;
   }
 
   .card {

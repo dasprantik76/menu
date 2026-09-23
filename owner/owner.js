@@ -228,6 +228,7 @@ function showView(viewElement) {
       if (window.location.hash !== "#pending") {
         window.history.replaceState(null, document.title, window.location.pathname + "#pending");
       }
+      setTimeout(fitPendingBizName, 10);
     } else if (isDashboard) {
       sessionStorage.setItem("menucard_view", "dashboard");
       localStorage.setItem("menucard_view", "dashboard");
@@ -436,6 +437,26 @@ function updatePendingUserCard() {
 }
 
 /**
+ * Auto-scale pending business name so that multi-word names stay cleanly on a single line
+ */
+function fitPendingBizName() {
+  const el = document.getElementById("pendingBizName");
+  if (!el) return;
+  el.style.fontSize = "";
+  const isMobile = window.innerWidth <= 640;
+  const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+  const baseRem = isMobile ? 2.8 : 3.38;
+  let currentPx = baseRem * rootFontSize;
+  const maxW = Math.min(window.innerWidth * 0.94, (window.innerWidth - 24));
+  if (el.scrollWidth > maxW && maxW > 0) {
+    const scale = maxW / el.scrollWidth;
+    currentPx = Math.max(16, currentPx * scale);
+    el.style.fontSize = `${(currentPx / rootFontSize).toFixed(2)}rem`;
+  }
+}
+window.addEventListener("resize", fitPendingBizName);
+
+/**
  * Render Pending Application Card
  */
 function renderPendingView() {
@@ -446,6 +467,7 @@ function renderPendingView() {
     if (slugEl) slugEl.textContent = `/r/${currentBusiness.slug}`;
   }
   updatePendingUserCard();
+  fitPendingBizName();
 }
 
 /**

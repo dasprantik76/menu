@@ -34,7 +34,7 @@
   pointer-events: auto;
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.38s cubic-bezier(0.2, 0, 0, 1), visibility 0.38s cubic-bezier(0.2, 0, 0, 1);
+  transition: opacity 0.8s cubic-bezier(0.25, 0.1, 0.25, 1), visibility 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .page-loader-overlay.dissolve {

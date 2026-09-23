@@ -81,7 +81,7 @@ function revealPage() {
       overlay.classList.add("dissolve");
       setTimeout(() => {
         overlay.style.display = "none";
-      }, 420);
+      }, 850);
     }
   });
 }

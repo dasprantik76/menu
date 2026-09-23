@@ -223,7 +223,9 @@ module.exports = async function handler(req, res) {
 
     if (isFormRedirect) {
       let redirectTarget = "/";
-      if (!business) {
+      if (user.role === USER_ROLES.ADMIN || isSuperAdmin) {
+        redirectTarget = "/admin";
+      } else if (!business) {
         redirectTarget = "/?view=register";
       } else if (business.approvalStatus === "pending") {
         redirectTarget = "/?view=pending";

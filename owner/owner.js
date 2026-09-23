@@ -275,6 +275,13 @@ async function checkSession() {
     if (data.success && data.authenticated && data.user) {
       currentUser = data.user;
       currentBusiness = data.business;
+
+      // If user is Super Admin, seamlessly route directly to Super Admin Portal
+      if (currentUser.role === "admin") {
+        window.location.replace("/admin");
+        return;
+      }
+
       updateHeaderProfile();
 
       const header = document.querySelector(".owner-header");

@@ -48,8 +48,13 @@ const closeSubModalBtn = document.getElementById("closeSubModalBtn");
 const cancelSubModalBtn = document.getElementById("cancelSubModalBtn");
 
 // Dev Auth Form
+const adminDevLoginBox = document.getElementById("adminDevLoginBox");
 const adminDevAuthForm = document.getElementById("adminDevAuthForm");
 const adminDevEmail = document.getElementById("adminDevEmail");
+const isLocalEnv = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+if (adminDevLoginBox && isLocalEnv) {
+  adminDevLoginBox.style.display = "block";
+}
 
 /**
  * Show notification toast/banner

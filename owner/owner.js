@@ -21,6 +21,7 @@ const devEmailInput = document.getElementById("devEmailInput");
 
 const registerBusinessForm = document.getElementById("registerBusinessForm");
 const registerLogoutBtn = document.getElementById("registerLogoutBtn");
+const pendingLogoutBtn = document.getElementById("pendingLogoutBtn");
 const bizNameInput = document.getElementById("bizNameInput");
 const bizNameErrorMsg = document.getElementById("bizNameErrorMsg");
 const ownerNameInput = document.getElementById("ownerNameInput");
@@ -153,8 +154,17 @@ function revealPage() {
       overlay.classList.add("dissolve");
       setTimeout(() => {
         overlay.style.display = "none";
-      }, 850);
+      }, 300);
     }
+    // Trigger visible entrance animation once overlay starts dissolving
+    setTimeout(() => {
+      const activeView = [pendingView, dashboardView, registerView, authView].find(v => v && v.style.display !== "none");
+      if (activeView) {
+        activeView.classList.remove("fade-in-active");
+        void activeView.offsetWidth;
+        activeView.classList.add("fade-in-active");
+      }
+    }, 50);
   });
 }
 
@@ -178,15 +188,30 @@ function showView(viewElement) {
     header.style.display = (isAuth || isRegister) ? "none" : "flex";
   }
 
+  const hamburger = document.getElementById("hamburgerBtn");
+  if (hamburger) {
+    hamburger.style.display = isPending ? "none" : "";
+  }
+  if (isPending && typeof closeDrawer === "function") {
+    closeDrawer();
+  }
+
   document.body.classList.toggle("auth-mode", isAuth);
   document.documentElement.classList.toggle("auth-mode", isAuth);
   document.body.classList.toggle("register-mode", isRegister);
   document.documentElement.classList.toggle("register-mode", isRegister);
+  document.body.classList.toggle("pending-mode", isPending);
+  document.documentElement.classList.toggle("pending-mode", isPending);
 
   [loadingView, authView, registerView, pendingView, dashboardView].forEach(v => {
     if (v) v.style.display = "none";
   });
-  if (viewElement) viewElement.style.display = viewElement === authView || viewElement === registerView ? "flex" : "block";
+  if (viewElement) {
+    viewElement.style.display = (viewElement === authView || viewElement === registerView || viewElement === pendingView) ? "flex" : "block";
+    viewElement.classList.remove("fade-in-active");
+    void viewElement.offsetWidth;
+    viewElement.classList.add("fade-in-active");
+  }
   if (isRegister) startTitleWordRotation();
 
   // Persist current view state so page refresh preserves view without flashing login or food-outline
@@ -380,15 +405,47 @@ function updateHeaderProfile() {
     userAvatar.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23991e2e'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
   }
   userProfileArea.style.display = "flex";
+  updatePendingUserCard();
+}
+
+/**
+ * Update Pending View Account Details Card
+ */
+function updatePendingUserCard() {
+  if (!currentUser) return;
+  const nameEl = document.getElementById("pendingUserName");
+  const roleEl = document.getElementById("pendingUserRole");
+  const initialEl = document.getElementById("pendingUserInitial");
+  const imgEl = document.getElementById("pendingUserImg");
+
+  const displayName = currentUser.name || currentUser.email || "Restaurant Owner";
+  if (nameEl) nameEl.textContent = displayName;
+  if (roleEl) roleEl.textContent = currentUser.role === "admin" ? "Super Admin" : "Restaurant Owner";
+
+  const firstLetter = (displayName.trim()[0] || "P").toUpperCase();
+  if (initialEl) initialEl.textContent = firstLetter;
+
+  if (currentUser.picture && imgEl) {
+    imgEl.src = currentUser.picture;
+    imgEl.style.display = "block";
+    if (initialEl) initialEl.style.display = "none";
+  } else {
+    if (imgEl) imgEl.style.display = "none";
+    if (initialEl) initialEl.style.display = "flex";
+  }
 }
 
 /**
  * Render Pending Application Card
  */
 function renderPendingView() {
-  if (!currentBusiness) return;
-  document.getElementById("pendingBizName").textContent = currentBusiness.name;
-  document.getElementById("pendingSlugValue").textContent = `/r/${currentBusiness.slug}`;
+  if (currentBusiness) {
+    const bizNameEl = document.getElementById("pendingBizName");
+    const slugEl = document.getElementById("pendingSlugValue");
+    if (bizNameEl) bizNameEl.textContent = currentBusiness.name;
+    if (slugEl) slugEl.textContent = `/r/${currentBusiness.slug}`;
+  }
+  updatePendingUserCard();
 }
 
 /**
@@ -921,6 +978,10 @@ if (logoutBtn) {
 
 if (registerLogoutBtn) {
   registerLogoutBtn.addEventListener("click", handleLogout);
+}
+
+if (pendingLogoutBtn) {
+  pendingLogoutBtn.addEventListener("click", handleLogout);
 }
 
 // ============================================================================

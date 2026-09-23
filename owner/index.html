@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@500&family=Inter:wght@400;500;600;700&family=Jost:wght@400;500;600;700;800&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=90">
+  <link rel="stylesheet" href="/owner/owner.css?v=117">
   <script>
     (function() {
       try {
@@ -23,7 +23,10 @@
         if (isRegister) {
           document.documentElement.className = "register-mode";
           document.write('<style id="preRouteStyle">html,body{background-color:#f8f6f2!important}body::before,html body::before,#authView::before,#registerView::before{display:none!important;content:none!important;background:none!important;background-image:none!important}#authView{display:none!important}#registerView{display:flex!important}.owner-header{display:none!important}</style>');
-        } else if (isPending || isDashboard) {
+        } else if (isPending) {
+          document.documentElement.className = "pending-mode";
+          document.write('<style id="preRouteStyle">body::before,html body::before,#authView::before{display:none!important;content:none!important;background:none!important}#authView{display:none!important}.owner-header{justify-content:center!important}.header-left-group{margin:0 auto!important;justify-content:center!important;gap:0!important}.brand-area{justify-content:center!important}.hamburger-btn,.header-right-group,.brand-tag{display:none!important}</style>');
+        } else if (isDashboard) {
           document.documentElement.className = "";
           document.write('<style id="preRouteStyle">body::before,html body::before,#authView::before{display:none!important;content:none!important;background:none!important}#authView{display:none!important}</style>');
         } else {
@@ -37,12 +40,16 @@
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
       width: 100vw; height: 100vh; height: 100dvh;
-      background-color: #ffffff;
+      background-color: #f8f6f2;
       z-index: 999999;
       pointer-events: auto;
       opacity: 1;
       visibility: visible;
-      transition: opacity 0.8s cubic-bezier(0.25, 0.1, 0.25, 1), visibility 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
+      transition: opacity 0.25s ease-out, visibility 0.25s ease-out;
+    }
+    html.auth-mode #pageLoaderOverlay,
+    body.auth-mode #pageLoaderOverlay {
+      background-color: #fbf9f6;
     }
   </style>
   <!-- Google Identity Services -->
@@ -312,37 +319,59 @@
     </section>
 
     <!-- 4. Application Pending Approval View -->
-    <section id="pendingView" class="card status-card" style="display: none;">
-      <div class="status-icon-circle pending">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-      </div>
-      <span class="status-badge pending">Application Pending Review</span>
-      <h3 id="pendingBizName">Your Restaurant</h3>
-      <p>Your business application has been submitted and is currently being reviewed by the super administrator. Once approved, your menu management features will unlock automatically.</p>
+    <section id="pendingView" class="status-card" style="display: none;">
+      <div class="pending-top-content">
+        <!-- Yellowish Pending Status Card (Clock + ACCOUNT ON HOLD + Activation Details) -->
+        <div class="pending-status-card">
+          <div class="status-icon-circle pending">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <span class="status-badge pending">ACCOUNT ON HOLD</span>
 
-      <div class="business-info-box">
-        <div class="info-row">
-          <span class="info-label">Approval Status:</span>
-          <span class="info-value" style="color:#b45309;">Pending Approval</span>
+          <p class="pending-contact-text">To activate your account reach us at :</p>
+
+          <a href="tel:7908441469" class="pending-phone-pill" title="Call 7908441469">
+            <svg class="pending-phone-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            <span class="pending-phone-number">7908441469</span>
+          </a>
         </div>
-        <div class="info-row">
-          <span class="info-label">Assigned URL:</span>
-          <span class="info-value" id="pendingSlugValue">/r/...</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Subscription Tier:</span>
-          <span class="info-value">14-Day Free Trial</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">Public Access:</span>
-          <span class="info-value" style="color:#64748b;">Unpublished</span>
+
+        <!-- Business Name & Label Outside Below Card -->
+        <div class="pending-biz-group">
+          <span class="pending-biz-label">BUSINESS NAME</span>
+          <h3 id="pendingBizName" class="pending-biz-name-outside">Your Restaurant</h3>
         </div>
       </div>
 
-      <button class="logout-btn" id="checkStatusBtn" style="background:#ffffff; border-color:#991e2e; color:#991e2e; font-weight:600;">Check Approval Status</button>
+      <!-- Account Details & Logout Block (Bottom of Page) -->
+      <div class="pending-bottom-block">
+        <div class="pending-account-group">
+          <span class="pending-account-label">LOGGED IN AS :</span>
+          <div class="pending-user-card" id="pendingUserCard">
+            <div class="pending-user-avatar" id="pendingUserAvatar">
+              <span id="pendingUserInitial">P</span>
+              <img src="" alt="Profile" id="pendingUserImg" style="display: none;">
+            </div>
+            <div class="pending-user-details">
+              <span class="pending-user-name" id="pendingUserName">Restaurant Owner</span>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="pending-logout-btn" id="pendingLogoutBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          <span>Log out</span>
+        </button>
+      </div>
     </section>
 
     <!-- 5. Approved Owner Dashboard View (Transition to Phase 4) -->
@@ -475,6 +504,6 @@
     </section>
   </main>
 
-  <script src="/owner/owner.js?v=53"></script>
+  <script src="/owner/owner.js?v=57"></script>
 </body>
 </html>

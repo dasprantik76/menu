@@ -27,7 +27,7 @@ img {
   pointer-events: none;
 }
 
-/* Universal White Screen Pre-loader with Smooth Dissolve Transition */
+/* Universal Pre-loader Overlay (Matches public menu background color) */
 .page-loader-overlay {
   position: fixed;
   top: 0;
@@ -37,12 +37,12 @@ img {
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  background-color: #ffffff;
+  background-color: #fbefe1;
   z-index: 999999;
   pointer-events: auto;
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.8s cubic-bezier(0.25, 0.1, 0.25, 1), visibility 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
 }
 
 .page-loader-overlay.dissolve {

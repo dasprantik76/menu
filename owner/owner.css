@@ -1595,30 +1595,75 @@ body.pending-mode #pendingView {
   justify-content: space-between !important;
 }
 
-#pendingView .status-icon-circle {
-  animation: iconPopIn 2.0s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+/* ==========================================================================
+   Pending View (Application Status Page) - Cinematic Staggered Entrance Animation
+   ========================================================================== */
+#pendingView:not(.fade-in-active) {
+  animation: none !important;
 }
 
-#pendingView .status-badge {
+#pendingView:not(.fade-in-active) .status-icon-circle,
+#pendingView:not(.fade-in-active) .status-badge,
+#pendingView:not(.fade-in-active) .pending-status-card,
+#pendingView:not(.fade-in-active) .pending-contact-text,
+#pendingView:not(.fade-in-active) .pending-phone-pill,
+#pendingView:not(.fade-in-active) .pending-biz-group,
+#pendingView:not(.fade-in-active) .pending-biz-name-outside,
+#pendingView:not(.fade-in-active) .pending-bottom-block,
+#pendingView:not(.fade-in-active) .pending-account-group,
+#pendingView:not(.fade-in-active) .pending-user-card,
+#pendingView:not(.fade-in-active) .pending-logout-btn {
+  animation: none !important;
+}
+
+#pendingView,
+#pendingView.fade-in-active {
+  animation: pendingPageFadeIn 2.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#pendingView .pending-status-card,
+#pendingView.fade-in-active .pending-status-card {
+  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+#pendingView .status-icon-circle,
+#pendingView.fade-in-active .status-icon-circle {
+  animation: iconPopIn 2.0s cubic-bezier(0.34, 1.56, 0.64, 1) 0.25s both;
+}
+
+#pendingView .status-badge,
+#pendingView.fade-in-active .status-badge {
   animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
 }
 
-#pendingView .pending-status-card {
-  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+#pendingView .pending-contact-text,
+#pendingView.fade-in-active .pending-contact-text {
+  animation: itemFadeSlideUp 2.0s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+}
+
+#pendingView .pending-phone-pill,
+#pendingView.fade-in-active .pending-phone-pill {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both;
 }
 
 #pendingView .pending-biz-group,
-#pendingView .pending-biz-name-outside {
-  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+#pendingView.fade-in-active .pending-biz-group,
+#pendingView .pending-biz-name-outside,
+#pendingView.fade-in-active .pending-biz-name-outside {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.65s both;
 }
 
 #pendingView .pending-bottom-block,
+#pendingView.fade-in-active .pending-bottom-block,
 #pendingView .pending-account-group,
-#pendingView .pending-user-card {
-  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both;
+#pendingView.fade-in-active .pending-account-group,
+#pendingView .pending-user-card,
+#pendingView.fade-in-active .pending-user-card {
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
 }
 
-#pendingView .pending-logout-btn {
+#pendingView .pending-logout-btn,
+#pendingView.fade-in-active .pending-logout-btn {
   animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.95s both;
 }
 

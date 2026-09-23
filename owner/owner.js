@@ -141,6 +141,27 @@ function showNotification(message, type = "error") {
 }
 
 /**
+ * Reveal page with smooth dissolve transition once contents are loaded
+ */
+let pageRevealed = false;
+function revealPage() {
+  if (pageRevealed) return;
+  pageRevealed = true;
+  requestAnimationFrame(() => {
+    const overlay = document.getElementById("pageLoaderOverlay");
+    if (overlay) {
+      overlay.classList.add("dissolve");
+      setTimeout(() => {
+        overlay.style.display = "none";
+      }, 420);
+    }
+  });
+}
+
+// Safety fallback timer to ensure page dissolves even on slow networks
+setTimeout(revealPage, 2200);
+
+/**
  * View switcher
  */
 function showView(viewElement) {
@@ -196,6 +217,9 @@ function showView(viewElement) {
       }
     }
   } catch (e) {}
+
+  // Smoothly dissolve the initial white pre-loader screen
+  revealPage();
 }
 
 /**

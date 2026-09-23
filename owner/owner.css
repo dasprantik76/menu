@@ -48,6 +48,30 @@ select:focus, select:active,
   -webkit-tap-highlight-color: transparent !important;
 }
 
+/* Universal White Screen Pre-loader with Smooth Dissolve Transition */
+.page-loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background-color: #ffffff;
+  z-index: 999999;
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.38s cubic-bezier(0.2, 0, 0, 1), visibility 0.38s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.page-loader-overlay.dissolve {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;

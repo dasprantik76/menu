@@ -8,9 +8,25 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Jost:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Righteous&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=64">
+  <link rel="stylesheet" href="/style.css?v=65">
+  <style>
+    #pageLoaderOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100vw; height: 100vh; height: 100dvh;
+      background-color: #ffffff;
+      z-index: 999999;
+      pointer-events: auto;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.38s cubic-bezier(0.2, 0, 0, 1), visibility 0.38s cubic-bezier(0.2, 0, 0, 1);
+    }
+  </style>
 </head>
 <body oncontextmenu="return false;" onselectstart="return false;">
+  <!-- Full-Screen White Pre-loader with Dissolve Transition -->
+  <div id="pageLoaderOverlay" class="page-loader-overlay" aria-hidden="true"></div>
+
   <div class="mobile-app">
     <!-- Sticky Top Name Bar -->
     <header class="sticky-header">
@@ -88,6 +104,6 @@
     </div>
   </div>
 
-  <script src="/script.js?v=40"></script>
+  <script src="/script.js?v=41"></script>
 </body>
 </html>

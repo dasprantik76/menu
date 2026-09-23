@@ -64,6 +64,27 @@ function showNotification(message, type = "error") {
 }
 
 /**
+ * Reveal page with smooth dissolve transition once contents are loaded
+ */
+let pageRevealed = false;
+function revealPage() {
+  if (pageRevealed) return;
+  pageRevealed = true;
+  requestAnimationFrame(() => {
+    const overlay = document.getElementById("pageLoaderOverlay");
+    if (overlay) {
+      overlay.classList.add("dissolve");
+      setTimeout(() => {
+        overlay.style.display = "none";
+      }, 420);
+    }
+  });
+}
+
+// Safety fallback timer to ensure page dissolves even on slow networks
+setTimeout(revealPage, 2200);
+
+/**
  * Switch top views
  */
 function showView(view) {
@@ -100,21 +121,25 @@ async function checkAdminSession() {
         showView(dashboardView);
         await Promise.all([fetchBusinesses(), fetchAuditLogs()]);
         if (urlParams.get("tab")) switchTab(urlParams.get("tab"));
+        revealPage();
       } else {
         currentAdmin = null;
         showView(authView);
         showNotification("Access denied: You are signed in as a Restaurant Owner, not a Super Admin.", "error");
+        revealPage();
       }
     } else {
       currentAdmin = null;
       adminProfileArea.style.display = "none";
       showView(authView);
       setupGoogleButton();
+      revealPage();
     }
   } catch (err) {
     console.error("Admin session error:", err);
     showView(authView);
     showNotification("Failed to connect to authentication server.", "error");
+    revealPage();
   }
 }
 
@@ -549,6 +574,10 @@ function escapeHtml(str) {
 }
 
 // Init
-document.addEventListener("DOMContentLoaded", () => {
-  checkAdminSession();
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await checkAdminSession();
+  } finally {
+    revealPage();
+  }
 });

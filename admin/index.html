@@ -6,11 +6,26 @@
   <title>Super Admin Portal - Menu by PixelSetu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Jost:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/admin.css?v=3">
+  <link rel="stylesheet" href="/admin/admin.css?v=4">
+  <style>
+    #pageLoaderOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100vw; height: 100vh; height: 100dvh;
+      background-color: #ffffff;
+      z-index: 999999;
+      pointer-events: auto;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.38s cubic-bezier(0.2, 0, 0, 1), visibility 0.38s cubic-bezier(0.2, 0, 0, 1);
+    }
+  </style>
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
+  <!-- Full-Screen White Pre-loader with Dissolve Transition -->
+  <div id="pageLoaderOverlay" class="page-loader-overlay" aria-hidden="true"></div>
   <!-- Header -->
   <header class="admin-header">
     <div class="brand-area">
@@ -233,6 +248,6 @@
       to { transform: rotate(360deg); }
     }
   </style>
-  <script src="/admin/admin.js"></script>
+  <script src="/admin/admin.js?v=4"></script>
 </body>
 </html>

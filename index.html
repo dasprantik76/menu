@@ -32,10 +32,26 @@
       } catch (e) {}
     })();
   </script>
+  <style>
+    #pageLoaderOverlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100vw; height: 100vh; height: 100dvh;
+      background-color: #ffffff;
+      z-index: 999999;
+      pointer-events: auto;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.38s cubic-bezier(0.2, 0, 0, 1), visibility 0.38s cubic-bezier(0.2, 0, 0, 1);
+    }
+  </style>
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="if(window.initGoogleAuth) window.initGoogleAuth()"></script>
 </head>
 <body>
+  <!-- Full-Screen White Pre-loader with Dissolve Transition -->
+  <div id="pageLoaderOverlay" class="page-loader-overlay" aria-hidden="true"></div>
+
   <!-- Header (hidden on login/auth view) -->
   <header class="owner-header" style="display: none;">
     <div class="header-left-group">
@@ -459,6 +475,6 @@
     </section>
   </main>
 
-  <script src="owner/owner.js?v=50"></script>
+  <script src="owner/owner.js?v=51"></script>
 </body>
 </html>

@@ -1783,8 +1783,29 @@ async function loadDynamicMenu() {
   }
 }
 
+/**
+ * Reveal page with smooth dissolve transition once contents are loaded
+ */
+let pageRevealed = false;
+function revealPage() {
+  if (pageRevealed) return;
+  pageRevealed = true;
+  requestAnimationFrame(() => {
+    const overlay = document.getElementById("pageLoaderOverlay");
+    if (overlay) {
+      overlay.classList.add("dissolve");
+      setTimeout(() => {
+        overlay.style.display = "none";
+      }, 420);
+    }
+  });
+}
+
+// Safety fallback timer to ensure page dissolves even on slow networks
+setTimeout(revealPage, 2200);
+
 // Initial Load
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const initialBlock = document.getElementById("categoryBlock");
   if (initialBlock) {
     const scrollBox = initialBlock.querySelector(".menu-scroll-box");
@@ -1799,7 +1820,11 @@ document.addEventListener("DOMContentLoaded", () => {
   setupSheetScrollAndBounce(document.getElementById("platterList"));
   renderCategoryPageDots();
   updatePlatterCountBadge();
-  loadDynamicMenu();
+  try {
+    await loadDynamicMenu();
+  } finally {
+    revealPage();
+  }
 });
 
 // Update title sizing on screen orientation change or resize

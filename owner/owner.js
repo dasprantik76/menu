@@ -148,7 +148,9 @@ function showView(viewElement) {
   if (preRouteStyle) preRouteStyle.remove();
 
   const isAuth = (viewElement === authView);
-  const isRegister = viewElement === registerView;
+  const isRegister = (viewElement === registerView);
+  const isPending = (viewElement === pendingView);
+  const isDashboard = (viewElement === dashboardView);
   const header = document.querySelector(".owner-header");
 
   if (header) {
@@ -165,6 +167,35 @@ function showView(viewElement) {
   });
   if (viewElement) viewElement.style.display = viewElement === authView || viewElement === registerView ? "flex" : "block";
   if (isRegister) startTitleWordRotation();
+
+  // Persist current view state so page refresh preserves view without flashing login or food-outline
+  try {
+    if (isRegister) {
+      sessionStorage.setItem("menucard_view", "register");
+      localStorage.setItem("menucard_view", "register");
+      if (window.location.hash !== "#register") {
+        window.history.replaceState(null, document.title, window.location.pathname + "#register");
+      }
+    } else if (isPending) {
+      sessionStorage.setItem("menucard_view", "pending");
+      localStorage.setItem("menucard_view", "pending");
+      if (window.location.hash !== "#pending") {
+        window.history.replaceState(null, document.title, window.location.pathname + "#pending");
+      }
+    } else if (isDashboard) {
+      sessionStorage.setItem("menucard_view", "dashboard");
+      localStorage.setItem("menucard_view", "dashboard");
+      if (window.location.hash !== "#dashboard") {
+        window.history.replaceState(null, document.title, window.location.pathname + "#dashboard");
+      }
+    } else if (isAuth) {
+      sessionStorage.removeItem("menucard_view");
+      localStorage.removeItem("menucard_view");
+      if (window.location.hash) {
+        window.history.replaceState(null, document.title, window.location.pathname);
+      }
+    }
+  } catch (e) {}
 }
 
 /**
@@ -264,7 +295,7 @@ async function checkSession() {
         }
         showView(registerView);
         if (window.location.search.includes("view=")) {
-          const cleanUrl = window.location.pathname + (window.location.hash || "");
+          const cleanUrl = window.location.pathname + (window.location.hash || "#register");
           window.history.replaceState({}, document.title, cleanUrl);
         }
       } else if (currentBusiness.approvalStatus === "pending") {
@@ -281,6 +312,10 @@ async function checkSession() {
     } else {
       currentUser = null;
       currentBusiness = null;
+      try {
+        sessionStorage.removeItem("menucard_view");
+        localStorage.removeItem("menucard_view");
+      } catch (e) {}
       userProfileArea.style.display = "none";
       const viewBtn = document.getElementById("viewPublicMenuBtn");
       if (viewBtn) viewBtn.style.display = "none";
@@ -291,6 +326,10 @@ async function checkSession() {
     }
   } catch (err) {
     console.warn("Session check error (proceeding to login view):", err);
+    try {
+      sessionStorage.removeItem("menucard_view");
+      localStorage.removeItem("menucard_view");
+    } catch (e) {}
     showView(authView);
     setupGoogleButton();
   }
@@ -828,6 +867,10 @@ if (checkStatusBtn) {
 async function handleLogout() {
   try {
     closeDrawer();
+    try {
+      sessionStorage.removeItem("menucard_view");
+      localStorage.removeItem("menucard_view");
+    } catch (e) {}
     if (window.google && window.google.accounts && window.google.accounts.id) {
       window.google.accounts.id.disableAutoSelect();
     }
@@ -835,7 +878,7 @@ async function handleLogout() {
     currentUser = null;
     currentBusiness = null;
     window.history.replaceState({}, document.title, window.location.pathname);
-    checkSession();
+    await checkSession();
   } catch (err) {
     console.error("Logout error:", err);
   }

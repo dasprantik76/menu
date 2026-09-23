@@ -451,8 +451,8 @@ body.auth-mode {
   width: 100% !important;
 }
 
-/* Zoomed Food Outline Background with Exact Opacity and Top Alignment */
-body.auth-mode::before {
+/* Zoomed Food Outline Background with Exact Opacity and Top Alignment (Strictly for #authView only) */
+#authView::before {
   content: '';
   position: fixed;
   top: 0;
@@ -466,6 +466,20 @@ body.auth-mode::before {
   opacity: 0.42;
   pointer-events: none;
   z-index: 0;
+}
+
+/* Explicitly ensure food-outline NEVER displays on register mode or anywhere outside login */
+body::before,
+html body::before,
+html.register-mode body::before,
+body.register-mode::before,
+html.register-mode #authView::before,
+body.register-mode #authView::before,
+#registerView::before {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  background-image: none !important;
 }
 
 body.auth-mode .owner-header {
@@ -491,6 +505,11 @@ body.auth-mode .main-container {
   z-index: 1;
 }
 
+#authView {
+  display: none;
+}
+
+html.auth-mode #authView,
 body.auth-mode #authView {
   width: 100%;
   height: 100% !important;
@@ -498,7 +517,7 @@ body.auth-mode #authView {
   height: 100dvh !important;
   max-height: 100dvh !important;
   overflow: hidden !important;
-  display: flex;
+  display: flex !important;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
@@ -2530,7 +2549,7 @@ input:checked + .slider:before {
     font-size: 16px; /* Avoids iOS auto-zoom on focus */
   }
 
-  body.auth-mode::before {
+  #authView::before {
     background-size: min(187vw, 1012px) auto;
   }
 

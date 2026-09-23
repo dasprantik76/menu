@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="auth-mode">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -7,18 +7,27 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@500&family=Inter:wght@400;500;600;700&family=Jost:wght@400;500;600;700;800&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=85">
+  <link rel="stylesheet" href="/owner/owner.css?v=87">
   <script>
     (function() {
       try {
-        var params = new URLSearchParams(window.location.search);
-        var view = params.get("view") || (window.location.hash ? window.location.hash.substring(1) : "");
-        if (view === "register") {
+        var search = window.location.search || "";
+        var hash = window.location.hash || "";
+        var saved = "";
+        try { saved = sessionStorage.getItem("menucard_view") || localStorage.getItem("menucard_view") || ""; } catch(e){}
+
+        var isRegister = search.indexOf("view=register") !== -1 || hash === "#register" || saved === "register";
+        var isPending = search.indexOf("view=pending") !== -1 || hash === "#pending" || saved === "pending";
+        var isDashboard = search.indexOf("view=dashboard") !== -1 || hash === "#dashboard" || saved === "dashboard";
+
+        if (isRegister) {
           document.documentElement.className = "register-mode";
-          document.write('<style id="preRouteStyle">#authView{display:none!important}#registerView{display:flex!important}.owner-header{display:flex!important}</style>');
-        } else if (view === "pending" || view === "dashboard") {
+          document.write('<style id="preRouteStyle">html,body{background-color:#f8f6f2!important}body::before,html body::before,#authView::before,#registerView::before{display:none!important;content:none!important;background:none!important;background-image:none!important}#authView{display:none!important}#registerView{display:flex!important}.owner-header{display:none!important}</style>');
+        } else if (isPending || isDashboard) {
           document.documentElement.className = "";
-          document.write('<style id="preRouteStyle">#authView{display:none!important}</style>');
+          document.write('<style id="preRouteStyle">body::before,html body::before,#authView::before{display:none!important;content:none!important;background:none!important}#authView{display:none!important}</style>');
+        } else {
+          document.documentElement.className = "auth-mode";
         }
       } catch (e) {}
     })();
@@ -26,7 +35,7 @@
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="if(window.initGoogleAuth) window.initGoogleAuth()"></script>
 </head>
-<body class="auth-mode">
+<body>
   <!-- Header -->
   <header class="owner-header">
     <div class="header-left-group">
@@ -124,7 +133,7 @@
     <div id="loadingView" style="display: none;"></div>
 
     <!-- 2. Authentication View (Google Login) -->
-    <section id="authView" class="auth-wrapper" style="display: none;">
+    <section id="authView" class="auth-wrapper">
       <div class="login-page-container">
         <!-- Top Brand Hero -->
         <div class="auth-brand-hero">
@@ -412,6 +421,6 @@
     </section>
   </main>
 
-  <script src="/owner/owner.js?v=48"></script>
+  <script src="/owner/owner.js?v=50"></script>
 </body>
 </html>

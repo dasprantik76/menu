@@ -1,5 +1,8 @@
-// Menu Categories & Items (Default / Fallback Dataset)
-let MENU_DATA = [
+// Active Menu Categories & Items (Loaded dynamically per restaurant slug)
+let MENU_DATA = [];
+
+// Fallback Dataset (Used strictly for offline/unseeded demo when slug is 'royal-food-corner')
+const ROYAL_FALLBACK_DATA = [
   {
     "category": "TODAY'S SPECIAL",
     "isFixed": true,
@@ -1744,42 +1747,147 @@ function getRestaurantSlug() {
   return params.get("restaurant") || params.get("r") || "royal-food-corner";
 }
 
+function escapeHtml(text) {
+  if (!text) return "";
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function updateRestaurantBranding(restaurant) {
+  const brandTitle = document.querySelector(".brand-title") || document.getElementById("brandTitle");
+  if (brandTitle && restaurant && restaurant.name) {
+    const words = restaurant.name.trim().split(/\s+/);
+    if (words.length >= 3) {
+      brandTitle.innerHTML = `${escapeHtml(words[0])} <span class="brand-accent">${escapeHtml(words[1])}</span> ${escapeHtml(words.slice(2).join(" "))}`;
+    } else if (words.length === 2) {
+      brandTitle.innerHTML = `${escapeHtml(words[0])} <span class="brand-accent">${escapeHtml(words[1])}</span>`;
+    } else {
+      brandTitle.textContent = restaurant.name;
+    }
+    document.title = `${restaurant.name} - Menu`;
+  }
+
+  if (restaurant && restaurant.branding && restaurant.branding.accentColor) {
+    const stickyHeader = document.querySelector(".sticky-header");
+    if (stickyHeader) {
+      stickyHeader.style.backgroundColor = restaurant.branding.accentColor;
+    }
+  }
+}
+
+function handleMenuLoadError(slug, status, errorMsg) {
+  const brandTitle = document.querySelector(".brand-title") || document.getElementById("brandTitle");
+  const heading = document.getElementById("categoryHeading");
+  const scrollBox = document.getElementById("menuScrollBox");
+  const dots = document.getElementById("categoryPageDots");
+  const browseBtn = document.getElementById("browseBtn");
+
+  const readableName = slug && slug !== "royal-food-corner"
+    ? slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+    : "Restaurant";
+
+  if (brandTitle) {
+    brandTitle.textContent = status === 404 ? "Menu Not Found" : readableName;
+  }
+  document.title = status === 404 ? "Menu Not Found" : `${readableName} - Menu`;
+
+  if (heading) {
+    heading.classList.remove("is-today-special");
+    heading.innerHTML = `<span class="cat-heading-text" style="color: #64748b;">${status === 403 ? "COMING SOON" : "MENU"}</span>`;
+    heading.style.pointerEvents = "none";
+  }
+
+  if (scrollBox) {
+    scrollBox.innerHTML = `
+      <div class="empty-menu-notice" style="padding: 48px 16px; text-align: center;">
+        <svg style="margin: 0 auto 12px; display: block; opacity: 0.5;" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#78716c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <p style="font-size: 0.95rem; font-weight: 600; color: #44403c; margin-bottom: 6px;">${escapeHtml(errorMsg)}</p>
+        <p style="font-size: 0.82rem; color: #78716c;">Please check back again later.</p>
+      </div>
+    `;
+  }
+
+  if (dots) dots.innerHTML = "";
+  if (browseBtn) browseBtn.style.display = "none";
+}
+
+function renderEmptyMenuState(message) {
+  const heading = document.getElementById("categoryHeading");
+  const scrollBox = document.getElementById("menuScrollBox");
+  const dots = document.getElementById("categoryPageDots");
+  const browseBtn = document.getElementById("browseBtn");
+
+  if (heading) {
+    heading.classList.remove("is-today-special");
+    heading.innerHTML = `<span class="cat-heading-text">MENU</span>`;
+  }
+
+  if (scrollBox) {
+    scrollBox.innerHTML = `
+      <div class="empty-menu-notice" style="padding: 48px 16px; text-align: center;">
+        <p style="font-size: 0.95rem; color: #78716c;">${escapeHtml(message)}</p>
+      </div>
+    `;
+  }
+
+  if (dots) dots.innerHTML = "";
+  if (browseBtn) browseBtn.style.display = "none";
+}
+
 // Fetch dynamic menu from the read-only public API (/api/public/menu?slug=:slug)
 async function loadDynamicMenu() {
   const slug = getRestaurantSlug();
+  const browseBtn = document.getElementById("browseBtn");
+
   try {
     const response = await fetch(`/api/public/menu?slug=${encodeURIComponent(slug)}`);
-    if (!response.ok) return;
+    const data = await response.json().catch(() => null);
 
-    const data = await response.json();
-    if (data && data.success && Array.isArray(data.categories) && data.categories.length > 0) {
+    if (!response.ok || !data || !data.success) {
+      const errorMsg = (data && data.error)
+        ? data.error
+        : (response && response.status === 404 ? "This restaurant menu could not be found." : "This menu is currently unavailable.");
+      handleMenuLoadError(slug, response ? response.status : 0, errorMsg);
+      return;
+    }
+
+    // Update restaurant brand title & accent styling
+    if (data.restaurant) {
+      updateRestaurantBranding(data.restaurant);
+    }
+
+    // Update menu categories
+    if (Array.isArray(data.categories) && data.categories.length > 0) {
       MENU_DATA = data.categories;
-
-      // Update brand title if returned
-      if (data.restaurant && data.restaurant.name) {
-        const brandTitle = document.querySelector(".brand-title");
-        if (brandTitle) {
-          const words = data.restaurant.name.split(" ");
-          if (words.length >= 3) {
-            brandTitle.innerHTML = `${words[0]} <span class="brand-accent">${words[1]}</span> ${words.slice(2).join(" ")}`;
-          } else if (words.length === 2) {
-            brandTitle.innerHTML = `${words[0]} <span class="brand-accent">${words[1]}</span>`;
-          } else {
-            brandTitle.textContent = data.restaurant.name;
-          }
-        }
-        document.title = `${data.restaurant.name} - Menu`;
-      }
-
-      // Re-render menu items and category modal with new data
       activeCategoryIndex = 0;
       renderMenuItems(activeCategoryIndex);
       setupCategorySheet();
       renderCategoryPageDots();
+      if (browseBtn) {
+        browseBtn.style.display = MENU_DATA.length > 1 ? "" : "none";
+      }
+    } else {
+      MENU_DATA = [];
+      renderEmptyMenuState("No items have been added to this menu yet. Please check back soon!");
     }
   } catch (err) {
-    // Gracefully preserve default dataset if offline or unseeded
-    console.info("ℹ️ Running in fallback mode:", err.message);
+    console.info("ℹ️ Error loading dynamic menu:", err.message);
+    if (slug === "royal-food-corner" && typeof ROYAL_FALLBACK_DATA !== "undefined") {
+      MENU_DATA = ROYAL_FALLBACK_DATA;
+      updateRestaurantBranding({ name: "Royal Food Corner" });
+      activeCategoryIndex = 0;
+      renderMenuItems(activeCategoryIndex);
+      setupCategorySheet();
+      renderCategoryPageDots();
+      if (browseBtn) browseBtn.style.display = "";
+    } else {
+      handleMenuLoadError(slug, 0, "Unable to load menu. Please check your connection.");
+    }
   }
 }
 
@@ -1801,9 +1909,6 @@ function revealPage() {
   });
 }
 
-// Safety fallback timer to ensure page dissolves even on slow networks
-setTimeout(revealPage, 2200);
-
 // Initial Load
 document.addEventListener("DOMContentLoaded", async () => {
   const initialBlock = document.getElementById("categoryBlock");
@@ -1815,14 +1920,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  renderMenuItems(activeCategoryIndex);
-  setupCategorySheet();
   setupSheetScrollAndBounce(document.getElementById("platterList"));
-  renderCategoryPageDots();
   updatePlatterCountBadge();
+
+  // Watchdog timer (7s) to guarantee overlay dissolves even on extreme network timeouts
+  const watchdog = setTimeout(revealPage, 7000);
+
   try {
     await loadDynamicMenu();
   } finally {
+    clearTimeout(watchdog);
     revealPage();
   }
 });

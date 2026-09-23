@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Royal Food Corner - Menu</title>
+  <title>Menu</title>
   <base href="/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Jost:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Righteous&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=66">
+  <link rel="stylesheet" href="/style.css?v=67">
   <style>
     #pageLoaderOverlay {
       position: fixed;
@@ -30,7 +30,7 @@
   <div class="mobile-app">
     <!-- Sticky Top Name Bar -->
     <header class="sticky-header">
-      <h1 class="brand-title">Royal <span class="brand-accent">Food</span> Corner</h1>
+      <h1 class="brand-title" id="brandTitle">&nbsp;</h1>
     </header>
 
     <!-- Main View Area (Stage for Category Blocks) -->
@@ -38,11 +38,8 @@
       <div class="category-block" id="categoryBlock">
         <!-- Fixed Space Category Panel Above the Menu -->
         <div class="category-panel">
-          <h2 class="category-heading is-today-special" id="categoryHeading" title="Click to browse categories" role="button" tabindex="0">
-            <svg class="cat-star-icon" viewBox="0 0 24 24" width="17" height="17" fill="#f59e0b" stroke="#d97706" stroke-width="0.8" aria-hidden="true">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            <span class="cat-heading-text">TODAY'S SPECIAL</span>
+          <h2 class="category-heading" id="categoryHeading" title="Click to browse categories" role="button" tabindex="0">
+            <span class="cat-heading-text">&nbsp;</span>
           </h2>
         </div>
 
@@ -104,6 +101,6 @@
     </div>
   </div>
 
-  <script src="/script.js?v=42"></script>
+  <script src="/script.js?v=43"></script>
 </body>
 </html>

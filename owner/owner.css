@@ -833,10 +833,9 @@ body.register-mode #registerView,
   overflow: hidden !important;
 }
 
-/* Top Canopy Awning - Default Placement with Top-Edge Alignment */
+/* Top Canopy Awning - Pure HTML/CSS Awning (9 Slats Mobile, 27 Slats Desktop) */
 .canopy-container {
   width: 100%;
-  line-height: 0;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -848,19 +847,54 @@ body.register-mode #registerView,
   z-index: 2;
 }
 
-.canopy-container picture {
+.canopy-awning {
   width: 100%;
-  display: block;
-  line-height: 0;
+  display: flex;
+  align-items: flex-start;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.15));
 }
 
-.canopy-img {
-  width: 100%;
-  max-width: 100%;
-  height: auto;
-  display: block;
-  vertical-align: top;
-  margin-top: 0;
+.canopy-desktop {
+  display: flex;
+  height: clamp(70px, 7.2vw, 100px);
+}
+
+.canopy-mobile {
+  display: none;
+  height: clamp(65px, 21.5vw, 88px);
+}
+
+.canopy-desktop .canopy-slat {
+  flex: 1;
+  height: 100%;
+  border-bottom-left-radius: 50% 18px;
+  border-bottom-right-radius: 50% 18px;
+}
+
+.canopy-mobile .canopy-slat {
+  flex: 1;
+  height: 100%;
+  border-bottom-left-radius: 50% 20px;
+  border-bottom-right-radius: 50% 20px;
+}
+
+.canopy-slat.slat-red,
+.canopy-awning .canopy-slat:nth-child(odd) {
+  background-color: #700c1c;
+}
+
+.canopy-slat.slat-gold,
+.canopy-awning .canopy-slat:nth-child(even) {
+  background-color: #dfb102;
+}
+
+@media (max-width: 640px) {
+  .canopy-desktop {
+    display: none !important;
+  }
+  .canopy-mobile {
+    display: flex !important;
+  }
 }
 
 /* Register Content Block */

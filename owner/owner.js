@@ -362,93 +362,46 @@ async function fetchAuthConfig() {
 let isGisInitialized = false;
 
 /**
- * Initialize Google Sign-In in Redirect Mode (Full page navigation, no popups)
+ * Initialize Google Sign-In in Full Redirect Mode while preserving exact custom button styling
  */
 async function setupGoogleButton() {
   const config = await fetchAuthConfig();
-  const googleBtnSlot = document.getElementById("googleBtnSlot");
   const googleSignInBtn = document.getElementById("googleSignInBtn");
   const googleSetupNotice = document.getElementById("googleSetupNotice");
 
-  if (!googleBtnSlot) return;
+  // Remove any injected GIS containers to preserve custom button styling
+  const oldContainer = document.getElementById("gisRedirectContainer");
+  if (oldContainer) oldContainer.remove();
+
+  if (!googleSignInBtn) return;
+
+  // Ensure original custom button is visible
+  googleSignInBtn.style.display = "inline-flex";
 
   if (config.isConfigured && config.googleClientId) {
     if (googleSetupNotice) googleSetupNotice.style.display = "none";
 
-    const initRedirectGis = () => {
-      if (isGisInitialized) return;
-      if (!window.google || !window.google.accounts || !window.google.accounts.id) return;
-
-      try {
-        const loginUri = window.location.origin + "/api/auth/google";
-
-        // Initialize Google Identity Services in Redirect Mode
-        window.google.accounts.id.initialize({
-          client_id: config.googleClientId,
-          ux_mode: "redirect",
-          login_uri: loginUri,
-          auto_select: false
-        });
-
-        const wrapper = document.querySelector(".google-btn-wrapper") || googleBtnSlot;
-        let redirectContainer = document.getElementById("gisRedirectContainer");
-        if (!redirectContainer) {
-          redirectContainer = document.createElement("div");
-          redirectContainer.id = "gisRedirectContainer";
-          redirectContainer.className = "gis-redirect-container";
-          redirectContainer.style.cssText = "display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;";
-          wrapper.appendChild(redirectContainer);
-        }
-
-        redirectContainer.innerHTML = "";
-        window.google.accounts.id.renderButton(redirectContainer, {
-          type: "standard",
-          shape: "pill",
-          theme: "outline",
-          text: "continue_with",
-          size: "large",
-          width: 320,
-          logo_alignment: "left"
-        });
-
-        // Hide the custom fallback button once native GIS redirect button is mounted
-        if (googleSignInBtn) {
-          googleSignInBtn.style.display = "none";
-        }
-
-        isGisInitialized = true;
-      } catch (e) {
-        console.warn("Google GIS redirect initialization error:", e.message);
-      }
-    };
-
-    if (window.google && window.google.accounts && window.google.accounts.id) {
-      initRedirectGis();
-    } else {
-      let attempts = 0;
-      const interval = setInterval(() => {
-        attempts++;
-        if (window.google && window.google.accounts && window.google.accounts.id) {
-          clearInterval(interval);
-          initRedirectGis();
-        } else if (attempts > 30) {
-          clearInterval(interval);
-        }
-      }, 100);
-    }
-
-    // Direct OAuth redirect fallback if custom button is clicked
-    if (googleSignInBtn && !googleSignInBtn.dataset.bound) {
+    if (!googleSignInBtn.dataset.bound) {
       googleSignInBtn.dataset.bound = "true";
       googleSignInBtn.addEventListener("click", () => {
         const redirectUri = window.location.origin + "/api/auth/google";
-        window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(config.googleClientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent("openid email profile")}&prompt=select_account`;
+        const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+          `client_id=${encodeURIComponent(config.googleClientId)}` +
+          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+          `&response_type=id_token` +
+          `&response_mode=form_post` +
+          `&scope=${encodeURIComponent("openid email profile")}` +
+          `&prompt=select_account` +
+          `&nonce=${encodeURIComponent(nonce)}`;
+
+        window.location.href = authUrl;
       });
     }
   } else {
     // When GOOGLE_CLIENT_ID is not configured in .env yet, wire up notice
     if (googleSetupNotice) googleSetupNotice.style.display = "none";
-    if (googleSignInBtn && !googleSignInBtn.dataset.bound) {
+    if (!googleSignInBtn.dataset.bound) {
       googleSignInBtn.dataset.bound = "true";
       googleSignInBtn.addEventListener("click", () => {
         const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";

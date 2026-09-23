@@ -53,7 +53,8 @@ module.exports = async function handler(req, res) {
   }
   body = body || {};
 
-  const { credential, accessToken, devEmail, devName } = body;
+  const credential = body.credential || body.id_token;
+  const { accessToken, devEmail, devName } = body;
 
   let googleUser = null;
 

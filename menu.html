@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Royal Food Corner - Menu</title>
+  <base href="/">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Jost:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Righteous&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=64">
+</head>
+<body oncontextmenu="return false;" onselectstart="return false;">
+  <div class="mobile-app">
+    <!-- Sticky Top Name Bar -->
+    <header class="sticky-header">
+      <h1 class="brand-title">Royal <span class="brand-accent">Food</span> Corner</h1>
+    </header>
+
+    <!-- Main View Area (Stage for Category Blocks) -->
+    <main class="main-content" id="mainContent">
+      <div class="category-block" id="categoryBlock">
+        <!-- Fixed Space Category Panel Above the Menu -->
+        <div class="category-panel">
+          <h2 class="category-heading is-today-special" id="categoryHeading" title="Click to browse categories" role="button" tabindex="0">
+            <svg class="cat-star-icon" viewBox="0 0 24 24" width="17" height="17" fill="#f59e0b" stroke="#d97706" stroke-width="0.8" aria-hidden="true">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span class="cat-heading-text">TODAY'S SPECIAL</span>
+          </h2>
+        </div>
+
+        <!-- Scrollable Menu Card Container -->
+        <div class="menu-card-container">
+          <div class="menu-scroll-box" id="menuScrollBox" role="list">
+            <!-- Populated by script.js -->
+          </div>
+        </div>
+      </div>
+      <!-- Vertical Dot Page Scroll Points (Category Pagination) -->
+      <nav class="category-page-dots" id="categoryPageDots" aria-label="Category Navigation Dots"></nav>
+    </main>
+
+    <!-- Fixed Bottom Button Bar -->
+    <footer class="bottom-bar">
+      <button class="browse-btn" id="browseBtn">
+        <span class="browse-btn-text">BROWSE CATEGORIES</span>
+        <svg class="browse-chevron-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 12L12 6L18 12"/>
+          <path d="M6 19L12 13L18 19"/>
+        </svg>
+      </button>
+      <button class="platter-btn" id="platterBtn" aria-label="View Platter" title="View Selected Dishes">
+        <div class="platter-icon-wrapper">
+          <img src="/assets/platter.png" alt="Platter" class="platter-icon-img">
+          <span class="platter-count" id="platterCount">0</span>
+        </div>
+      </button>
+    </footer>
+
+    <!-- Categories Modal / Bottom Sheet -->
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="category-sheet" id="categorySheet" role="dialog" aria-label="Select Category">
+      <div class="sheet-header">
+        <h3>Select Category</h3>
+        <button class="close-sheet-btn" id="closeSheetBtn">&times;</button>
+      </div>
+      <div class="sheet-list" id="categorySheetList">
+        <!-- Injected via script.js -->
+      </div>
+    </div>
+
+    <!-- Platter Review Dialog / Bottom Sheet (Theme-consistent) -->
+    <div class="modal-backdrop" id="platterBackdrop"></div>
+    <div class="platter-sheet" id="platterSheet" role="dialog" aria-label="My Platter">
+      <div class="sheet-header">
+        <div class="platter-sheet-title">
+          <h3>My Platter (<span id="platterDialogCount">0</span>)</h3>
+        </div>
+        <button class="close-sheet-btn" id="closePlatterBtn">&times;</button>
+      </div>
+      <div class="platter-list" id="platterList">
+        <!-- Injected via script.js: Selected dish names only -->
+      </div>
+      <div class="platter-footer" id="platterFooter">
+        <button class="clear-platter-btn" id="clearPlatterBtn">Clear Platter</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/script.js?v=40"></script>
+</body>
+</html>

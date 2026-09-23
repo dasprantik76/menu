@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en" class="auth-mode">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Business Owner Portal - Menu by PixelSetu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@500&family=Inter:wght@400;500;600;700&family=Jost:wght@400;500;600;700;800&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="owner/owner.css?v=85">
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer onload="if(window.initGoogleAuth) window.initGoogleAuth()"></script>
+</head>
+<body class="auth-mode">
+  <!-- Header (hidden on login/auth view) -->
+  <header class="owner-header" style="display: none;">
+    <div class="header-left-group">
+      <button type="button" class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu" title="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="brand-area">
+        <a href="/" class="brand-logo-link">
+          <div class="brand-logo-stacked">
+            <span class="brand-logo-text">Menu</span>
+            <span class="brand-by-text">by PixelSetu</span>
+          </div>
+        </a>
+        <span class="brand-tag">Owner Portal</span>
+      </div>
+    </div>
+
+    <div class="header-right-group">
+      <a href="#" id="viewPublicMenuBtn" target="_blank" class="topbar-public-btn" style="display: none;">
+        <span>View Menu</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="7" y1="17" x2="17" y2="7"></line>
+          <polyline points="7 7 17 7 17 17"></polyline>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- Hamburger Navigation Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay" style="display: none;"></div>
+  <aside class="drawer-sidebar" id="drawerSidebar">
+    <div class="drawer-header">
+      <div class="drawer-brand">
+        <div class="brand-logo-stacked">
+          <span class="brand-logo-text">Menu</span>
+          <span class="brand-by-text">by PixelSetu</span>
+        </div>
+        <span class="brand-tag">Owner</span>
+      </div>
+      <button type="button" class="drawer-close-btn" id="closeDrawerBtn" aria-label="Close menu">&times;</button>
+    </div>
+
+    <div class="drawer-content">
+      <!-- User Profile in Drawer -->
+      <div class="drawer-user-card" id="userProfileArea" style="display: none;">
+        <img src="" alt="Profile" class="drawer-user-avatar" id="userAvatar">
+        <div class="drawer-user-info">
+          <span class="drawer-user-name" id="userName">User</span>
+          <span class="drawer-user-role" id="userRole">Owner</span>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="drawer-nav">
+        <a href="#menu" class="drawer-nav-item active" id="drawerMenuLink">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          <span>Menu Editor</span>
+        </a>
+        <a href="#" id="drawerPublicMenuLink" target="_blank" class="drawer-nav-item" style="display: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          <span>View Menu</span>
+        </a>
+      </nav>
+    </div>
+
+    <div class="drawer-footer">
+      <button type="button" class="drawer-logout-btn" id="logoutBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        <span>Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    <div id="notificationBanner" class="notification-banner"></div>
+
+    <!-- 1. Loading View (Hidden) -->
+    <div id="loadingView" style="display: none;"></div>
+
+    <!-- 2. Authentication View (Google Login) -->
+    <section id="authView" class="auth-wrapper" style="display: flex;">
+      <div class="login-page-container">
+        <!-- Top Brand Hero -->
+        <div class="auth-brand-hero">
+          <div class="auth-hero-menu-banner">
+            <span class="auth-hero-menu-text">Menu</span>
+          </div>
+          <span class="auth-hero-logo-sub">by PixelSetu</span>
+        </div>
+
+        <!-- Bottom Tan Card Section -->
+        <div class="card-section">
+          <div class="card-header-group">
+            <h1 class="login-title">Login</h1>
+            <p class="login-subtitle">to manage your menu, your way.</p>
+          </div>
+
+          <!-- Middle Google Login Bar -->
+          <div class="card-center-group">
+            <div class="google-btn-slot" id="googleBtnSlot">
+              <div class="google-btn-wrapper">
+                <button type="button" class="google-pill-btn" id="googleSignInBtn" title="Continue with Google">
+                  <svg class="google-icon" width="30" height="30" viewBox="0 0 18 18" aria-hidden="true">
+                    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/>
+                    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                    <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.039l3.007-2.332z"/>
+                    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+                  </svg>
+                  <span>Continue with Google</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="googleSetupNotice" class="google-setup-notice" style="display: none;">
+              <p>To enable live Google OAuth redirection, set <code>GOOGLE_CLIENT_ID</code> in <code>.env</code>.</p>
+            </div>
+          </div>
+
+          <!-- Pizza Plate Image with Bottom-Edge Alignment -->
+          <div class="pizza-container">
+            <img src="https://ik.imagekit.io/d3ycnoiwd/Menu/Admin/pizza-plate.png?v=2" alt="Pizza plate" class="pizza-img">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. First-Time Business Registration View -->
+    <section id="registerView" style="display: none;">
+      <!-- Top Canopy Image with Top-Edge Alignment (Responsive: Mobile & Desktop) -->
+      <div class="canopy-container">
+        <picture>
+          <source media="(max-width: 640px)" srcset="https://ik.imagekit.io/d3ycnoiwd/Menu/Admin/canopy-mobile.png">
+          <img src="https://ik.imagekit.io/d3ycnoiwd/Menu/Admin/canopy.png?v=2" alt="Canopy" class="canopy-img">
+        </picture>
+      </div>
+
+      <div class="register-container">
+        <h2 class="register-title">Register Your <span class="register-title-rotator" id="registerTitleRotator"><span class="register-title-accent" id="registerTitleAccent">Restaurant</span></span></h2>
+
+        <form id="registerBusinessForm">
+          <input type="hidden" id="bizSlugInput">
+
+          <div class="form-group">
+            <label for="ownerNameInput">1. Name of Owner *</label>
+            <input type="text" id="ownerNameInput" class="form-input" placeholder="Full name of the owner" required>
+            <span class="field-error-msg" id="ownerNameErrorMsg" style="display: none;"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="bizNameInput">2. Name of Business *</label>
+            <input type="text" id="bizNameInput" class="form-input" placeholder="Your business name" required>
+            <span class="field-error-msg" id="bizNameErrorMsg" style="display: none;"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="bizPhoneInput">3. Phone Number *</label>
+            <input type="tel" id="bizPhoneInput" class="form-input" placeholder="10-digit mobile number" pattern="[0-9]{10}" maxlength="10" inputmode="numeric" required>
+            <span class="field-error-msg" id="phoneErrorMsg" style="display: none;"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="bizLogoInput">4. Business Logo (Optional)</label>
+            <div class="logo-upload-dropzone" id="logoUploadDropzone" role="button" tabindex="0" aria-label="Upload business logo">
+              <input type="file" id="bizLogoInput" accept="image/png, image/jpeg, image/webp, image/svg+xml" style="display: none;">
+              <div class="logo-upload-placeholder" id="logoUploadPlaceholder">
+                <div class="logo-upload-icon-circle">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                </div>
+                <div class="logo-upload-text-group">
+                  <span class="logo-upload-prompt"><span class="logo-upload-browse">Upload a File</span></span>
+                  <span class="logo-upload-hint">Recommended Format : PNG</span>
+                </div>
+              </div>
+              <div class="logo-upload-preview-wrapper" id="logoUploadPreviewWrapper" style="display: none;">
+                <img id="logoPreviewImg" src="" alt="Business Logo Preview" class="logo-preview-img">
+                <div class="logo-preview-info">
+                  <span id="logoFileName" class="logo-file-name"></span>
+                  <span id="logoFileSize" class="logo-file-size"></span>
+                </div>
+                <button type="button" id="removeLogoBtn" class="logo-remove-btn" title="Remove logo" aria-label="Remove logo">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" id="submitRegisterBtn">Create Account</button>
+          <button type="button" class="register-logout-btn" id="registerLogoutBtn">Log out</button>
+        </form>
+      </div>
+
+      <!-- Vegetables Illustration with Bottom-Right & Bottom-Edge Alignment -->
+      <div class="vegetables-container">
+        <img src="https://ik.imagekit.io/d3ycnoiwd/Menu/Admin/vegetables.png" alt="Vegetables" class="vegetables-img">
+      </div>
+    </section>
+
+    <!-- 4. Application Pending Approval View -->
+    <section id="pendingView" class="card status-card" style="display: none;">
+      <div class="status-icon-circle pending">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      </div>
+      <span class="status-badge pending">Application Pending Review</span>
+      <h3 id="pendingBizName">Your Restaurant</h3>
+      <p>Your business application has been submitted and is currently being reviewed by the super administrator. Once approved, your menu management features will unlock automatically.</p>
+
+      <div class="business-info-box">
+        <div class="info-row">
+          <span class="info-label">Approval Status:</span>
+          <span class="info-value" style="color:#b45309;">Pending Approval</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Assigned URL:</span>
+          <span class="info-value" id="pendingSlugValue">/r/...</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Subscription Tier:</span>
+          <span class="info-value">14-Day Free Trial</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Public Access:</span>
+          <span class="info-value" style="color:#64748b;">Unpublished</span>
+        </div>
+      </div>
+
+      <button class="logout-btn" id="checkStatusBtn" style="background:#ffffff; border-color:#991e2e; color:#991e2e; font-weight:600;">Check Approval Status</button>
+    </section>
+
+    <!-- 5. Approved Owner Dashboard View (Transition to Phase 4) -->
+    <section id="dashboardView" style="display: none;">
+      <!-- Switcher Capsule Button: CATEGORY - MENU -->
+      <div class="capsule-switcher-wrapper">
+        <div class="capsule-switcher" role="tablist" aria-label="Dashboard Section Switcher" data-active="category">
+          <div class="capsule-slider-pill" id="capsuleSliderPill"></div>
+          <button type="button" class="capsule-btn active" id="capsuleCategoryBtn" role="tab" aria-selected="true" data-view="category">CATEGORY</button>
+          <button type="button" class="capsule-btn" id="capsuleMenuBtn" role="tab" aria-selected="false" data-view="menu">MENU</button>
+        </div>
+      </div>
+
+      <!-- GROUP 1: CATEGORY View -->
+      <div id="categoryViewGroup" class="editor-layout">
+        <div class="categories-container-box">
+          <!-- Centered Category Count -->
+          <div id="categoriesCountLabel" class="categories-center-count">Categories</div>
+
+          <!-- Add Category Action Bar -->
+          <div class="categories-action-row">
+            <button type="button" class="btn-primary" id="openAddCategoryHeaderBtn">+ Add New Category</button>
+          </div>
+
+          <!-- Categories List -->
+          <div id="categoriesGrid" class="categories-grid">
+            <!-- Rendered via JS -->
+          </div>
+          <div id="emptyCategoriesState" style="display: none; text-align: center; padding: 48px 20px; color: #64748b;">
+            <p style="font-size: 1rem; margin-bottom: 12px;">No categories created yet.</p>
+            <button type="button" class="btn-primary" id="emptyStateAddCategoryBtn" style="width: auto; padding: 8px 18px; font-size: 0.85rem; display: inline-block;">+ Add First Category</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GROUP 2: MENU View -->
+      <div id="menuViewGroup" class="editor-layout" style="display: none;">
+        <div class="dishes-container-box">
+          <!-- Centered Dish Count (matches category count) -->
+          <div id="dishCountLabel" class="categories-center-count">Items</div>
+
+          <!-- Dishes Action Bar: Category Dropdown on Left + Add Item on Right -->
+          <div class="dishes-action-row">
+            <div class="category-dropdown-wrapper">
+              <div id="categoryDropdownDisplay" class="category-dropdown-display" aria-hidden="true"></div>
+              <select id="categorySelectDropdown" class="category-dropdown-select" aria-label="Filter dishes by category">
+                <!-- Rendered via JS -->
+              </select>
+            </div>
+            <button type="button" class="btn-primary" id="openAddDishBtn">+ Add Item</button>
+          </div>
+
+          <!-- Dishes Grid -->
+          <div id="dishesGrid" class="dishes-grid">
+            <!-- Rendered via JS -->
+          </div>
+          <div id="emptyDishesState" style="display: none; text-align: center; padding: 48px 20px; color: #64748b;">
+            <p style="font-size: 1rem; margin-bottom: 12px;">No dishes in this category yet.</p>
+            <button type="button" class="btn-primary" id="emptyStateAddDishBtn" style="width: auto; padding: 8px 18px; font-size: 0.85rem; display: inline-block;">+ Add First Dish</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="categoryModalTitle" style="font-family: 'Jost', sans-serif; font-size: 1.25rem; margin: 0; color: #0f172a;">Add Category</h3>
+          <button type="button" class="btn-secondary" id="closeCategoryModalBtn" style="padding: 4px 8px; font-size: 1rem; line-height: 1;">&times;</button>
+        </div>
+        <form id="categoryForm">
+          <input type="hidden" id="categoryIdInput">
+          <div class="form-group">
+            <label for="categoryNameInput">Category Name *</label>
+            <input type="text" id="categoryNameInput" class="form-input" placeholder="e.g. BIRYANI, STARTERS, BEVERAGES" required>
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button type="button" class="btn-secondary" id="cancelCategoryBtn" style="flex: 1; padding: 10px;">Cancel</button>
+            <button type="submit" class="btn-primary" id="saveCategoryBtn" style="flex: 1; padding: 10px;">Save Category</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dish Modal -->
+    <div id="dishModal" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="dishModalTitle" style="font-family: 'Jost', sans-serif; font-size: 1.25rem; margin: 0; color: #0f172a;">Add Dish</h3>
+          <button type="button" class="btn-secondary" id="closeDishModalBtn" style="padding: 4px 8px; font-size: 1rem; line-height: 1;">&times;</button>
+        </div>
+        <form id="dishForm">
+          <input type="hidden" id="dishIdInput">
+          
+          <div class="form-group">
+            <label for="dishCategorySelect">Category *</label>
+            <select id="dishCategorySelect" class="form-input" required>
+              <!-- Options populated dynamically -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="dishNameInput">Dish Name *</label>
+            <input type="text" id="dishNameInput" class="form-input" placeholder="e.g. Chicken Biryani" required>
+          </div>
+
+          <div class="form-group">
+            <label for="dishPriceInput">Price *</label>
+            <input type="number" id="dishPriceInput" class="form-input" placeholder="280" min="0" step="1" required>
+          </div>
+
+          <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px;">
+            <label class="switch-label" style="margin-bottom: 0;">
+              <span class="switch">
+                <input type="checkbox" id="dishAvailableInput" checked>
+                <span class="slider"></span>
+              </span>
+              <span>Available for customers to order</span>
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 24px;">
+            <button type="button" class="btn-secondary" id="cancelDishBtn" style="flex: 1; padding: 10px;">Cancel</button>
+            <button type="submit" class="btn-primary" id="saveDishBtn" style="flex: 1; padding: 10px;">Save Dish</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    </section>
+  </main>
+
+  <script src="owner/owner.js?v=44"></script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+{
+  "version": 2,
+  "rewrites": [
+    {
+      "source": "/r/:slug",
+      "destination": "/menu.html?restaurant=:slug"
+    },
+    {
+      "source": "/menu",
+      "destination": "/menu.html"
+    },
+    {
+      "source": "/owner",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/owner/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/owner/:path*",
+      "destination": "/owner/:path*"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/admin/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/public/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Accept" }
+      ]
+    }
+  ]
+}

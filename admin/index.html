@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin Portal - Menu by PixelSetu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Jost:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/admin/admin.css?v=3">
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <!-- Header -->
+  <header class="admin-header">
+    <div class="brand-area">
+      <a href="/admin/" style="text-decoration: none;" class="brand-logo-link">
+        <div class="brand-logo-stacked">
+          <span class="brand-logo-text">Menu</span>
+          <span class="brand-by-text">by PixelSetu</span>
+        </div>
+      </a>
+      <span class="brand-tag">Super Admin</span>
+    </div>
+    <div class="admin-profile-area" id="adminProfileArea" style="display: none;">
+      <img src="" alt="Admin" class="admin-avatar" id="adminAvatar">
+      <div class="admin-info">
+        <span class="admin-name" id="adminName">Admin</span>
+        <span class="admin-badge">Platform Administrator</span>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    <div id="notificationBanner" class="notification-banner"></div>
+
+    <!-- 1. Loading View (Hidden) -->
+    <div id="loadingView" style="display: none;"></div>
+
+    <!-- 2. Auth View (Admin Login) -->
+    <section id="authView" class="auth-wrapper" style="display: none;">
+      <div class="auth-card">
+        <h2 style="font-family: 'Jost', sans-serif; font-size: 1.6rem; color: #0f172a; margin-bottom: 8px;">Super Admin Portal</h2>
+        <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 24px;">Restricted access for platform administrators to review restaurant businesses, manage subscriptions, and inspect audit logs.</p>
+        
+        <div class="google-btn-slot" id="googleBtnSlot" style="display: flex; justify-content: center; margin-bottom: 24px;"></div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: left;">
+          <h4 style="font-size: 0.9rem; font-weight: 700; color: #334155; margin-bottom: 12px;">Fast Administrator Sign-In</h4>
+          <form id="adminDevAuthForm">
+            <div class="form-group">
+              <label for="adminDevEmail">Admin Email</label>
+              <input type="email" id="adminDevEmail" class="form-input" value="admin@yourdomain.com" required>
+            </div>
+            <button type="submit" class="btn-admin" style="width: 100%; padding: 11px; background: #0f172a; color: #ffffff; border: none; font-size: 0.9rem;">Sign In as Super Admin</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Super Admin Control Dashboard -->
+    <section id="dashboardView" style="display: none;">
+      <!-- Stats Overview -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Pending Reviews</span>
+          <span class="stat-value" id="statPendingCount" style="color: #d97706;">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Total Restaurants</span>
+          <span class="stat-value" id="statTotalBizCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Active / Live Menus</span>
+          <span class="stat-value" id="statActiveCount" style="color: #059669;">0</span>
+        </div>
+      </div>
+
+      <!-- Section Tabs -->
+      <div class="admin-tabs">
+        <button type="button" class="admin-tab active" data-tab="pending">
+          Pending Applications
+          <span class="tab-badge" id="pendingTabBadge" style="display: none;">0</span>
+        </button>
+        <button type="button" class="admin-tab" data-tab="all">All Restaurants</button>
+        <button type="button" class="admin-tab" data-tab="audit">Audit Logs</button>
+      </div>
+
+      <!-- Tab Content 1: Pending Applications -->
+      <div id="tabContentPending" class="admin-card">
+        <div class="card-title-row">
+          <div>
+            <h3 class="card-title">Pending Restaurant Applications</h3>
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 2px;">Review new business registrations before their menus can be published and managed.</p>
+          </div>
+          <button type="button" class="btn-admin btn-settings" id="refreshPendingBtn">&#8635; Refresh</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Restaurant Name</th>
+                <th>Owner</th>
+                <th>Menu Slug / URL</th>
+                <th>Applied On</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="pendingTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <div id="emptyPendingState" style="display: none; text-align: center; padding: 40px; color: #64748b;">
+          <p>No pending applications waiting for review.</p>
+        </div>
+      </div>
+
+      <!-- Tab Content 2: All Restaurants -->
+      <div id="tabContentAll" class="admin-card" style="display: none;">
+        <div class="card-title-row">
+          <div>
+            <h3 class="card-title">All Registered Restaurants</h3>
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 2px;">Manage approval statuses, subscriptions, and access permissions.</p>
+          </div>
+          <button type="button" class="btn-admin btn-settings" id="refreshAllBtn">&#8635; Refresh</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Restaurant</th>
+                <th>Owner Details</th>
+                <th>Approval</th>
+                <th>Subscription</th>
+                <th>Menu Catalog</th>
+                <th>Public Link</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="allBizTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content 3: Audit Logs -->
+      <div id="tabContentAudit" class="admin-card" style="display: none;">
+        <div class="card-title-row">
+          <div>
+            <h3 class="card-title">Security & Action Audit Logs</h3>
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 2px;">Tamper-resistant audit trails of all super-administrative operations.</p>
+          </div>
+          <button type="button" class="btn-admin btn-settings" id="refreshLogsBtn">&#8635; Refresh</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Admin User</th>
+                <th>Action</th>
+                <th>Target ID</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Subscription & Feature Config Modal -->
+    <div id="subModal" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="subModalTitle" style="font-family: 'Jost', sans-serif; font-size: 1.25rem; margin: 0; color: #0f172a;">Manage Subscription</h3>
+          <button type="button" class="btn-admin btn-settings" id="closeSubModalBtn" style="padding: 4px 8px; line-height: 1;">&times;</button>
+        </div>
+        <form id="subForm">
+          <input type="hidden" id="subBizIdInput">
+          
+          <div class="form-group">
+            <label for="subStatusSelect">Subscription Tier / Status</label>
+            <select id="subStatusSelect" class="form-input">
+              <option value="trial">14-Day Free Trial</option>
+              <option value="active">Active Paid Subscription</option>
+              <option value="past_due">Past Due / Grace Period</option>
+              <option value="canceled">Canceled / Inactive</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="subExpiryInput">Subscription Expiry Date</label>
+            <input type="date" id="subExpiryInput" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label style="margin-bottom: 8px;">Feature Flags</label>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.88rem; cursor: pointer;">
+                <input type="checkbox" id="featCustomDomain"> Enable Custom Domain
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.88rem; cursor: pointer;">
+                <input type="checkbox" id="featOnlineOrdering"> Enable Online Ordering Checkout
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; font-size: 0.88rem; cursor: pointer;">
+                <input type="checkbox" id="featAnalytics"> Enable Premium Analytics & Reporting
+              </label>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 24px;">
+            <button type="button" class="btn-admin btn-settings" id="cancelSubModalBtn" style="flex: 1; padding: 10px;">Cancel</button>
+            <button type="submit" class="btn-admin" style="flex: 1; padding: 10px; background: #991e2e; color: #ffffff; border: none;">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+  <script src="/admin/admin.js"></script>
+</body>
+</html>

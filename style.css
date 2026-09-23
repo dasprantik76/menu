@@ -1,0 +1,1043 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Jost:wght@200;300;400;500;600;700&display=swap');
+
+/* ==========================================================================
+   ROYAL FOOD CORNER - Minimalist Clean Menu
+   ========================================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+
+*:focus, *:active, *:focus-visible {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  overflow: hidden;
+  height: 100%;
+  width: 100%;
+}
+
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  background-color: #fbefe1; /* Warm parchment page background */
+  font-family: 'Jost', sans-serif;
+  color: #000000;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-touch-callout: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+/* Mobile Application Frame */
+.mobile-app {
+  width: 100%;
+  max-width: 440px;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background-color: #fbefe1; /* Page bg color #fbefe1 */
+  position: relative;
+  overflow: hidden;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  box-shadow: none;
+}
+
+/* 1. STICKY TOP NAME BAR (No stroke) */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background-color: #991e2e; /* Solid #991e2e */
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(24px, env(safe-area-inset-top, 24px)) 20px 22px;
+  text-align: center;
+  border: none; /* Stroke removed */
+}
+
+.brand-title {
+  font-family: 'Pacifico', cursive, sans-serif;
+  font-size: 1.78rem;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  color: #ffffff; /* 'Royal' & 'Corner' in white */
+  text-transform: none;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.brand-accent {
+  color: #f9931c; /* 'Food' in #f9931c */
+}
+
+/* 2. MAIN CONTENT AREA (STAGE FOR CATEGORY BLOCKS) */
+.main-content {
+  flex: 1;
+  min-height: 0; /* Important for flex child overflow */
+  display: flex;
+  flex-direction: column;
+  padding: 0; /* No bottom padding so container flows directly into bottom bar */
+  border: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Vertical Dot Page Scroll Points (Category Pagination in Vacant Right Margin) */
+.category-page-dots {
+  position: absolute;
+  right: 9px;
+  top: 52%;
+  transform: translateY(-50%);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 2px;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.category-dot {
+  position: relative;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: rgba(153, 30, 46, 0.22);
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  display: block;
+}
+
+/* Expanded invisible touch hit target for easy tapping on mobile */
+.category-dot::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: -10px;
+  right: -10px;
+}
+
+.category-dot:hover {
+  background-color: rgba(153, 30, 46, 0.6);
+  transform: scale(1.35);
+}
+
+.category-dot.active {
+  width: 4px;
+  height: 14px;
+  border-radius: 999px;
+  background-color: #991e2e;
+  box-shadow: 0 1px 3px rgba(153, 30, 46, 0.35);
+}
+
+/* Category Block (Entire Unit: Heading + Menu Items) */
+.category-block {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #fbefe1;
+  overflow: hidden;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateY(0);
+}
+
+/* Category Panel Above the Menu - Fixed height ensures menu list starts from the exact same line */
+.category-panel {
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 3%;
+  margin-top: 18px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+/* Category Title - Compact outline box with reduced vertical padding */
+.category-heading {
+  font-family: 'Righteous', cursive, sans-serif;
+  color: #d05a00; /* Warm amber with high contrast against #fbefe1 */
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  text-align: center;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 18px;
+  border: 2px solid #d05a00; /* Rounded-cornered rectangular outline box */
+  border-radius: 8px; /* Rounded corners */
+  line-height: 1;
+  box-shadow: none;
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.26s cubic-bezier(0.22, 1, 0.36, 1), transform 0.26s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.15s ease, border-color 0.2s ease;
+  will-change: opacity, transform;
+}
+
+.category-heading:hover {
+  background-color: rgba(208, 90, 0, 0.05);
+}
+
+.category-heading:active {
+  transform: scale(0.97);
+  background-color: rgba(208, 90, 0, 0.1);
+}
+
+/* Golden Highlight for Today's Special Category Heading (Clean, No Glow) */
+.category-heading.is-today-special {
+  color: #78350f; /* Rich golden amber / warm brown */
+  border-color: #f59e0b; /* Bright golden stroke */
+  background: linear-gradient(135deg, #fffdf0 0%, #fef3c7 45%, #fde68a 100%);
+  box-shadow: none !important;
+}
+
+.category-heading.is-today-special:hover {
+  background: linear-gradient(135deg, #fffbeb 0%, #fde68a 45%, #fcd34d 100%);
+  border-color: #d97706;
+  box-shadow: none !important;
+}
+
+.category-heading.is-today-special:active {
+  transform: scale(0.97);
+  background: linear-gradient(135deg, #fef08a 0%, #fde047 100%);
+  border-color: #b45309;
+  box-shadow: none !important;
+}
+
+.category-heading .cat-star-icon {
+  margin-right: 7px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+  filter: none !important;
+}
+
+/* 3. SCROLLABLE MENU AREA WITH SMOOTH PROGRESSIVE FADE */
+.menu-card-container {
+  position: relative;
+  flex: 1;
+  min-height: 0; /* allows internal scrolling */
+  background: transparent;
+  border: none !important;
+  border-bottom: none !important;
+  border-radius: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  outline: none !important;
+  box-shadow: none !important;
+  width: 100%;
+  overflow: hidden;
+  overscroll-behavior-y: auto;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  
+  /* Initial state: Top is 100% visible, bottom has smooth soft progressive fade */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black calc(100% - 80px),
+    rgba(0, 0, 0, 0.9) calc(100% - 64px),
+    rgba(0, 0, 0, 0.65) calc(100% - 48px),
+    rgba(0, 0, 0, 0.38) calc(100% - 32px),
+    rgba(0, 0, 0, 0.12) calc(100% - 16px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black calc(100% - 80px),
+    rgba(0, 0, 0, 0.9) calc(100% - 64px),
+    rgba(0, 0, 0, 0.65) calc(100% - 48px),
+    rgba(0, 0, 0, 0.38) calc(100% - 32px),
+    rgba(0, 0, 0, 0.12) calc(100% - 16px),
+    transparent 100%
+  );
+  transition: -webkit-mask-image 0.2s ease, mask-image 0.2s ease;
+}
+
+/* When user scrolls down, smooth top fade activates while retaining bottom softness */
+.menu-card-container.has-scrolled {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 2px,
+    rgba(0, 0, 0, 0.2) 10px,
+    rgba(0, 0, 0, 0.6) 20px,
+    black 30px,
+    black calc(100% - 80px),
+    rgba(0, 0, 0, 0.9) calc(100% - 64px),
+    rgba(0, 0, 0, 0.65) calc(100% - 48px),
+    rgba(0, 0, 0, 0.38) calc(100% - 32px),
+    rgba(0, 0, 0, 0.12) calc(100% - 16px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 2px,
+    rgba(0, 0, 0, 0.2) 10px,
+    rgba(0, 0, 0, 0.6) 20px,
+    black 30px,
+    black calc(100% - 80px),
+    rgba(0, 0, 0, 0.9) calc(100% - 64px),
+    rgba(0, 0, 0, 0.65) calc(100% - 48px),
+    rgba(0, 0, 0, 0.38) calc(100% - 32px),
+    rgba(0, 0, 0, 0.12) calc(100% - 16px),
+    transparent 100%
+  );
+}
+
+.menu-scroll-box {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  padding: 8px 0 65px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  will-change: transform;
+}
+
+/* Remove scroll bar from customer menu list */
+.menu-scroll-box::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+/* Pure Y-Axis Transform Scroll Bounce (One-time displacement, smooth and slow, non-stretchy) */
+@keyframes scrollBounceBottom {
+  0% {
+    transform: translateY(0);
+  }
+  38% {
+    transform: translateY(-16px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes scrollBounceTop {
+  0% {
+    transform: translateY(0);
+  }
+  38% {
+    transform: translateY(16px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.menu-scroll-box.bounce-bottom,
+.sheet-list.bounce-bottom,
+.platter-list.bounce-bottom {
+  animation: scrollBounceBottom 0.52s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.menu-scroll-box.bounce-top,
+.sheet-list.bounce-top,
+.platter-list.bounce-top {
+  animation: scrollBounceTop 0.52s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Menu Row & Dotted Leaders - Centered Y-Axis Dotted Leader with Selectable Indicator */
+.menu-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  font-family: 'Jost', sans-serif !important;
+  font-size: 1.02rem;
+  line-height: 1.35;
+  padding-left: 16px;
+  padding-right: 30px; /* Pushed inward for comfortable breathing room */
+  padding-top: 4px;
+  padding-bottom: 4px;
+  min-height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  background: transparent !important;
+  background-color: transparent !important;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.menu-row:active,
+.menu-row:hover,
+.menu-row:focus {
+  background: transparent !important;
+  background-color: transparent !important;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Circular Selection Box - Appears smoothly on left when selected */
+.row-selector {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0;
+  height: 18px;
+  min-width: 0;
+  border-radius: 50%;
+  background-color: #991e2e;
+  opacity: 0;
+  transform: scale(0.3);
+  margin-right: 0;
+  overflow: hidden;
+  flex-shrink: 0;
+  align-self: center;
+  position: relative;
+  top: 0;
+  transition: width 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.2s ease,
+              transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+              margin-right 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.menu-row.selected .row-selector {
+  width: 18px;
+  height: 18px;
+  opacity: 1;
+  transform: scale(1);
+  margin-right: 9px;
+}
+
+.row-selector .check-icon {
+  width: 11px;
+  height: 11px;
+}
+
+.dish-name {
+  color: #000000; /* Menu text color black */
+  font-family: 'Jost', sans-serif !important;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  letter-spacing: 0.1px;
+  align-self: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  transition: color 0.18s ease;
+}
+
+.menu-row.selected .dish-name {
+  color: #991e2e; /* Highlight selected dish in brand crimson */
+  font-weight: 600;
+}
+
+.dish-note {
+  font-family: 'Jost', sans-serif !important;
+  font-size: 0.82em;
+  color: #555555; /* Subtle dark gray for bracketed text */
+  font-weight: 400;
+  margin-left: 3px;
+  align-self: center;
+}
+
+/* Dotted Leader Line - Positioned precisely in the vertical middle along Y-axis */
+.dot-leader {
+  flex: 1 1 auto;
+  border-bottom: 2px dotted rgba(0, 0, 0, 0.28); /* Dotted leader for light parchment bg */
+  margin: 0 6px;
+  min-width: 10px;
+  flex-shrink: 0;
+  align-self: center;
+  transform: none;
+}
+
+.dish-price {
+  color: #b60000; /* Price color #b60000 */
+  font-family: 'Jost', sans-serif !important;
+  font-weight: 700;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  font-size: 1.12rem;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.rupee-symbol {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-weight: 500 !important; /* Regular/Medium stroke - clean, clearly legible, not thin */
+  font-size: 0.98em;
+  margin-right: 1.5px;
+  display: inline-block;
+  vertical-align: baseline;
+}
+
+/* 4. STICKY BOTTOM BAR IN PHONE (No stroke, no glow on browse button background panel) */
+.bottom-bar {
+  position: relative;
+  z-index: 90;
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 14px 16px max(14px, env(safe-area-inset-bottom, 14px));
+  background-color: #fbefe1; /* Page bg color #fbefe1 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+  border: none !important;
+  border-top: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.browse-btn {
+  flex: 0 1 auto;
+  max-width: 240px;
+  height: 42px;
+  background-color: #991e2e; /* Royal crimson matching sticky top header */
+  color: #ffffff; /* Crisp white */
+  font-family: 'Jost', sans-serif;
+  font-weight: 600;
+  font-size: 0.88rem;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 0 16px;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: none !important;
+  filter: none !important;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.browse-btn-text {
+  letter-spacing: 0.6px;
+}
+
+.browse-chevron-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  display: inline-block;
+  color: #ffffff;
+  stroke: #ffffff;
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+.browse-btn:active {
+  transform: scale(0.97);
+  background-color: #7d1724;
+  box-shadow: none;
+}
+
+/* Platter Button with Embedded Live Count (Clean icon without outer white circle) */
+.platter-btn {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: none;
+  transition: transform 0.15s ease;
+  padding: 0;
+}
+
+.platter-btn:active {
+  transform: scale(0.92);
+}
+
+.platter-icon-wrapper {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.platter-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Live Selection Count Digit Inside the Center of the Platter */
+.platter-count {
+  position: absolute;
+  top: 50%;
+  left: 49%;
+  transform: translate(-50%, -50%);
+  font-family: 'Jost', sans-serif;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: #991e2e;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  transition: transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.platter-btn.bounce .platter-count {
+  transform: translate(-50%, -50%) scale(1.4);
+}
+
+/* 5. MINIMAL CATEGORIES MODAL (Consistent with Parchment & Crimson Theme) */
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 200;
+}
+
+.modal-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.category-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-radius: 20px 20px 0 0;
+  padding: 18px 0 0 0; /* Zero bottom padding, zero horizontal padding for edge-flush scrollbar */
+  transform: translateY(105%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 210;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: none;
+  border: none !important;
+  outline: none !important;
+}
+
+.category-sheet.active {
+  transform: translateY(0);
+}
+
+.sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px 14px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.sheet-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: 'Jost', sans-serif;
+  color: #991e2e;
+}
+
+.close-sheet-btn {
+  background: #f3eae0;
+  border: none;
+  color: #555555;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sheet-list {
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  padding: 12px 20px 32px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  will-change: transform;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  
+  /* Initial state: Top is 100% visible, bottom has smooth progressive softness fade */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black calc(100% - 44px),
+    rgba(0, 0, 0, 0.85) calc(100% - 32px),
+    rgba(0, 0, 0, 0.5) calc(100% - 20px),
+    rgba(0, 0, 0, 0.15) calc(100% - 10px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black calc(100% - 44px),
+    rgba(0, 0, 0, 0.85) calc(100% - 32px),
+    rgba(0, 0, 0, 0.5) calc(100% - 20px),
+    rgba(0, 0, 0, 0.15) calc(100% - 10px),
+    transparent 100%
+  );
+  transition: -webkit-mask-image 0.2s ease, mask-image 0.2s ease;
+}
+
+.sheet-list.has-scrolled {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 6px,
+    rgba(0, 0, 0, 0.6) 14px,
+    black 24px,
+    black calc(100% - 44px),
+    rgba(0, 0, 0, 0.85) calc(100% - 32px),
+    rgba(0, 0, 0, 0.5) calc(100% - 20px),
+    rgba(0, 0, 0, 0.15) calc(100% - 10px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 6px,
+    rgba(0, 0, 0, 0.6) 14px,
+    black 24px,
+    black calc(100% - 44px),
+    rgba(0, 0, 0, 0.85) calc(100% - 32px),
+    rgba(0, 0, 0, 0.5) calc(100% - 20px),
+    rgba(0, 0, 0, 0.15) calc(100% - 10px),
+    transparent 100%
+  );
+}
+
+.sheet-list::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+.sheet-item {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #faf4eb;
+  color: #222222;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.sheet-item:last-child {
+  margin-bottom: max(18px, env(safe-area-inset-bottom, 18px));
+}
+
+.sheet-item.active {
+  background: #991e2e;
+  border-color: #991e2e;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.sheet-item.active span:last-child {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.sheet-item:hover {
+  background: #f3eae0;
+}
+
+.sheet-item.today-special-sheet-item:not(.active) {
+  background: linear-gradient(135deg, #fffdf2 0%, #fef3c7 100%);
+  border-color: rgba(245, 158, 11, 0.45);
+  color: #78350f;
+  font-weight: 600;
+}
+
+.sheet-item.today-special-sheet-item:not(.active) span:last-child {
+  color: #92400e !important;
+}
+
+.empty-menu-notice {
+  text-align: center;
+  padding: 48px 16px;
+  color: #78716c;
+  font-family: 'Jost', sans-serif;
+  font-size: 1rem;
+  font-style: italic;
+  letter-spacing: 0.3px;
+}
+
+/* 6. PLATTER DIALOG (Theme Consistent: White card, #991e2e accents, Jost typography) */
+.platter-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-radius: 24px 24px 0 0;
+  padding: 20px 20px max(24px, env(safe-area-inset-bottom, 24px)) 20px;
+  transform: translateY(105%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 210;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: none;
+  border: none !important;
+  outline: none !important;
+}
+
+.platter-sheet.active {
+  transform: translateY(0);
+}
+
+.platter-sheet-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.platter-title-icon {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.platter-sheet-title h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  font-family: 'Jost', sans-serif;
+  color: #991e2e;
+  margin: 0;
+}
+
+.platter-list {
+  overflow-y: auto;
+  overscroll-behavior: none;
+  overscroll-behavior-y: none;
+  padding: 14px 0 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 52vh;
+}
+
+.platter-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #faf4eb;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.platter-item-name {
+  font-family: 'Jost', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  color: #000000;
+  letter-spacing: 0.2px;
+  white-space: normal;
+  overflow: visible;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.3;
+  padding-right: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.platter-item-remove {
+  background: transparent !important;
+  border: none;
+  color: #991e2e;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 0;
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.platter-item-remove:active {
+  background: transparent !important;
+  color: #991e2e;
+  opacity: 0.55;
+  transform: scale(0.88);
+}
+
+.platter-empty {
+  text-align: center;
+  padding: 34px 16px;
+  color: #777777;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.platter-empty-icon {
+  width: 44px;
+  height: 44px;
+  opacity: 0.45;
+  margin-bottom: 12px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.platter-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 14px;
+  border: none !important;
+  border-top: none !important;
+}
+
+.clear-platter-btn {
+  background: transparent;
+  border: 1px solid rgba(153, 30, 46, 0.3);
+  color: #991e2e;
+  font-family: 'Jost', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clear-platter-btn:hover {
+  background: rgba(153, 30, 46, 0.08);
+}
+
+
+/* Desktop Presentation Frame (No border stroke) */
+@media (min-width: 500px) {
+  body {
+    padding: 24px 0;
+  }
+  .mobile-app {
+    height: 840px;
+    border-radius: 28px;
+    border: none;
+    box-shadow: none;
+  }
+}

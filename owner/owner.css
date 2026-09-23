@@ -3065,9 +3065,9 @@ input:checked + .slider:before {
     box-sizing: border-box;
   }
 
-  /* Pending View on Mobile: Above padding similar to left/right padding */
+  /* Pending View on Mobile: Above padding and left/right padding of yellow card strictly identical */
   body.pending-mode .main-container {
-    padding: 16px 16px 28px !important;
+    padding: 20px 20px 28px !important;
     min-height: calc(100vh - 82px);
     min-height: calc(100dvh - 82px);
     box-sizing: border-box;
@@ -3076,11 +3076,22 @@ input:checked + .slider:before {
   body.pending-mode #pendingView,
   #pendingView {
     padding: 0 0 16px !important;
+    width: 100% !important;
+  }
+
+  #pendingView .pending-top-content {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   .pending-status-card,
   #pendingView .pending-status-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
     padding: 20px 20px 20px !important;
+    box-sizing: border-box !important;
   }
 
   .pending-contact-text,

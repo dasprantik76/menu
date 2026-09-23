@@ -7,7 +7,22 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@500&family=Inter:wght@400;500;600;700&family=Jost:wght@400;500;600;700;800&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=83">
+  <link rel="stylesheet" href="/owner/owner.css?v=85">
+  <script>
+    (function() {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        var view = params.get("view") || (window.location.hash ? window.location.hash.substring(1) : "");
+        if (view === "register") {
+          document.documentElement.className = "register-mode";
+          document.write('<style id="preRouteStyle">#authView{display:none!important}#registerView{display:flex!important}.owner-header{display:flex!important}</style>');
+        } else if (view === "pending" || view === "dashboard") {
+          document.documentElement.className = "";
+          document.write('<style id="preRouteStyle">#authView{display:none!important}</style>');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer onload="if(window.initGoogleAuth) window.initGoogleAuth()"></script>
 </head>
@@ -397,6 +412,6 @@
     </section>
   </main>
 
-  <script src="/owner/owner.js?v=47"></script>
+  <script src="/owner/owner.js?v=48"></script>
 </body>
 </html>

@@ -222,7 +222,15 @@ module.exports = async function handler(req, res) {
     setSessionCookie(res, sessionToken);
 
     if (isFormRedirect) {
-      res.writeHead(302, { Location: "/" });
+      let redirectTarget = "/";
+      if (!business) {
+        redirectTarget = "/?view=register";
+      } else if (business.approvalStatus === "pending") {
+        redirectTarget = "/?view=pending";
+      } else if (business.approvalStatus === "approved") {
+        redirectTarget = "/?view=dashboard";
+      }
+      res.writeHead(302, { Location: redirectTarget });
       return res.end();
     }
 

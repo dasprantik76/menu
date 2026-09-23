@@ -144,6 +144,9 @@ function showNotification(message, type = "error") {
  * View switcher
  */
 function showView(viewElement) {
+  const preRouteStyle = document.getElementById("preRouteStyle");
+  if (preRouteStyle) preRouteStyle.remove();
+
   const isAuth = (viewElement === authView);
   const isRegister = viewElement === registerView;
   const header = document.querySelector(".owner-header");
@@ -260,6 +263,10 @@ async function checkSession() {
           submitBtn.textContent = "Create Account";
         }
         showView(registerView);
+        if (window.location.search.includes("view=")) {
+          const cleanUrl = window.location.pathname + (window.location.hash || "");
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
       } else if (currentBusiness.approvalStatus === "pending") {
         renderPendingView();
         showView(pendingView);

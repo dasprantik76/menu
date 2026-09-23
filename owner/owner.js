@@ -204,7 +204,10 @@ function showView(viewElement) {
   document.documentElement.classList.toggle("pending-mode", isPending);
 
   [loadingView, authView, registerView, pendingView, dashboardView].forEach(v => {
-    if (v) v.style.display = "none";
+    if (v) {
+      v.style.display = "none";
+      v.classList.remove("fade-in-active");
+    }
   });
   if (viewElement) {
     viewElement.style.display = (viewElement === authView || viewElement === registerView || viewElement === pendingView) ? "flex" : "block";

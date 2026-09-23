@@ -543,14 +543,21 @@ body.auth-mode {
   z-index: 0;
 }
 
-/* Explicitly ensure food-outline NEVER displays on register mode or anywhere outside login */
+/* Explicitly ensure food-outline NEVER displays on register/pending/dashboard mode or anywhere outside login */
 body::before,
 html body::before,
 html.register-mode body::before,
 body.register-mode::before,
 html.register-mode #authView::before,
 body.register-mode #authView::before,
-#registerView::before {
+#registerView::before,
+html.pending-mode body::before,
+body.pending-mode::before,
+html.pending-mode #authView::before,
+body.pending-mode #authView::before,
+#pendingView::before,
+html:not(.auth-mode) #authView::before,
+body:not(.auth-mode) #authView::before {
   display: none !important;
   content: none !important;
   background: none !important;
@@ -600,6 +607,37 @@ body.auth-mode #authView {
   margin: 0;
   position: relative;
   z-index: 1;
+}
+
+/* Strict mutual exclusion guards (prevents any multi-view overlap) */
+html:not(.auth-mode) #authView,
+body:not(.auth-mode) #authView,
+html.pending-mode #authView,
+body.pending-mode #authView,
+html.register-mode #authView,
+body.register-mode #authView {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+html:not(.pending-mode) #pendingView,
+body:not(.pending-mode) #pendingView,
+html.auth-mode #pendingView,
+body.auth-mode #pendingView,
+html.register-mode #pendingView,
+body.register-mode #pendingView {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+html:not(.register-mode) #registerView,
+body:not(.register-mode) #registerView,
+html.auth-mode #registerView,
+body.auth-mode #registerView,
+html.pending-mode #registerView,
+body.pending-mode #registerView {
+  display: none !important;
+  visibility: hidden !important;
 }
 
 /* Auth Page Wrapper */
@@ -888,8 +926,12 @@ body.register-mode .main-container {
   max-height: 100% !important;
 }
 
-body.register-mode #registerView,
 #registerView {
+  display: none;
+}
+
+html.register-mode #registerView,
+body.register-mode #registerView {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -3136,8 +3178,8 @@ input:checked + .slider:before {
     box-sizing: border-box !important;
   }
 
-  body.pending-mode #pendingView,
-  #pendingView {
+  html.pending-mode #pendingView,
+  body.pending-mode #pendingView {
     padding: 0 !important;
     height: 100% !important;
     max-height: 100% !important;

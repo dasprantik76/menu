@@ -1057,17 +1057,25 @@ let selectedCategoryId = null;
 let isFetchingMenuData = false;
 let activeFetchesCount = 0;
 
+function showPortalLoading() {
+  const centralLoader = document.getElementById("ownerCentralLoader");
+  if (centralLoader) centralLoader.style.display = "flex";
+}
+
+function hidePortalLoading() {
+  const centralLoader = document.getElementById("ownerCentralLoader");
+  if (centralLoader) centralLoader.style.display = "none";
+}
+
 function trackFetchStart() {
   activeFetchesCount++;
-  const globalLoader = document.getElementById("portalGlobalLoader");
-  if (globalLoader) globalLoader.style.display = "flex";
+  showPortalLoading();
 }
 
 function trackFetchEnd() {
   activeFetchesCount = Math.max(0, activeFetchesCount - 1);
   if (activeFetchesCount === 0) {
-    const globalLoader = document.getElementById("portalGlobalLoader");
-    if (globalLoader) globalLoader.style.display = "none";
+    hidePortalLoading();
   }
 }
 
@@ -1122,13 +1130,6 @@ async function loadMenuData() {
   if (!currentBusiness) return;
   isFetchingMenuData = true;
   trackFetchStart();
-
-  // If in MENU view, or CATEGORY view, render initial loading state
-  if (currentDashboardView === "menu" && dishes.length === 0) {
-    renderDishesGrid();
-  } else if (currentDashboardView === "category") {
-    renderCategoriesList();
-  }
 
   try {
     const [catRes, itemRes] = await Promise.all([
@@ -1278,11 +1279,6 @@ function renderCategoriesList() {
     card.className = `category-admin-card ${isFixed ? "today-special-card" : ""} ${isAvail ? "" : "unavailable"}`.trim();
     card.dataset.id = cat._id;
 
-    // Mini loading circle inside badge if data is actively fetching and dish count is not yet loaded
-    const badgeContent = (isFetchingMenuData && isFixed && dishes.length === 0)
-      ? `<span class="badge-loading-circle" aria-label="Loading items count"></span>`
-      : `${dishCount} item${dishCount === 1 ? "" : "s"}`;
-
     card.innerHTML = `
       <div class="category-row-info">
         <label class="switch-label category-row-switch" title="${isAvail ? 'Available (click to toggle)' : 'Sold Out / Unavailable (click to toggle)'}">
@@ -1303,7 +1299,7 @@ function renderCategoriesList() {
         `}
       </div>
       <div class="category-row-actions">
-        <span class="category-dish-count-badge">${badgeContent}</span>
+        <span class="category-dish-count-badge">${dishCount} item${dishCount === 1 ? "" : "s"}</span>
         ${isFixed ? "" : `
           <button type="button" class="delete-cat-btn delete-icon-btn" data-id="${cat._id}" title="Delete Category" aria-label="Delete Category">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -1343,18 +1339,6 @@ function renderCategoriesList() {
 
     categoriesGrid.appendChild(card);
   });
-
-  // If menu data is currently fetching, show loading circle below Today's Special
-  if (isFetchingMenuData) {
-    const loaderRow = document.createElement("div");
-    loaderRow.className = "categories-fetching-loader";
-    loaderRow.id = "categoriesFetchingLoader";
-    loaderRow.innerHTML = `
-      <div class="owner-loading-circle"></div>
-      <span class="owner-loading-circle-text">Fetching data...</span>
-    `;
-    categoriesGrid.appendChild(loaderRow);
-  }
 }
 
 /**
@@ -1565,18 +1549,6 @@ function populateCategoryDropdown() {
 function renderDishesGrid() {
   if (!dishesGrid) return;
   dishesGrid.innerHTML = "";
-
-  if (isFetchingMenuData && dishes.length === 0) {
-    if (dishCountLabel) dishCountLabel.textContent = "Items";
-    if (emptyDishesState) emptyDishesState.style.display = "none";
-    dishesGrid.innerHTML = `
-      <div class="owner-fetch-spinner-box">
-        <div class="owner-loading-circle"></div>
-        <p class="owner-loading-circle-text">Fetching data...</p>
-      </div>
-    `;
-    return;
-  }
 
   let filtered = dishes;
   if (selectedCategoryId) {

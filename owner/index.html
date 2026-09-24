@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=163">
+  <link rel="stylesheet" href="/owner/owner.css?v=164">
   <script>
     (function() {
       try {
@@ -411,10 +411,9 @@
 
     <!-- 5. Approved Owner Dashboard View (Transition to Phase 4) -->
     <section id="dashboardView" style="display: none;">
-      <!-- Floating Data Loading Circle Indicator -->
-      <div id="portalGlobalLoader" class="portal-global-loader" style="display: none;" aria-live="polite">
-        <div class="owner-loading-circle sm"></div>
-        <span>Fetching data...</span>
+      <!-- Single Central Loading Circle in Centre of Page (No Text) -->
+      <div id="ownerCentralLoader" class="owner-central-loader" style="display: none;" aria-label="Loading">
+        <div class="owner-loading-circle"></div>
       </div>
 
       <!-- Switcher Capsule Button: CATEGORY - MENU -->
@@ -455,14 +454,8 @@
                 </div>
               </div>
               <div class="category-row-actions">
-                <span class="category-dish-count-badge">
-                  <span class="badge-loading-circle" aria-label="Loading items count"></span>
-                </span>
+                <span class="category-dish-count-badge">0 items</span>
               </div>
-            </div>
-            <div class="categories-fetching-loader" id="categoriesFetchingLoader">
-              <div class="owner-loading-circle"></div>
-              <span class="owner-loading-circle-text">Fetching data...</span>
             </div>
           </div>
           <div id="emptyCategoriesState" class="owner-empty-state" style="display: none;">
@@ -490,10 +483,7 @@
 
           <!-- Dishes Grid -->
           <div id="dishesGrid" class="dishes-grid">
-            <div class="owner-fetch-spinner-box">
-              <div class="owner-loading-circle"></div>
-              <p class="owner-loading-circle-text">Fetching data...</p>
-            </div>
+            <!-- Rendered via JS -->
           </div>
           <div id="emptyDishesState" class="owner-empty-state" style="display: none;">
             <p class="owner-empty-state-text">No items in this category yet.</p>
@@ -570,6 +560,6 @@
     </section>
   </main>
 
-  <script src="/owner/owner.js?v=68"></script>
+  <script src="/owner/owner.js?v=69"></script>
 </body>
 </html>

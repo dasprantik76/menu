@@ -2552,21 +2552,15 @@ html.pending-mode .owner-header .brand-tag {
   to { transform: rotate(360deg); }
 }
 
-/* Single Central Loading Circle in Centre of Page (No Text) */
+/* Single Central Loading Circle on Main Page with other elements (No Blur, No Text) */
 .owner-central-loader {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  z-index: 9999;
-  pointer-events: none;
+  width: 100%;
+  padding: 36px 0;
+  min-height: 100px;
+  box-sizing: border-box;
 }
 
 .owner-central-loader[style*="display: none"] {

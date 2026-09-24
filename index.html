@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="owner/owner.css?v=164">
+  <link rel="stylesheet" href="owner/owner.css?v=165">
   <script>
     (function() {
       try {
@@ -411,11 +411,6 @@
 
     <!-- 5. Approved Owner Dashboard View (Transition to Phase 4) -->
     <section id="dashboardView" style="display: none;">
-      <!-- Single Central Loading Circle in Centre of Page (No Text) -->
-      <div id="ownerCentralLoader" class="owner-central-loader" style="display: none;" aria-label="Loading">
-        <div class="owner-loading-circle"></div>
-      </div>
-
       <!-- Switcher Capsule Button: CATEGORY - MENU -->
       <div class="capsule-switcher-wrapper">
         <div class="capsule-switcher" role="tablist" aria-label="Dashboard Section Switcher" data-active="category">
@@ -458,6 +453,10 @@
               </div>
             </div>
           </div>
+          <!-- Single Central Loading Circle in Centre of Page (No Text) -->
+          <div id="categoryCenterLoader" class="owner-central-loader" style="display: flex;" aria-label="Loading">
+            <div class="owner-loading-circle"></div>
+          </div>
           <div id="emptyCategoriesState" class="owner-empty-state" style="display: none;">
             <p class="owner-empty-state-text">No items in this category yet.</p>
           </div>
@@ -484,6 +483,10 @@
           <!-- Dishes Grid -->
           <div id="dishesGrid" class="dishes-grid">
             <!-- Rendered via JS -->
+          </div>
+          <!-- Single Central Loading Circle in Centre of Page (No Text) -->
+          <div id="menuCenterLoader" class="owner-central-loader" style="display: none;" aria-label="Loading">
+            <div class="owner-loading-circle"></div>
           </div>
           <div id="emptyDishesState" class="owner-empty-state" style="display: none;">
             <p class="owner-empty-state-text">No items in this category yet.</p>
@@ -560,6 +563,6 @@
     </section>
   </main>
 
-  <script src="owner/owner.js?v=69"></script>
+  <script src="owner/owner.js?v=70"></script>
 </body>
 </html>

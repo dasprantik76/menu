@@ -1058,13 +1058,17 @@ let isFetchingMenuData = false;
 let activeFetchesCount = 0;
 
 function showPortalLoading() {
-  const centralLoader = document.getElementById("ownerCentralLoader");
-  if (centralLoader) centralLoader.style.display = "flex";
+  document.querySelectorAll(".owner-central-loader").forEach(el => {
+    el.style.display = "flex";
+  });
+  if (emptyCategoriesState) emptyCategoriesState.style.display = "none";
+  if (emptyDishesState) emptyDishesState.style.display = "none";
 }
 
 function hidePortalLoading() {
-  const centralLoader = document.getElementById("ownerCentralLoader");
-  if (centralLoader) centralLoader.style.display = "none";
+  document.querySelectorAll(".owner-central-loader").forEach(el => {
+    el.style.display = "none";
+  });
 }
 
 function trackFetchStart() {
@@ -1128,6 +1132,7 @@ const cancelDishBtn = document.getElementById("cancelDishBtn");
  */
 async function loadMenuData() {
   if (!currentBusiness) return;
+  if (isFetchingMenuData) return;
   isFetchingMenuData = true;
   trackFetchStart();
 
@@ -1175,6 +1180,7 @@ async function loadMenuData() {
   } finally {
     isFetchingMenuData = false;
     trackFetchEnd();
+    hidePortalLoading();
     renderCategoriesList();
     renderCategoryTabs();
     populateCategoryDropdown();
@@ -1214,6 +1220,12 @@ function switchDashboardView(view) {
     void categoryViewGroup.offsetWidth;
     categoryViewGroup.classList.add("view-content-smooth");
 
+    if (isFetchingMenuData) {
+      const catLoader = document.getElementById("categoryCenterLoader");
+      if (catLoader) catLoader.style.display = "flex";
+      if (emptyCategoriesState) emptyCategoriesState.style.display = "none";
+    }
+
     renderCategoriesList();
   } else {
     capsuleMenuBtn.classList.add("active");
@@ -1229,6 +1241,12 @@ function switchDashboardView(view) {
     void menuViewGroup.offsetWidth;
     menuViewGroup.classList.add("view-content-smooth");
 
+    if (isFetchingMenuData) {
+      const menuLoader = document.getElementById("menuCenterLoader");
+      if (menuLoader) menuLoader.style.display = "flex";
+      if (emptyDishesState) emptyDishesState.style.display = "none";
+    }
+
     renderCategoryTabs();
     renderDishesGrid();
   }
@@ -1243,10 +1261,16 @@ function initViewSwitcher() {
   switchDashboardView(savedView);
 
   if (capsuleCategoryBtn) {
-    capsuleCategoryBtn.addEventListener("click", () => switchDashboardView("category"));
+    capsuleCategoryBtn.addEventListener("click", () => {
+      switchDashboardView("category");
+      loadMenuData();
+    });
   }
   if (capsuleMenuBtn) {
-    capsuleMenuBtn.addEventListener("click", () => switchDashboardView("menu"));
+    capsuleMenuBtn.addEventListener("click", () => {
+      switchDashboardView("menu");
+      loadMenuData();
+    });
   }
 }
 
@@ -1559,15 +1583,26 @@ function renderDishesGrid() {
     if (currentCategoryTitle) currentCategoryTitle.textContent = "All Dishes";
   }
 
+  const menuLoader = document.getElementById("menuCenterLoader");
+
+  if (isFetchingMenuData) {
+    if (dishCountLabel) dishCountLabel.textContent = "Items";
+    if (emptyDishesState) emptyDishesState.style.display = "none";
+    if (menuLoader) menuLoader.style.display = "flex";
+    return;
+  }
+
+  if (menuLoader) menuLoader.style.display = "none";
+
   if (dishCountLabel) {
     dishCountLabel.textContent = `${filtered.length} Item${filtered.length === 1 ? "" : "s"}`;
   }
 
   if (filtered.length === 0) {
-    emptyDishesState.style.display = "flex";
+    if (emptyDishesState) emptyDishesState.style.display = "flex";
     return;
   }
-  emptyDishesState.style.display = "none";
+  if (emptyDishesState) emptyDishesState.style.display = "none";
 
   filtered.forEach(dish => {
     const card = document.createElement("div");

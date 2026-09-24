@@ -84,12 +84,28 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ success: false, error: "A valid numeric price is required." });
       }
 
-      const catObjectId = new ObjectId(categoryId);
-      // Verify category belongs to this business
-      const category = await db.collection(COLLECTIONS.CATEGORIES).findOne({
+      let catObjectId = null;
+      try {
+        catObjectId = new ObjectId(categoryId);
+      } catch (e) {
+        catObjectId = null;
+      }
+
+      let category = catObjectId ? await db.collection(COLLECTIONS.CATEGORIES).findOne({
         _id: catObjectId,
         businessId: business._id
-      });
+      }) : null;
+
+      if (!category && (categoryId === "today_special_fixed" || categoryId === "today_special")) {
+        category = await db.collection(COLLECTIONS.CATEGORIES).findOne({
+          businessId: business._id,
+          $or: [{ isFixed: true }, { name: "TODAY'S SPECIAL" }]
+        });
+        if (category) {
+          catObjectId = category._id;
+        }
+      }
+
       if (!category) {
         return res.status(400).json({ success: false, error: "Selected category does not exist in your restaurant." });
       }
@@ -168,11 +184,27 @@ module.exports = async function handler(req, res) {
         updates.displayOrder = displayOrder;
       }
       if (categoryId) {
-        const catObjectId = new ObjectId(categoryId);
-        const catExists = await db.collection(COLLECTIONS.CATEGORIES).findOne({
+        let catObjectId = null;
+        try {
+          catObjectId = new ObjectId(categoryId);
+        } catch (e) {
+          catObjectId = null;
+        }
+        let catExists = catObjectId ? await db.collection(COLLECTIONS.CATEGORIES).findOne({
           _id: catObjectId,
           businessId: business._id
-        });
+        }) : null;
+
+        if (!catExists && (categoryId === "today_special_fixed" || categoryId === "today_special")) {
+          catExists = await db.collection(COLLECTIONS.CATEGORIES).findOne({
+            businessId: business._id,
+            $or: [{ isFixed: true }, { name: "TODAY'S SPECIAL" }]
+          });
+          if (catExists) {
+            catObjectId = catExists._id;
+          }
+        }
+
         if (catExists) {
           updates.categoryId = catObjectId;
         }

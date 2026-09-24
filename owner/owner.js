@@ -1042,9 +1042,34 @@ if (pendingLogoutBtn) {
 // PHASE 4: OWNER MENU MANAGEMENT (CATEGORIES & DISHES)
 // ============================================================================
 
-let categories = [];
+const HARDCODED_TODAY_SPECIAL = {
+  _id: "today_special_fixed",
+  name: "TODAY'S SPECIAL",
+  displayOrder: -1,
+  isFixed: true,
+  isVisible: true,
+  isAvailable: true
+};
+
+let categories = [{ ...HARDCODED_TODAY_SPECIAL }];
 let dishes = [];
 let selectedCategoryId = null;
+let isFetchingMenuData = false;
+let activeFetchesCount = 0;
+
+function trackFetchStart() {
+  activeFetchesCount++;
+  const globalLoader = document.getElementById("portalGlobalLoader");
+  if (globalLoader) globalLoader.style.display = "flex";
+}
+
+function trackFetchEnd() {
+  activeFetchesCount = Math.max(0, activeFetchesCount - 1);
+  if (activeFetchesCount === 0) {
+    const globalLoader = document.getElementById("portalGlobalLoader");
+    if (globalLoader) globalLoader.style.display = "none";
+  }
+}
 
 // Switcher Capsule DOM Elements
 const capsuleCategoryBtn = document.getElementById("capsuleCategoryBtn");
@@ -1095,6 +1120,16 @@ const cancelDishBtn = document.getElementById("cancelDishBtn");
  */
 async function loadMenuData() {
   if (!currentBusiness) return;
+  isFetchingMenuData = true;
+  trackFetchStart();
+
+  // If in MENU view, or CATEGORY view, render initial loading state
+  if (currentDashboardView === "menu" && dishes.length === 0) {
+    renderDishesGrid();
+  } else if (currentDashboardView === "category") {
+    renderCategoriesList();
+  }
+
   try {
     const [catRes, itemRes] = await Promise.all([
       fetch("/api/owner/categories"),
@@ -1104,27 +1139,45 @@ async function loadMenuData() {
     const catData = await catRes.json();
     const itemData = await itemRes.json();
 
-    if (catData.success) {
-      categories = catData.categories || [];
-      categories.sort((a, b) => {
-        const aFixed = a.isFixed || (a.name && a.name.toUpperCase() === "TODAY'S SPECIAL");
-        const bFixed = b.isFixed || (b.name && b.name.toUpperCase() === "TODAY'S SPECIAL");
-        if (aFixed && !bFixed) return -1;
-        if (!aFixed && bFixed) return 1;
-        return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
-      });
-    }
     if (itemData.success) {
       dishes = itemData.items || [];
     }
 
+    if (catData.success) {
+      const serverCats = catData.categories || [];
+      const serverSpecial = serverCats.find(c => c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
+
+      let specialCat;
+      if (serverSpecial) {
+        specialCat = {
+          ...HARDCODED_TODAY_SPECIAL,
+          ...serverSpecial,
+          isFixed: true,
+          name: "TODAY'S SPECIAL"
+        };
+      } else {
+        specialCat = { ...HARDCODED_TODAY_SPECIAL };
+      }
+
+      const otherCats = serverCats.filter(c => c !== serverSpecial && !(c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
+      otherCats.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+
+      categories = [specialCat, ...otherCats];
+    } else {
+      if (categories.length === 0) {
+        categories = [{ ...HARDCODED_TODAY_SPECIAL }];
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load menu data:", err);
+    showNotification("Failed to load menu items.", "error");
+  } finally {
+    isFetchingMenuData = false;
+    trackFetchEnd();
     renderCategoriesList();
     renderCategoryTabs();
     populateCategoryDropdown();
     renderDishesGrid();
-  } catch (err) {
-    console.error("Failed to load menu data:", err);
-    showNotification("Failed to load menu items.", "error");
   }
 }
 
@@ -1204,11 +1257,15 @@ function renderCategoriesList() {
   categoriesGrid.innerHTML = "";
 
   if (categoriesCountLabel) {
-    categoriesCountLabel.textContent = `${categories.length} Categor${categories.length === 1 ? "y" : "ies"}`;
+    if (isFetchingMenuData && categories.length <= 1) {
+      categoriesCountLabel.textContent = "1 Category";
+    } else {
+      categoriesCountLabel.textContent = `${categories.length} Categor${categories.length === 1 ? "y" : "ies"}`;
+    }
   }
 
-  if (categories.length === 0) {
-    if (emptyCategoriesState) emptyCategoriesState.style.display = "block";
+  if (categories.length === 0 && !isFetchingMenuData) {
+    if (emptyCategoriesState) emptyCategoriesState.style.display = "flex";
     return;
   }
   if (emptyCategoriesState) emptyCategoriesState.style.display = "none";
@@ -1221,6 +1278,11 @@ function renderCategoriesList() {
     card.className = `category-admin-card ${isFixed ? "today-special-card" : ""} ${isAvail ? "" : "unavailable"}`.trim();
     card.dataset.id = cat._id;
 
+    // Mini loading circle inside badge if data is actively fetching and dish count is not yet loaded
+    const badgeContent = (isFetchingMenuData && isFixed && dishes.length === 0)
+      ? `<span class="badge-loading-circle" aria-label="Loading items count"></span>`
+      : `${dishCount} item${dishCount === 1 ? "" : "s"}`;
+
     card.innerHTML = `
       <div class="category-row-info">
         <label class="switch-label category-row-switch" title="${isAvail ? 'Available (click to toggle)' : 'Sold Out / Unavailable (click to toggle)'}">
@@ -1230,13 +1292,18 @@ function renderCategoriesList() {
           </span>
         </label>
         ${isFixed ? `
-          <div class="category-card-name is-fixed" title="Today's Special" aria-label="Category name ${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</div>
+          <div class="category-card-name is-fixed" title="Today's Special" aria-label="Category name ${escapeHtml(cat.name)}">
+            <svg class="cat-star-icon" viewBox="0 0 24 24" width="16" height="16" fill="#f59e0b" stroke="#d97706" stroke-width="0.8" aria-hidden="true">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            ${escapeHtml(cat.name)}
+          </div>
         ` : `
           <div class="category-card-name" title="Click to edit name" tabindex="0" role="button" aria-label="Edit category name ${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</div>
         `}
       </div>
       <div class="category-row-actions">
-        <span class="category-dish-count-badge">${dishCount} item${dishCount === 1 ? "" : "s"}</span>
+        <span class="category-dish-count-badge">${badgeContent}</span>
         ${isFixed ? "" : `
           <button type="button" class="delete-cat-btn delete-icon-btn" data-id="${cat._id}" title="Delete Category" aria-label="Delete Category">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -1276,6 +1343,18 @@ function renderCategoriesList() {
 
     categoriesGrid.appendChild(card);
   });
+
+  // If menu data is currently fetching, show loading circle below Today's Special
+  if (isFetchingMenuData) {
+    const loaderRow = document.createElement("div");
+    loaderRow.className = "categories-fetching-loader";
+    loaderRow.id = "categoriesFetchingLoader";
+    loaderRow.innerHTML = `
+      <div class="owner-loading-circle"></div>
+      <span class="owner-loading-circle-text">Fetching data...</span>
+    `;
+    categoriesGrid.appendChild(loaderRow);
+  }
 }
 
 /**
@@ -1438,10 +1517,11 @@ function renderCategoryTabs() {
 
   // Individual category options
   sortedCategories.forEach(cat => {
+    const isFixed = cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL");
     const catDishCount = dishes.filter(d => String(d.categoryId) === String(cat._id)).length;
     const opt = document.createElement("option");
     opt.value = String(cat._id);
-    opt.textContent = `${cat.name} (${catDishCount})`;
+    opt.textContent = `${isFixed ? "★ " : ""}${cat.name} (${catDishCount})`;
     if (selectedCategoryId === String(cat._id)) {
       opt.selected = true;
     }
@@ -1471,9 +1551,10 @@ function populateCategoryDropdown() {
     return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
   });
   sortedCategories.forEach(cat => {
+    const isFixed = cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL");
     const opt = document.createElement("option");
     opt.value = cat._id;
-    opt.textContent = cat.name;
+    opt.textContent = isFixed ? `★ ${cat.name}` : cat.name;
     dishCategorySelect.appendChild(opt);
   });
 }
@@ -1482,7 +1563,20 @@ function populateCategoryDropdown() {
  * Render dishes grid based on active filter
  */
 function renderDishesGrid() {
+  if (!dishesGrid) return;
   dishesGrid.innerHTML = "";
+
+  if (isFetchingMenuData && dishes.length === 0) {
+    if (dishCountLabel) dishCountLabel.textContent = "Items";
+    if (emptyDishesState) emptyDishesState.style.display = "none";
+    dishesGrid.innerHTML = `
+      <div class="owner-fetch-spinner-box">
+        <div class="owner-loading-circle"></div>
+        <p class="owner-loading-circle-text">Fetching data...</p>
+      </div>
+    `;
+    return;
+  }
 
   let filtered = dishes;
   if (selectedCategoryId) {
@@ -1498,7 +1592,7 @@ function renderDishesGrid() {
   }
 
   if (filtered.length === 0) {
-    emptyDishesState.style.display = "block";
+    emptyDishesState.style.display = "flex";
     return;
   }
   emptyDishesState.style.display = "none";

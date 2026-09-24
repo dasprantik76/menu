@@ -2552,6 +2552,135 @@ html.pending-mode .owner-header .brand-tag {
   to { transform: rotate(360deg); }
 }
 
+/* Owner Portal Data Loading Circle */
+.owner-loading-circle {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(153, 30, 46, 0.15);
+  border-top-color: #991e2e;
+  border-radius: 50%;
+  animation: ownerCircleSpin 0.75s linear infinite;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.owner-loading-circle.sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.owner-loading-circle.lg {
+  width: 40px;
+  height: 40px;
+  border-width: 3.5px;
+}
+
+@keyframes ownerCircleSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Badge Mini Loading Circle */
+.badge-loading-circle {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(146, 64, 14, 0.22);
+  border-top-color: #92400e;
+  border-radius: 50%;
+  animation: ownerCircleSpin 0.7s linear infinite;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+/* Categories Fetching Loader Row */
+.categories-fetching-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.categories-fetching-loader[style*="display: none"] {
+  display: none !important;
+}
+
+.owner-loading-circle-text {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #64748b;
+  margin: 0;
+  user-select: none;
+}
+
+/* Dishes Grid Fetching Loader Box */
+.owner-fetch-spinner-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 50px 20px;
+  width: 100%;
+  min-height: clamp(220px, 35vh, 380px);
+  box-sizing: border-box;
+}
+
+.owner-fetch-spinner-box .owner-loading-circle {
+  width: 36px;
+  height: 36px;
+  border-width: 3px;
+}
+
+.owner-fetch-spinner-box .owner-loading-circle-text {
+  font-size: 0.95rem;
+}
+
+/* Floating Global Portal Loading Indicator */
+.portal-global-loader {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 18px 7px 14px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(153, 30, 46, 0.22);
+  border-radius: 9999px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.05);
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1e293b;
+  pointer-events: none;
+  animation: portalSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.portal-global-loader[style*="display: none"] {
+  display: none !important;
+}
+
+@keyframes portalSlideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
 /* ==========================================================================
    VIEW SWITCHER CAPSULE (CATEGORY - MENU)
    ========================================================================== */
@@ -2673,6 +2802,7 @@ html.pending-mode .owner-header .brand-tag {
   width: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .categories-center-count {
@@ -2815,11 +2945,21 @@ html.pending-mode .owner-header .brand-tag {
 
 .category-card-name.is-fixed {
   cursor: default;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .category-card-name.is-fixed:hover {
   background: transparent;
   border-color: transparent;
+}
+
+.category-card-name.is-fixed .cat-star-icon {
+  margin-right: 0;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 /* Golden Highlight for Today's Special Category Row */
@@ -2867,6 +3007,7 @@ html.pending-mode .owner-header .brand-tag {
   gap: 20px;
   margin-top: 0;
   width: 100%;
+  flex: 1;
 }
 
 #menuViewGroup {
@@ -3390,6 +3531,40 @@ input:checked + .slider:before {
   width: 100%;
   display: flex;
   flex-direction: column;
+  flex: 1;
+}
+
+/* Dashboard Empty States - Centered in Middle of Page */
+.owner-empty-state,
+#emptyDishesState,
+#emptyCategoriesState {
+  flex: 1;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: clamp(260px, 45vh, 480px);
+  padding: 30px 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.owner-empty-state[style*="display: none"],
+#emptyDishesState[style*="display: none"],
+#emptyCategoriesState[style*="display: none"] {
+  display: none !important;
+}
+
+.owner-empty-state-text {
+  font-family: 'Google Sans', sans-serif !important;
+  font-size: clamp(1rem, 2.5vw, 1.12rem);
+  font-weight: 500;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+  text-align: center;
+  user-select: none;
 }
 
 /* ==========================================================================

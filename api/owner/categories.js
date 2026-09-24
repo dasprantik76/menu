@@ -155,11 +155,27 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ success: false, error: "Category ID ('id') is required." });
       }
 
-      const catId = new ObjectId(id);
-      const existing = await db.collection(COLLECTIONS.CATEGORIES).findOne({
+      let catId = null;
+      try {
+        catId = new ObjectId(id);
+      } catch (e) {
+        catId = null;
+      }
+
+      let existing = catId ? await db.collection(COLLECTIONS.CATEGORIES).findOne({
         _id: catId,
         businessId: business._id
-      });
+      }) : null;
+
+      if (!existing && (id === "today_special_fixed" || id === "today_special")) {
+        existing = await db.collection(COLLECTIONS.CATEGORIES).findOne({
+          businessId: business._id,
+          $or: [{ isFixed: true }, { name: "TODAY'S SPECIAL" }]
+        });
+        if (existing) {
+          catId = existing._id;
+        }
+      }
 
       if (!existing) {
         return res.status(404).json({ success: false, error: "Category not found or does not belong to your restaurant." });

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@500&family=Inter:wght@400;500;600;700&family=Jost:wght@400;500;600;700;800&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="owner/owner.css?v=132">
+  <link rel="stylesheet" href="owner/owner.css?v=141">
   <script>
     (function() {
       try {
@@ -309,6 +309,14 @@
         </div>
       </div>
 
+      <!-- Top Brand Hero below Canopy (Matches Top Bar Size) -->
+      <div class="register-brand-hero">
+        <div class="brand-logo-stacked">
+          <span class="brand-logo-text">Menu</span>
+          <span class="brand-by-text">by PixelSetu</span>
+        </div>
+      </div>
+
       <div class="register-container">
         <h2 class="register-title">Register Your <span class="register-title-rotator" id="registerTitleRotator"><span class="register-title-accent" id="registerTitleAccent">Restaurant</span></span></h2>
 
@@ -331,39 +339,6 @@
             <label for="bizPhoneInput">3. Phone Number *</label>
             <input type="tel" id="bizPhoneInput" class="form-input" placeholder="10-digit mobile number" pattern="[0-9]{10}" maxlength="10" inputmode="numeric" required>
             <span class="field-error-msg" id="phoneErrorMsg" style="display: none;"></span>
-          </div>
-
-          <div class="form-group">
-            <label for="bizLogoInput">4. Business Logo (Optional)</label>
-            <div class="logo-upload-dropzone" id="logoUploadDropzone" role="button" tabindex="0" aria-label="Upload business logo">
-              <input type="file" id="bizLogoInput" accept="image/png, image/jpeg, image/webp, image/svg+xml" style="display: none;">
-              <div class="logo-upload-placeholder" id="logoUploadPlaceholder">
-                <div class="logo-upload-icon-circle">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                    <polyline points="21 15 16 10 5 21"></polyline>
-                  </svg>
-                </div>
-                <div class="logo-upload-text-group">
-                  <span class="logo-upload-prompt"><span class="logo-upload-browse">Upload a File</span></span>
-                  <span class="logo-upload-hint">Recommended Format : PNG</span>
-                </div>
-              </div>
-              <div class="logo-upload-preview-wrapper" id="logoUploadPreviewWrapper" style="display: none;">
-                <img id="logoPreviewImg" src="" alt="Business Logo Preview" class="logo-preview-img">
-                <div class="logo-preview-info">
-                  <span id="logoFileName" class="logo-file-name"></span>
-                  <span id="logoFileSize" class="logo-file-size"></span>
-                </div>
-                <button type="button" id="removeLogoBtn" class="logo-remove-btn" title="Remove logo" aria-label="Remove logo">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-            </div>
           </div>
 
           <button type="submit" class="btn-primary" id="submitRegisterBtn">Create Account</button>

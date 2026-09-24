@@ -1596,7 +1596,7 @@ body.register-mode #registerView {
 .register-btn-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: clamp(8px, 2.5vw, 12px);
   width: 100%;
   margin-top: clamp(16px, 2.5vh, 26px);
   box-sizing: border-box;
@@ -1610,11 +1610,11 @@ body.register-mode #registerView {
   outline: none !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
   border-radius: 8px !important;
-  padding: 12px 14px !important;
+  padding: 12px clamp(8px, 2.5vw, 14px) !important;
   font-family: 'Google Sans', sans-serif !important;
-  font-size: 0.95rem !important;
+  font-size: clamp(0.85rem, 3.6vw, 0.95rem) !important;
   font-weight: 600 !important;
-  letter-spacing: 0.2px !important;
+  letter-spacing: 0.1px !important;
   cursor: pointer !important;
   flex: 1 !important;
   min-height: 48px !important;
@@ -1622,6 +1622,7 @@ body.register-mode #registerView {
   align-items: center !important;
   justify-content: center !important;
   text-decoration: none !important;
+  white-space: nowrap !important;
   margin: 0 !important;
   transition: all 0.15s ease !important;
   box-sizing: border-box !important;
@@ -1647,11 +1648,11 @@ body.register-mode #registerView {
   outline: none;
   box-shadow: 0 2px 8px rgba(153, 30, 46, 0.28), 0 1px 3px rgba(0, 0, 0, 0.08);
   border-radius: 8px;
-  padding: 12px 14px;
+  padding: 12px clamp(8px, 2.5vw, 14px);
   font-family: 'Google Sans', sans-serif !important;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 3.6vw, 0.95rem);
   font-weight: 600;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.1px;
   cursor: pointer;
   flex: 1;
   min-height: 48px;
@@ -1659,6 +1660,7 @@ body.register-mode #registerView {
   align-items: center;
   justify-content: center;
   position: relative;
+  white-space: nowrap !important;
   margin: 0 !important;
   transition: background-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
   box-sizing: border-box;

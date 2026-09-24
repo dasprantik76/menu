@@ -28,7 +28,20 @@ const tabContentAudit = document.getElementById("tabContentAudit");
 const pendingTableBody = document.getElementById("pendingTableBody");
 const emptyPendingState = document.getElementById("emptyPendingState");
 const allBizTableBody = document.getElementById("allBizTableBody");
+const emptyAllBizState = document.getElementById("emptyAllBizState");
 const auditTableBody = document.getElementById("auditTableBody");
+const emptyAuditState = document.getElementById("emptyAuditState");
+
+// Mobile Cards Containers
+const pendingCardsList = document.getElementById("pendingCardsList");
+const allBizCardsList = document.getElementById("allBizCardsList");
+const auditCardsList = document.getElementById("auditCardsList");
+
+// Search & Filter Controls
+const pendingSearchInput = document.getElementById("pendingSearchInput");
+const bizSearchInput = document.getElementById("bizSearchInput");
+const bizStatusFilter = document.getElementById("bizStatusFilter");
+const auditSearchInput = document.getElementById("auditSearchInput");
 
 const refreshPendingBtn = document.getElementById("refreshPendingBtn");
 const refreshAllBtn = document.getElementById("refreshAllBtn");
@@ -46,6 +59,16 @@ const featOnlineOrdering = document.getElementById("featOnlineOrdering");
 const featAnalytics = document.getElementById("featAnalytics");
 const closeSubModalBtn = document.getElementById("closeSubModalBtn");
 const cancelSubModalBtn = document.getElementById("cancelSubModalBtn");
+
+// Approval Duration Modal Elements
+const approvalModal = document.getElementById("approvalModal");
+const approvalModalTitle = document.getElementById("approvalModalTitle");
+const approvalForm = document.getElementById("approvalForm");
+const approvalBizIdInput = document.getElementById("approvalBizIdInput");
+const approvalDaysInput = document.getElementById("approvalDaysInput");
+const approvalExpiryText = document.getElementById("approvalExpiryText");
+const cancelApprovalModalBtn = document.getElementById("cancelApprovalModalBtn");
+const presetChips = document.querySelectorAll(".preset-chip");
 
 // Dev Auth Form
 const adminDevLoginBox = document.getElementById("adminDevLoginBox");
@@ -208,48 +231,64 @@ function renderStats() {
   const pending = allBusinesses.filter(b => b.approvalStatus === "pending");
   const active = allBusinesses.filter(b => b.approvalStatus === "approved" && b.isPublished);
 
-  statPendingCount.textContent = pending.length;
-  statTotalBizCount.textContent = allBusinesses.length;
-  statActiveCount.textContent = active.length;
+  if (statPendingCount) statPendingCount.textContent = pending.length;
+  if (statTotalBizCount) statTotalBizCount.textContent = allBusinesses.length;
+  if (statActiveCount) statActiveCount.textContent = active.length;
 
-  if (pending.length > 0) {
-    pendingTabBadge.textContent = pending.length;
-    pendingTabBadge.style.display = "inline-block";
-  } else {
-    pendingTabBadge.style.display = "none";
+  if (pendingTabBadge) {
+    if (pending.length > 0) {
+      pendingTabBadge.textContent = pending.length;
+      pendingTabBadge.style.display = "inline-block";
+    } else {
+      pendingTabBadge.style.display = "none";
+    }
   }
 }
 
 /**
- * Render Pending Applications
+ * Render Pending Applications (Desktop Table + Mobile Cards)
  */
 function renderPendingTable() {
   pendingTableBody.innerHTML = "";
-  const pending = allBusinesses.filter(b => b.approvalStatus === "pending");
+  if (pendingCardsList) pendingCardsList.innerHTML = "";
+
+  const query = pendingSearchInput ? pendingSearchInput.value.toLowerCase().trim() : "";
+  let pending = allBusinesses.filter(b => b.approvalStatus === "pending");
+
+  if (query) {
+    pending = pending.filter(biz => {
+      const name = (biz.name || "").toLowerCase();
+      const addr = (biz.address || "").toLowerCase();
+      const slug = (biz.slug || "").toLowerCase();
+      const ownerName = (biz.owner && biz.owner.name ? biz.owner.name : "").toLowerCase();
+      const ownerEmail = (biz.owner && biz.owner.email ? biz.owner.email : "").toLowerCase();
+      return name.includes(query) || addr.includes(query) || slug.includes(query) || ownerName.includes(query) || ownerEmail.includes(query);
+    });
+  }
 
   if (pending.length === 0) {
-    emptyPendingState.style.display = "block";
+    if (emptyPendingState) emptyPendingState.style.display = "block";
     return;
   }
-  emptyPendingState.style.display = "none";
+  if (emptyPendingState) emptyPendingState.style.display = "none";
 
   pending.forEach(biz => {
-    const tr = document.createElement("tr");
     const dateStr = biz.createdAt ? new Date(biz.createdAt).toLocaleDateString() : "Recent";
     const ownerName = (biz.owner && biz.owner.name) || "Unknown Owner";
     const ownerEmail = (biz.owner && biz.owner.email) || "";
 
+    // 1. Desktop Table Row (>= 768px)
+    const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
         <strong>${escapeHtml(biz.name)}</strong>
-        <div style="font-size:0.78rem; color:#64748b;">${escapeHtml(biz.address || "No address provided")}</div>
       </td>
       <td>
         <div>${escapeHtml(ownerName)}</div>
         <div style="font-size:0.78rem; color:#64748b;">${escapeHtml(ownerEmail)}</div>
       </td>
       <td>
-        <a href="/r/${biz.slug}" target="_blank" style="color:#991e2e; font-weight:600; text-decoration:none;">/r/${biz.slug} &nearr;</a>
+        <a href="/r/${biz.slug}" target="_blank" class="public-menu-pill">/r/${biz.slug} &nearr;</a>
       </td>
       <td>${dateStr}</td>
       <td>
@@ -263,21 +302,84 @@ function renderPendingTable() {
       </td>
     `;
 
-    tr.querySelector(".approve-btn").addEventListener("click", () => handleApproval(biz._id, "approved"));
+    tr.querySelector(".approve-btn").addEventListener("click", () => openApprovalModal(biz));
     tr.querySelector(".reject-btn").addEventListener("click", () => handleApproval(biz._id, "rejected"));
-
     pendingTableBody.appendChild(tr);
+
+    // 2. Mobile Card (< 768px)
+    if (pendingCardsList) {
+      const card = document.createElement("div");
+      card.className = "admin-biz-card";
+      card.innerHTML = `
+        <div class="admin-biz-card-header">
+          <div class="admin-biz-name">${escapeHtml(biz.name)}</div>
+          <span class="status-pill pending">Pending</span>
+        </div>
+        <div class="admin-biz-meta-list">
+          <div class="admin-biz-meta-row">
+            <span class="admin-biz-meta-label">Owner</span>
+            <span class="admin-biz-meta-val">${escapeHtml(ownerName)}</span>
+          </div>
+          <div class="admin-biz-meta-row">
+            <span class="admin-biz-meta-label">Email</span>
+            <span class="admin-biz-meta-val">${escapeHtml(ownerEmail || "N/A")}</span>
+          </div>
+          <div class="admin-biz-meta-row">
+            <span class="admin-biz-meta-label">Applied Date</span>
+            <span class="admin-biz-meta-val">${dateStr}</span>
+          </div>
+          <div class="admin-biz-meta-row">
+            <span class="admin-biz-meta-label">Menu URL</span>
+            <a href="/r/${biz.slug}" target="_blank" class="public-menu-pill">/r/${biz.slug} &nearr;</a>
+          </div>
+        </div>
+        <div class="admin-biz-card-actions">
+          <button type="button" class="btn-admin btn-approve approve-btn" data-id="${biz._id}">Approve</button>
+          <button type="button" class="btn-admin btn-reject reject-btn" data-id="${biz._id}">Reject</button>
+        </div>
+      `;
+
+      card.querySelector(".approve-btn").addEventListener("click", () => openApprovalModal(biz));
+      card.querySelector(".reject-btn").addEventListener("click", () => handleApproval(biz._id, "rejected"));
+      pendingCardsList.appendChild(card);
+    }
   });
 }
 
 /**
- * Render All Businesses Table
+ * Render All Businesses Table (Desktop Table + Mobile Cards)
  */
 function renderAllBizTable() {
   allBizTableBody.innerHTML = "";
+  if (allBizCardsList) allBizCardsList.innerHTML = "";
 
-  allBusinesses.forEach(biz => {
-    const tr = document.createElement("tr");
+  const query = bizSearchInput ? bizSearchInput.value.toLowerCase().trim() : "";
+  const statusFilter = bizStatusFilter ? bizStatusFilter.value : "all";
+
+  let filtered = allBusinesses.slice();
+
+  if (statusFilter !== "all") {
+    filtered = filtered.filter(b => b.approvalStatus === statusFilter);
+  }
+
+  if (query) {
+    filtered = filtered.filter(biz => {
+      const name = (biz.name || "").toLowerCase();
+      const addr = (biz.address || "").toLowerCase();
+      const slug = (biz.slug || "").toLowerCase();
+      const ownerName = (biz.owner && biz.owner.name ? biz.owner.name : "").toLowerCase();
+      const ownerEmail = (biz.owner && biz.owner.email ? biz.owner.email : "").toLowerCase();
+      return name.includes(query) || addr.includes(query) || slug.includes(query) || ownerName.includes(query) || ownerEmail.includes(query);
+    });
+  }
+
+  if (filtered.length === 0) {
+    if (emptyAllBizState) emptyAllBizState.style.display = "block";
+    return;
+  }
+  if (emptyAllBizState) emptyAllBizState.style.display = "none";
+
+  filtered.forEach(biz => {
     const ownerName = (biz.owner && biz.owner.name) || "Unknown";
     const ownerEmail = (biz.owner && biz.owner.email) || "";
     const catCount = (biz.stats && biz.stats.categories) || 0;
@@ -288,10 +390,25 @@ function renderAllBizTable() {
     if (biz.approvalStatus === "rejected") statusPillClass = "rejected";
     if (biz.approvalStatus === "suspended") statusPillClass = "suspended";
 
+    let expiryHint = "";
+    if (biz.approvalStatus === "approved" && biz.approvalExpiry) {
+      const expiry = new Date(biz.approvalExpiry);
+      const diffDays = Math.ceil((expiry - new Date()) / 86400000);
+      if (diffDays > 0) {
+        expiryHint = `<div style="font-size:0.73rem; color:#047857; margin-top:3px; font-weight:600;">${diffDays}d active (${expiry.toLocaleDateString()})</div>`;
+      } else {
+        expiryHint = `<div style="font-size:0.73rem; color:#dc2626; margin-top:3px; font-weight:600;">Expired (Hold)</div>`;
+      }
+    }
+
+    const subStatus = biz.subscriptionStatus || "trial";
+    const subClass = subStatus === "active" ? "active" : subStatus === "trial" ? "trial" : "";
+
+    // 1. Desktop Table Row (>= 768px)
+    const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
         <strong>${escapeHtml(biz.name)}</strong>
-        <div style="font-size:0.78rem; color:#64748b;">${escapeHtml(biz.address || "")}</div>
       </td>
       <td>
         <div>${escapeHtml(ownerName)}</div>
@@ -299,15 +416,16 @@ function renderAllBizTable() {
       </td>
       <td>
         <span class="status-pill ${statusPillClass}">${biz.approvalStatus}</span>
+        ${expiryHint}
       </td>
       <td>
-        <span class="sub-pill ${biz.subscriptionStatus === "active" ? "active" : ""}">${biz.subscriptionStatus || "TRIAL"}</span>
+        <span class="sub-pill ${subClass}">${subStatus.toUpperCase()}</span>
       </td>
       <td>
         <span style="font-weight:600; color:#334155;">${catCount}</span> cats, <span style="font-weight:600; color:#334155;">${itemCount}</span> items
       </td>
       <td>
-        <a href="/r/${biz.slug}" target="_blank" style="color:#991e2e; font-size:0.82rem; font-weight:600;">/r/${biz.slug} &nearr;</a>
+        <a href="/r/${biz.slug}" target="_blank" class="public-menu-pill">/r/${biz.slug} &nearr;</a>
       </td>
       <td>
         <div class="btn-action-group">
@@ -326,50 +444,143 @@ function renderAllBizTable() {
     if (suspendBtn) suspendBtn.addEventListener("click", () => handleApproval(biz._id, "suspended"));
 
     const reactivateBtn = tr.querySelector(".reactivate-btn");
-    if (reactivateBtn) reactivateBtn.addEventListener("click", () => handleApproval(biz._id, "approved"));
+    if (reactivateBtn) reactivateBtn.addEventListener("click", () => openApprovalModal(biz));
 
     const approveBtn = tr.querySelector(".approve-btn");
-    if (approveBtn) approveBtn.addEventListener("click", () => handleApproval(biz._id, "approved"));
+    if (approveBtn) approveBtn.addEventListener("click", () => openApprovalModal(biz));
 
     tr.querySelector(".config-sub-btn").addEventListener("click", () => openSubModal(biz));
-
     allBizTableBody.appendChild(tr);
+
+    // 2. Mobile Card (< 768px)
+    if (allBizCardsList) {
+      const card = document.createElement("div");
+      card.className = "admin-biz-card";
+      card.innerHTML = `
+        <div class="admin-biz-card-header">
+          <div class="admin-biz-name">${escapeHtml(biz.name)}</div>
+          <span class="status-pill ${statusPillClass}">${biz.approvalStatus}</span>
+        </div>
+        <div class="admin-biz-meta-list">
+          <div class="admin-biz-meta-row">
+            <span class="admin-biz-meta-label">Owner</span>
+            <span class="admin-biz-meta-val">${escapeHtml(ownerName)}</span>
+          </div>
+          <div class="admin-biz-meta-row">
+            <span class="admin-biz-meta-label">Email</span>
+            <span class="admin-biz-meta-val">${escapeHtml(ownerEmail || "N/A")}</span>
+          </div>
+          ${biz.approvalStatus === "approved" && biz.approvalExpiry ? `
+          <div class="admin-biz-meta-row">
+            <span class="admin-biz-meta-label">Approval Period</span>
+            <span class="admin-biz-meta-val" style="color:#047857; font-weight:700;">
+              ${Math.max(0, Math.ceil((new Date(biz.approvalExpiry) - new Date()) / 86400000))}d left (${new Date(biz.approvalExpiry).toLocaleDateString()})
+            </span>
+          </div>` : ""}
+          <div class="admin-biz-meta-row">
+            <span class="admin-biz-meta-label">Subscription</span>
+            <span class="sub-pill ${subClass}">${subStatus.toUpperCase()}</span>
+          </div>
+          <div class="admin-biz-meta-row">
+            <span class="admin-biz-meta-label">Catalog</span>
+            <span class="admin-biz-meta-val">${catCount} cats, ${itemCount} items</span>
+          </div>
+          <div class="admin-biz-meta-row">
+            <span class="admin-biz-meta-label">Public Menu</span>
+            <a href="/r/${biz.slug}" target="_blank" class="public-menu-pill">/r/${biz.slug} &nearr;</a>
+          </div>
+        </div>
+        <div class="admin-biz-card-actions">
+          ${biz.approvalStatus === "approved" 
+            ? `<button type="button" class="btn-admin btn-suspend suspend-btn" data-id="${biz._id}">Suspend</button>` 
+            : biz.approvalStatus === "suspended"
+            ? `<button type="button" class="btn-admin btn-reactivate reactivate-btn" data-id="${biz._id}">Reactivate</button>`
+            : `<button type="button" class="btn-admin btn-approve approve-btn" data-id="${biz._id}">Approve</button>`
+          }
+          <button type="button" class="btn-admin btn-settings config-sub-btn" data-id="${biz._id}">Tier &amp; Features</button>
+        </div>
+      `;
+
+      const mSuspendBtn = card.querySelector(".suspend-btn");
+      if (mSuspendBtn) mSuspendBtn.addEventListener("click", () => handleApproval(biz._id, "suspended"));
+
+      const mReactivateBtn = card.querySelector(".reactivate-btn");
+      if (mReactivateBtn) mReactivateBtn.addEventListener("click", () => openApprovalModal(biz));
+
+      const mApproveBtn = card.querySelector(".approve-btn");
+      if (mApproveBtn) mApproveBtn.addEventListener("click", () => openApprovalModal(biz));
+
+      card.querySelector(".config-sub-btn").addEventListener("click", () => openSubModal(biz));
+      allBizCardsList.appendChild(card);
+    }
   });
 }
 
 /**
- * Render Audit Logs
+ * Render Audit Logs (Desktop Table + Mobile Cards)
  */
 function renderAuditLogsTable() {
   auditTableBody.innerHTML = "";
+  if (auditCardsList) auditCardsList.innerHTML = "";
 
-  if (auditLogs.length === 0) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="5" style="text-align:center; padding:24px; color:#64748b;">No administrative actions logged yet.</td>`;
-    auditTableBody.appendChild(tr);
-    return;
+  const query = auditSearchInput ? auditSearchInput.value.toLowerCase().trim() : "";
+  let filtered = auditLogs.slice();
+
+  if (query) {
+    filtered = filtered.filter(log => {
+      const email = (log.adminEmail || "").toLowerCase();
+      const action = (log.action || "").toLowerCase();
+      const target = (log.targetId || "").toLowerCase();
+      const details = log.details ? JSON.stringify(log.details).toLowerCase() : "";
+      return email.includes(query) || action.includes(query) || target.includes(query) || details.includes(query);
+    });
   }
 
-  auditLogs.forEach(log => {
-    const tr = document.createElement("tr");
+  if (filtered.length === 0) {
+    if (emptyAuditState) emptyAuditState.style.display = "block";
+    return;
+  }
+  if (emptyAuditState) emptyAuditState.style.display = "none";
+
+  filtered.forEach(log => {
     const timeStr = log.timestamp ? new Date(log.timestamp).toLocaleString() : "";
     const detailsStr = log.details ? JSON.stringify(log.details) : "";
 
+    // 1. Desktop Row (>= 768px)
+    const tr = document.createElement("tr");
     tr.innerHTML = `
       <td style="white-space:nowrap; font-size:0.82rem; color:#64748b;">${timeStr}</td>
       <td><strong>${escapeHtml(log.adminEmail || "Admin")}</strong></td>
-      <td><span style="font-weight:700; color:#0f172a; font-size:0.8rem; background:#f1f5f9; padding:2px 8px; border-radius:4px;">${log.action}</span></td>
-      <td style="font-family:monospace; font-size:0.8rem; color:#64748b;">${log.targetId || "-"}</td>
+      <td><span style="font-weight:700; color:#0f172a; font-size:0.8rem; background:#f1f5f9; padding:2px 8px; border-radius:4px;">${escapeHtml(log.action)}</span></td>
+      <td style="font-family:monospace; font-size:0.8rem; color:#64748b;">${escapeHtml(log.targetId || "-")}</td>
       <td style="font-size:0.8rem; color:#334155; max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(detailsStr)}</td>
     `;
     auditTableBody.appendChild(tr);
+
+    // 2. Mobile Card (< 768px)
+    if (auditCardsList) {
+      const card = document.createElement("div");
+      card.className = "admin-audit-card";
+      card.innerHTML = `
+        <div class="admin-audit-header">
+          <span class="admin-audit-action">${escapeHtml(log.action)}</span>
+          <span class="admin-audit-time">${timeStr}</span>
+        </div>
+        <div class="admin-audit-meta">
+          <div><strong>Admin:</strong> ${escapeHtml(log.adminEmail || "Admin")}</div>
+          <div><strong>Target:</strong> <span style="font-family:monospace;">${escapeHtml(log.targetId || "-")}</span></div>
+        </div>
+        ${detailsStr ? `<div class="admin-audit-details">${escapeHtml(detailsStr)}</div>` : ""}
+      `;
+      auditCardsList.appendChild(card);
+    }
   });
 }
 
 /**
  * Handle Business Status Change (Approve, Reject, Suspend)
  */
-async function handleApproval(businessId, approvalStatus) {
+async function handleApproval(businessId, approvalStatus, approvalDays = 30) {
   let reason = null;
   if (approvalStatus === "rejected") {
     reason = prompt("Please enter a reason for rejection (optional):");
@@ -380,15 +591,23 @@ async function handleApproval(businessId, approvalStatus) {
   }
 
   try {
+    const payload = { id: businessId, approvalStatus, reason };
+    if (approvalStatus === "approved") {
+      payload.approvalDays = approvalDays;
+    }
+
     const res = await fetch("/api/admin/businesses", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: businessId, approvalStatus, reason })
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
 
     if (data.success) {
-      showNotification(`Restaurant status updated to: ${approvalStatus}`, "success");
+      const msg = approvalStatus === "approved"
+        ? `Restaurant approved for ${approvalDays} days!`
+        : `Restaurant status updated to: ${approvalStatus}`;
+      showNotification(msg, "success");
       await Promise.all([fetchBusinesses(), fetchAuditLogs()]);
     } else {
       showNotification(data.error || "Failed to update business status.", "error");
@@ -396,6 +615,76 @@ async function handleApproval(businessId, approvalStatus) {
   } catch (err) {
     showNotification("Network error processing action.", "error");
   }
+}
+
+/**
+ * Approval Duration Dialog Modal Functions
+ */
+function updateApprovalExpiryPreview() {
+  if (!approvalDaysInput || !approvalExpiryText) return;
+  const days = parseInt(approvalDaysInput.value, 10);
+  if (!days || days < 1) {
+    approvalExpiryText.textContent = "EXPIRES ON : —";
+    return;
+  }
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + days);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const day = expiryDate.getDate();
+  const month = months[expiryDate.getMonth()];
+  const year = expiryDate.getFullYear();
+  const formatted = `${day} ${month}, ${year}`;
+  approvalExpiryText.textContent = `EXPIRES ON : ${formatted}`;
+}
+
+function openApprovalModal(biz) {
+  if (!approvalModal) return;
+  approvalBizIdInput.value = biz._id;
+  approvalModalTitle.textContent = biz.name;
+  const defaultDays = biz.approvalDays || 30;
+  approvalDaysInput.value = defaultDays;
+
+  presetChips.forEach(chip => {
+    chip.classList.toggle("active", chip.dataset.days === String(defaultDays));
+  });
+
+  updateApprovalExpiryPreview();
+  approvalModal.style.display = "flex";
+}
+
+function closeApprovalModal() {
+  if (approvalModal) approvalModal.style.display = "none";
+}
+
+if (cancelApprovalModalBtn) cancelApprovalModalBtn.addEventListener("click", closeApprovalModal);
+
+if (approvalDaysInput) {
+  approvalDaysInput.addEventListener("input", () => {
+    const val = approvalDaysInput.value;
+    presetChips.forEach(chip => {
+      chip.classList.toggle("active", chip.dataset.days === val);
+    });
+    updateApprovalExpiryPreview();
+  });
+}
+
+presetChips.forEach(chip => {
+  chip.addEventListener("click", () => {
+    approvalDaysInput.value = chip.dataset.days;
+    presetChips.forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    updateApprovalExpiryPreview();
+  });
+});
+
+if (approvalForm) {
+  approvalForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = approvalBizIdInput.value;
+    const days = parseInt(approvalDaysInput.value, 10) || 30;
+    closeApprovalModal();
+    await handleApproval(id, "approved", days);
+  });
 }
 
 /**
@@ -467,9 +756,9 @@ function switchTab(tab) {
     else b.classList.remove("active");
   });
 
-  tabContentPending.style.display = tab === "pending" ? "block" : "none";
-  tabContentAll.style.display = tab === "all" ? "block" : "none";
-  tabContentAudit.style.display = tab === "audit" ? "block" : "none";
+  if (tabContentPending) tabContentPending.style.display = tab === "pending" ? "block" : "none";
+  if (tabContentAll) tabContentAll.style.display = tab === "all" ? "block" : "none";
+  if (tabContentAudit) tabContentAudit.style.display = tab === "audit" ? "block" : "none";
 }
 
 tabButtons.forEach(btn => {
@@ -478,9 +767,23 @@ tabButtons.forEach(btn => {
   });
 });
 
-refreshPendingBtn.addEventListener("click", () => fetchBusinesses());
-refreshAllBtn.addEventListener("click", () => fetchBusinesses());
-refreshLogsBtn.addEventListener("click", () => fetchAuditLogs());
+if (refreshPendingBtn) refreshPendingBtn.addEventListener("click", () => fetchBusinesses());
+if (refreshAllBtn) refreshAllBtn.addEventListener("click", () => fetchBusinesses());
+if (refreshLogsBtn) refreshLogsBtn.addEventListener("click", () => fetchAuditLogs());
+
+// Real-Time Search & Status Filtering
+if (pendingSearchInput) {
+  pendingSearchInput.addEventListener("input", () => renderPendingTable());
+}
+if (bizSearchInput) {
+  bizSearchInput.addEventListener("input", () => renderAllBizTable());
+}
+if (bizStatusFilter) {
+  bizStatusFilter.addEventListener("change", () => renderAllBizTable());
+}
+if (auditSearchInput) {
+  auditSearchInput.addEventListener("input", () => renderAuditLogsTable());
+}
 
 /**
  * Admin Fast Dev Login
@@ -579,10 +882,20 @@ function escapeHtml(str) {
 }
 
 // Init
+function syncHeaderHeight() {
+  const adminHeader = document.querySelector(".admin-header");
+  if (adminHeader) {
+    document.documentElement.style.setProperty("--admin-header-height", `${adminHeader.offsetHeight}px`);
+  }
+}
+window.addEventListener("resize", syncHeaderHeight);
+
 document.addEventListener("DOMContentLoaded", async () => {
+  syncHeaderHeight();
   try {
     await checkAdminSession();
   } finally {
     revealPage();
+    syncHeaderHeight();
   }
 });

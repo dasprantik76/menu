@@ -32,6 +32,22 @@ module.exports = async function handler(req, res) {
     // GET: List all businesses with stats
     // -------------------------------------------------------------
     if (req.method === "GET") {
+      // Automatically expire any approved businesses whose approvalExpiry has passed
+      const now = new Date();
+      await db.collection(COLLECTIONS.BUSINESSES).updateMany(
+        {
+          approvalStatus: APPROVAL_STATUS.APPROVED,
+          approvalExpiry: { $exists: true, $ne: null, $lt: now }
+        },
+        {
+          $set: {
+            approvalStatus: APPROVAL_STATUS.PENDING,
+            isPublished: false,
+            updatedAt: now
+          }
+        }
+      );
+
       const businesses = await db.collection(COLLECTIONS.BUSINESSES)
         .find({})
         .sort({ createdAt: -1 })
@@ -72,7 +88,7 @@ module.exports = async function handler(req, res) {
     // PATCH: Approve, Reject, or Suspend a Business
     // -------------------------------------------------------------
     if (req.method === "PATCH") {
-      const { id, approvalStatus } = body;
+      const { id, approvalStatus, approvalDays, reason } = body;
 
       if (!id || !approvalStatus) {
         return res.status(400).json({ success: false, error: "Business ID ('id') and 'approvalStatus' are required." });
@@ -98,11 +114,21 @@ module.exports = async function handler(req, res) {
         updatedAt: new Date()
       };
 
-      // Auto-publish when approved for instant convenience
+      // Handle approval duration & auto-publish
       if (approvalStatus === APPROVAL_STATUS.APPROVED) {
         updates.isPublished = true;
+        const days = Math.max(1, parseInt(approvalDays, 10) || 30);
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + days);
+        updates.approvalDays = days;
+        updates.approvalExpiry = expiryDate;
       } else if (approvalStatus === APPROVAL_STATUS.SUSPENDED || approvalStatus === APPROVAL_STATUS.REJECTED) {
         updates.isPublished = false;
+        updates.approvalExpiry = null;
+      }
+
+      if (reason) {
+        updates.statusReason = reason;
       }
 
       await db.collection(COLLECTIONS.BUSINESSES).updateOne(
@@ -115,8 +141,8 @@ module.exports = async function handler(req, res) {
         adminId: adminUser.userId,
         businessId: bizId,
         action: `business_${approvalStatus}`,
-        previousValue: { approvalStatus: previousStatus, isPublished: existing.isPublished },
-        newValue: { approvalStatus, isPublished: updates.isPublished }
+        previousValue: { approvalStatus: previousStatus, isPublished: existing.isPublished, approvalExpiry: existing.approvalExpiry },
+        newValue: { approvalStatus, isPublished: updates.isPublished, approvalDays: updates.approvalDays, approvalExpiry: updates.approvalExpiry }
       });
 
       const updated = await db.collection(COLLECTIONS.BUSINESSES).findOne({ _id: bizId });

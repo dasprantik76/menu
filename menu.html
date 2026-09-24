@@ -8,24 +8,86 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Jost:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Righteous&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=68">
+  <link rel="stylesheet" href="/style.css?v=69">
   <style>
     #pageLoaderOverlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
       width: 100vw; height: 100vh; height: 100dvh;
-      background-color: #fbefe1;
+      background-color: #ffffff;
       z-index: 999999;
       pointer-events: auto;
       opacity: 1;
       visibility: visible;
-      transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+      transition: opacity 0.35s ease-out, visibility 0.35s ease-out;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    #pageLoaderOverlay.dissolve {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .page-loader-branding {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      user-select: none;
+    }
+    .page-loader-banner {
+      display: inline-block;
+      background: #deb103;
+      clip-path: polygon(0% 8%, 100% 28%, 100% 100%, 0% 100%);
+      padding: 22px 38px 11px 28px;
+      user-select: none;
+      filter: drop-shadow(0 4px 14px rgba(222, 177, 3, 0.32));
+    }
+    .page-loader-menu-text {
+      display: block;
+      color: #710d1d;
+      font-family: 'Pacifico', cursive, sans-serif;
+      font-size: clamp(2.6rem, 7.5vw, 3.4rem);
+      line-height: 1;
+      letter-spacing: -0.5px;
+    }
+    .page-loader-by-text {
+      font-family: 'Jost', sans-serif;
+      font-size: clamp(1.25rem, 3.6vw, 1.45rem);
+      font-weight: 600;
+      color: #1e293b;
+      letter-spacing: 0.3px;
+      margin-top: 10px;
+      line-height: 1;
+    }
+    .page-loader-spinner {
+      width: 38px;
+      height: 38px;
+      border: 3.5px solid #ede8e1;
+      border-top-color: #991e2e;
+      border-radius: 50%;
+      animation: pageLoaderSpin 0.8s linear infinite;
+      margin-top: 36px;
+    }
+    @keyframes pageLoaderSpin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body oncontextmenu="return false;" onselectstart="return false;">
-  <!-- Full-Screen White Pre-loader with Dissolve Transition -->
-  <div id="pageLoaderOverlay" class="page-loader-overlay" aria-hidden="true"></div>
+  <!-- Full-Screen Pre-loader with Large Branding Block & Spinner -->
+  <div id="pageLoaderOverlay" class="page-loader-overlay" aria-hidden="true">
+    <div class="page-loader-branding">
+      <div class="page-loader-banner">
+        <span class="page-loader-menu-text">Menu</span>
+      </div>
+      <span class="page-loader-by-text">by PixelSetu</span>
+    </div>
+    <div class="page-loader-spinner" aria-hidden="true"></div>
+  </div>
 
   <div class="mobile-app">
     <!-- Sticky Top Name Bar -->

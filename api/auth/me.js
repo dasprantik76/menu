@@ -1,6 +1,6 @@
 const { ObjectId } = require("mongodb");
 const { connectToDatabase } = require("../_lib/mongodb");
-const { COLLECTIONS } = require("../_lib/models");
+const { COLLECTIONS, checkAndExpireApproval } = require("../_lib/models");
 const { getSessionUser, clearSessionCookie } = require("../_lib/auth");
 
 /**
@@ -43,7 +43,10 @@ module.exports = async function handler(req, res) {
     }
 
     // Fetch business associated with this user
-    const business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId: user._id });
+    let business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId: user._id });
+    if (business) {
+      business = await checkAndExpireApproval(db, business);
+    }
 
     return res.status(200).json({
       success: true,
@@ -60,6 +63,8 @@ module.exports = async function handler(req, res) {
         name: business.name,
         slug: business.slug,
         approvalStatus: business.approvalStatus,
+        approvalExpiry: business.approvalExpiry,
+        approvalDays: business.approvalDays,
         subscriptionStatus: business.subscriptionStatus,
         subscriptionExpiry: business.subscriptionExpiry,
         enabledFeatures: business.enabledFeatures || [],

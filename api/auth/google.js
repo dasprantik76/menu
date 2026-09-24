@@ -1,6 +1,6 @@
 const { OAuth2Client } = require("google-auth-library");
 const { connectToDatabase } = require("../_lib/mongodb");
-const { COLLECTIONS, USER_ROLES } = require("../_lib/models");
+const { COLLECTIONS, USER_ROLES, checkAndExpireApproval } = require("../_lib/models");
 const { signSessionToken, setSessionCookie } = require("../_lib/auth");
 
 /**
@@ -210,7 +210,10 @@ module.exports = async function handler(req, res) {
     const userId = user._id;
 
     // 4. Check if user already owns a business
-    const business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId: userId });
+    let business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId: userId });
+    if (business) {
+      business = await checkAndExpireApproval(db, business);
+    }
 
     // 5. Generate secure session token & set HttpOnly cookie
     const tokenPayload = {

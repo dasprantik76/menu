@@ -1,6 +1,6 @@
 const { ObjectId } = require("mongodb");
 const { connectToDatabase } = require("../_lib/mongodb");
-const { COLLECTIONS, APPROVAL_STATUS, SUBSCRIPTION_STATUS } = require("../_lib/models");
+const { COLLECTIONS, APPROVAL_STATUS, SUBSCRIPTION_STATUS, checkAndExpireApproval } = require("../_lib/models");
 const { requireAuth } = require("../_lib/auth");
 
 /**
@@ -46,7 +46,10 @@ module.exports = async function handler(req, res) {
     // GET: Retrieve authenticated owner's business
     // -------------------------------------------------------------
     if (req.method === "GET") {
-      const business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId });
+      let business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId });
+      if (business) {
+        business = await checkAndExpireApproval(db, business);
+      }
       return res.status(200).json({
         success: true,
         business: business || null
@@ -166,10 +169,11 @@ module.exports = async function handler(req, res) {
     // PATCH: Update editable business details
     // -------------------------------------------------------------
     if (req.method === "PATCH") {
-      const business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId });
+      let business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId });
       if (!business) {
         return res.status(404).json({ success: false, error: "No business found for your account." });
       }
+      business = await checkAndExpireApproval(db, business);
 
       // Security: Only allow updating safe fields. Disallow modifying approvalStatus, subscription, ownerId.
       const safeUpdates = { updatedAt: new Date() };

@@ -51,10 +51,38 @@ async function ensureIndexes(db) {
   }
 }
 
+/**
+ * Automatically checks if an approved business has passed its approvalExpiry date.
+ * If expired, reverts approvalStatus back to 'pending', sets isPublished to false,
+ * and records the update in the database so the restaurant goes on hold mode seeking approval.
+ */
+async function checkAndExpireApproval(db, business) {
+  if (!business || business.approvalStatus !== APPROVAL_STATUS.APPROVED || !business.approvalExpiry) {
+    return business;
+  }
+  const now = new Date();
+  if (now > new Date(business.approvalExpiry)) {
+    await db.collection(COLLECTIONS.BUSINESSES).updateOne(
+      { _id: business._id },
+      {
+        $set: {
+          approvalStatus: APPROVAL_STATUS.PENDING,
+          isPublished: false,
+          updatedAt: now
+        }
+      }
+    );
+    business.approvalStatus = APPROVAL_STATUS.PENDING;
+    business.isPublished = false;
+  }
+  return business;
+}
+
 module.exports = {
   COLLECTIONS,
   APPROVAL_STATUS,
   SUBSCRIPTION_STATUS,
   USER_ROLES,
-  ensureIndexes
+  ensureIndexes,
+  checkAndExpireApproval
 };

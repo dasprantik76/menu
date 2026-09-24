@@ -1,5 +1,5 @@
 const { connectToDatabase } = require("../_lib/mongodb");
-const { COLLECTIONS, APPROVAL_STATUS } = require("../_lib/models");
+const { COLLECTIONS, APPROVAL_STATUS, checkAndExpireApproval } = require("../_lib/models");
 
 /**
  * Public Read-Only Menu API
@@ -44,6 +44,7 @@ module.exports = async function handler(req, res) {
           branding: 1,
           contact: 1,
           approvalStatus: 1,
+          approvalExpiry: 1,
           isPublished: 1
         }
       }
@@ -55,6 +56,8 @@ module.exports = async function handler(req, res) {
         error: `Restaurant with slug '${cleanSlug}' was not found.`
       });
     }
+
+    business = await checkAndExpireApproval(db, business);
 
     // Public security gate: Only approved & published restaurants are visible to customers
     if (business.approvalStatus !== APPROVAL_STATUS.APPROVED) {

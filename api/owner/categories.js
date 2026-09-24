@@ -1,6 +1,6 @@
 const { ObjectId } = require("mongodb");
 const { connectToDatabase } = require("../_lib/mongodb");
-const { COLLECTIONS, APPROVAL_STATUS } = require("../_lib/models");
+const { COLLECTIONS, APPROVAL_STATUS, checkAndExpireApproval } = require("../_lib/models");
 const { requireAuth } = require("../_lib/auth");
 
 /**
@@ -31,13 +31,14 @@ module.exports = async function handler(req, res) {
     const { db } = await connectToDatabase();
 
     // Verify owner's business
-    const business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId });
+    let business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId });
     if (!business) {
       return res.status(404).json({
         success: false,
         error: "No restaurant business found for your account. Please register first."
       });
     }
+    business = await checkAndExpireApproval(db, business);
 
     // -------------------------------------------------------------
     // GET: List all categories for this restaurant

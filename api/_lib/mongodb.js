@@ -171,14 +171,76 @@ function matchesQuery(doc, query) {
     if (!anyPassed) return false;
   }
 
+  if (Array.isArray(query.$and)) {
+    const allPassed = query.$and.every(subQuery => matchesQuery(doc, subQuery));
+    if (!allPassed) return false;
+  }
+
   for (const [key, val] of Object.entries(query)) {
-    if (key === "$or") continue;
+    if (key === "$or" || key === "$and") continue;
     const docVal = doc[key];
-    if (val && typeof val === "object" && "$ne" in val) {
-      if (String(docVal) === String(val.$ne)) return false;
-      continue;
+
+    // If query value is an operator object (e.g. { $lt: ..., $exists: ... })
+    // Note: ObjectId is an object, but not a plain query operator object
+    if (val && typeof val === "object" && !(val._bsontype === "ObjectID" || val.constructor?.name === "ObjectId")) {
+      const keys = Object.keys(val);
+      const isOperatorObj = keys.length > 0 && keys.some(k => k.startsWith("$"));
+
+      if (isOperatorObj) {
+        if ("$exists" in val) {
+          const exists = docVal !== undefined && docVal !== null;
+          if (val.$exists && !exists) return false;
+          if (!val.$exists && exists) return false;
+        }
+
+        if ("$ne" in val) {
+          if (val.$ne === null && (docVal === null || docVal === undefined)) return false;
+          if (val.$ne !== null && String(docVal) === String(val.$ne)) return false;
+        }
+
+        if ("$in" in val && Array.isArray(val.$in)) {
+          const matched = val.$in.some(target => String(target) === String(docVal));
+          if (!matched) return false;
+        }
+
+        if ("$nin" in val && Array.isArray(val.$nin)) {
+          const matched = val.$nin.some(target => String(target) === String(docVal));
+          if (matched) return false;
+        }
+
+        if ("$lt" in val) {
+          const v = val.$lt instanceof Date ? val.$lt.getTime() : (typeof val.$lt === "number" ? val.$lt : new Date(val.$lt).getTime());
+          const d = docVal instanceof Date ? docVal.getTime() : (typeof docVal === "number" ? docVal : new Date(docVal).getTime());
+          if (isNaN(d) || isNaN(v) || !(d < v)) return false;
+        }
+
+        if ("$lte" in val) {
+          const v = val.$lte instanceof Date ? val.$lte.getTime() : (typeof val.$lte === "number" ? val.$lte : new Date(val.$lte).getTime());
+          const d = docVal instanceof Date ? docVal.getTime() : (typeof docVal === "number" ? docVal : new Date(docVal).getTime());
+          if (isNaN(d) || isNaN(v) || !(d <= v)) return false;
+        }
+
+        if ("$gt" in val) {
+          const v = val.$gt instanceof Date ? val.$gt.getTime() : (typeof val.$gt === "number" ? val.$gt : new Date(val.$gt).getTime());
+          const d = docVal instanceof Date ? docVal.getTime() : (typeof docVal === "number" ? docVal : new Date(docVal).getTime());
+          if (isNaN(d) || isNaN(v) || !(d > v)) return false;
+        }
+
+        if ("$gte" in val) {
+          const v = val.$gte instanceof Date ? val.$gte.getTime() : (typeof val.$gte === "number" ? val.$gte : new Date(val.$gte).getTime());
+          const d = docVal instanceof Date ? docVal.getTime() : (typeof docVal === "number" ? docVal : new Date(docVal).getTime());
+          if (isNaN(d) || isNaN(v) || !(d >= v)) return false;
+        }
+
+        continue;
+      }
     }
-    if (String(docVal) !== String(val)) return false;
+
+    if (val === null || val === undefined) {
+      if (docVal !== val) return false;
+    } else if (String(docVal) !== String(val)) {
+      return false;
+    }
   }
   return true;
 }
@@ -206,6 +268,11 @@ function createMockCollection(name) {
         doc = list[index];
         if (update.$set) {
           Object.assign(doc, update.$set);
+        }
+        if (update.$unset) {
+          for (const key of Object.keys(update.$unset)) {
+            delete doc[key];
+          }
         }
       }
 
@@ -254,8 +321,15 @@ function createMockCollection(name) {
     async updateOne(query, update) {
       const list = global._mockDb[name] || [];
       const doc = list.find(d => matchesQuery(d, query));
-      if (doc && update.$set) {
-        Object.assign(doc, update.$set);
+      if (doc) {
+        if (update.$set) {
+          Object.assign(doc, update.$set);
+        }
+        if (update.$unset) {
+          for (const key of Object.keys(update.$unset)) {
+            delete doc[key];
+          }
+        }
       }
       return { modifiedCount: doc ? 1 : 0 };
     },
@@ -263,8 +337,15 @@ function createMockCollection(name) {
       const list = global._mockDb[name] || [];
       let count = 0;
       list.forEach(doc => {
-        if (matchesQuery(doc, query) && update.$set) {
-          Object.assign(doc, update.$set);
+        if (matchesQuery(doc, query)) {
+          if (update.$set) {
+            Object.assign(doc, update.$set);
+          }
+          if (update.$unset) {
+            for (const key of Object.keys(update.$unset)) {
+              delete doc[key];
+            }
+          }
           count++;
         }
       });
@@ -297,7 +378,13 @@ function createMockCollection(name) {
 }
 
 async function connectToDatabase() {
-  if (process.env.MONGODB_URI) {
+  const currentUri = process.env.MONGODB_URI;
+  if (currentUri) {
+    if (!global._mongoClientPromise) {
+      client = new MongoClient(currentUri, options);
+      global._mongoClientPromise = client.connect();
+    }
+    clientPromise = global._mongoClientPromise;
     const connectedClient = await clientPromise;
     const db = connectedClient.db(dbName);
     return { client: connectedClient, db };

@@ -1845,7 +1845,7 @@ async function loadDynamicMenu() {
   const browseBtn = document.getElementById("browseBtn");
 
   try {
-    const response = await fetch(`/api/public/menu?slug=${encodeURIComponent(slug)}`);
+    const response = await fetch(`/api/public/menu?slug=${encodeURIComponent(slug)}&_t=${Date.now()}`, { cache: "no-store" });
     const data = await response.json().catch(() => null);
 
     if (!response.ok || !data || !data.success) {

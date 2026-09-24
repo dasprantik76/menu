@@ -126,13 +126,16 @@ module.exports = async function handler(req, res) {
         return {
           category: cat.name,
           items: itemsInCat,
-          isFixed: !!cat.isFixed
+          isFixed: !!cat.isFixed,
+          isVisible: cat.isVisible !== false
         };
       })
-      .filter(cat => cat.isFixed || cat.category === "TODAY'S SPECIAL" || cat.items.length > 0);
+      .filter(cat => cat.isFixed || cat.category === "TODAY'S SPECIAL" || cat.items.length > 0 || cat.isVisible !== false);
 
-    // Set caching headers for optimal edge delivery
-    res.setHeader("Cache-Control", "public, max-age=60, s-maxage=300, stale-while-revalidate=600");
+    // Disable caching so newly added items/categories reflect immediately
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     res.setHeader("Access-Control-Allow-Origin", "*");
 
     return res.status(200).json({

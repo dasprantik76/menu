@@ -1293,7 +1293,7 @@ body.register-mode #registerView {
 .form-input {
   width: 100%;
   padding: 10px 14px;
-  border: 1.5px solid #94a3b8;
+  border: 1px solid #94a3b8;
   border-radius: 8px;
   font-family: 'Google Sans', sans-serif;
   font-size: 0.98rem;
@@ -1592,21 +1592,91 @@ body.register-mode #registerView {
   background: #7d1724;
 }
 
-#submitRegisterBtn {
+/* Register Button Row (Split into White Log out on Left & Red Create account on Right) */
+.register-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
   margin-top: clamp(16px, 2.5vh, 26px);
+  box-sizing: border-box;
+}
+
+.btn-register-logout,
+.register-logout-btn {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 8px !important;
+  padding: 12px 14px !important;
+  font-family: 'Google Sans', sans-serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.2px !important;
+  cursor: pointer !important;
+  flex: 1 !important;
+  min-height: 48px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+  margin: 0 !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+.btn-register-logout:hover,
+.register-logout-btn:hover {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 2px 5px rgba(0, 0, 0, 0.06) !important;
+}
+
+.btn-register-logout:active,
+.register-logout-btn:active {
+  background: #f1f5f9 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+#submitRegisterBtn {
+  background: #991e2e;
+  color: #ffffff;
+  border: none;
+  outline: none;
+  box-shadow: 0 2px 8px rgba(153, 30, 46, 0.28), 0 1px 3px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'Google Sans', sans-serif !important;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  flex: 1;
   min-height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  font-family: 'Google Sans', sans-serif !important;
-  font-weight: 500;
-  transition: background-color 0.15s ease, opacity 0.15s ease;
+  margin: 0 !important;
+  transition: background-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+#submitRegisterBtn:hover {
+  background: #7d1724;
+  box-shadow: 0 4px 14px rgba(153, 30, 46, 0.38), 0 2px 5px rgba(0, 0, 0, 0.10);
+}
+
+#submitRegisterBtn:active {
+  box-shadow: 0 1px 3px rgba(153, 30, 46, 0.25);
 }
 
 #submitRegisterBtn:disabled {
   opacity: 0.88;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 #submitRegisterBtn.btn-loading {
@@ -1630,27 +1700,6 @@ body.register-mode #registerView {
   to {
     transform: rotate(360deg);
   }
-}
-
-/* Register View Log Out Text Button */
-.register-logout-btn {
-  display: block;
-  margin: 14px auto 0;
-  background: transparent;
-  border: none;
-  padding: 4px 8px;
-  color: #64748b;
-  font-family: 'Google Sans', sans-serif !important;
-  font-size: 0.88rem;
-  font-weight: 500;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.register-logout-btn:hover {
-  color: #0f172a;
 }
 
 /* Status Cards / Views (Pending & Status Screens) - Ultra-Slow Cinematic Animation */
@@ -1990,14 +2039,13 @@ body.pending-mode #pendingView {
   animation-delay: 0.65s;
 }
 
+#registerView .register-btn-row,
+#registerView.fade-in-active .register-btn-row,
 #registerView #submitRegisterBtn,
-#registerView.fade-in-active #submitRegisterBtn {
-  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.75s both;
-}
-
+#registerView.fade-in-active #submitRegisterBtn,
 #registerView #registerLogoutBtn,
 #registerView.fade-in-active #registerLogoutBtn {
-  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.85s both;
+  animation: itemFadeSlideUp 2.2s cubic-bezier(0.16, 1, 0.3, 1) 0.75s both;
 }
 
 #registerView .vegetables-img,
@@ -2150,15 +2198,16 @@ body.pending-mode #pendingView {
 #pendingView #pendingBizName,
 .pending-biz-name-outside {
   font-family: 'Google Sans', sans-serif !important;
-  font-size: clamp(2rem, 8.5vw, 3.38rem);
+  font-size: clamp(1.4rem, 6.8vw, 3rem);
   font-weight: 800 !important;
   color: #991e2e !important;
   margin: 0 auto !important;
   line-height: 1.15 !important;
   text-align: center !important;
-  max-width: calc(100vw - 20px) !important;
+  max-width: 100% !important;
   letter-spacing: -0.4px !important;
-  white-space: nowrap !important;
+  white-space: nowrap;
+  box-sizing: border-box !important;
 }
 
 .timing-pulse-dot {
@@ -3454,18 +3503,17 @@ input:checked + .slider:before {
   }
 
   .pending-biz-group {
-    margin: 54px auto 0;
-    width: calc(100% + 20px);
-    margin-left: -10px;
-    margin-right: -10px;
-    padding: 0;
+    margin: 48px auto 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 8px;
     box-sizing: border-box;
   }
 
   #pendingBizName.pending-biz-name-outside,
   #pendingView #pendingBizName {
-    white-space: nowrap !important;
-    max-width: calc(100vw - 20px) !important;
+    white-space: nowrap;
+    max-width: 100% !important;
   }
 
   .card {

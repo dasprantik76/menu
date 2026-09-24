@@ -343,7 +343,7 @@ async function checkSession() {
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.classList.remove("btn-loading");
-          submitBtn.textContent = "Create Account";
+          submitBtn.textContent = "Create account";
         }
         showView(registerView);
         if (window.location.search.includes("view=")) {
@@ -433,7 +433,7 @@ function updatePendingUserCard() {
 
 /**
  * Auto-scale pending business name so that multi-word names stay cleanly on a single line
- * with minimum left/right padding and large bold text.
+ * with safe padding and large bold text, never clipped or cropped.
  */
 function fitPendingBizName() {
   const el = document.getElementById("pendingBizName");
@@ -443,19 +443,31 @@ function fitPendingBizName() {
     return;
   }
 
-  // Remove previous inline font-size to accurately measure natural scrollWidth
+  // Remove previous inline font-size to measure natural scrollWidth
   el.style.removeProperty("font-size");
+  el.style.whiteSpace = "nowrap";
 
-  // Minimum padding left/right: 10px on each side (total 20px)
-  const minSideMargin = 20;
-  const availableWidth = Math.max(180, window.innerWidth - minSideMargin);
+  // Measure actual available container width
+  const container = el.parentElement || pendingView;
+  const containerWidth = container ? container.clientWidth : window.innerWidth;
+  // Leave at least 16px safe breathing room inside container so letters never clip
+  const availableWidth = Math.max(160, containerWidth - 16);
   const scrollW = el.scrollWidth;
 
   if (scrollW > availableWidth && availableWidth > 0) {
-    const computedFontSize = parseFloat(getComputedStyle(el).fontSize) || 48;
+    const computedFontSize = parseFloat(getComputedStyle(el).fontSize) || 36;
     const scale = availableWidth / scrollW;
-    const targetPx = Math.max(14, Math.floor(computedFontSize * scale * 0.985));
-    el.style.setProperty("font-size", `${targetPx}px`, "important");
+    let targetPx = Math.floor(computedFontSize * scale * 0.95);
+    if (targetPx < 18) {
+      // If font size would become smaller than 18px on a single line, allow wrapping
+      el.style.whiteSpace = "normal";
+      el.style.setProperty("font-size", "1.45rem", "important");
+    } else {
+      el.style.whiteSpace = "nowrap";
+      el.style.setProperty("font-size", `${targetPx}px`, "important");
+    }
+  } else {
+    el.style.whiteSpace = "nowrap";
   }
 }
 window.addEventListener("resize", fitPendingBizName);
@@ -962,7 +974,7 @@ registerBusinessForm.addEventListener("submit", async (e) => {
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.classList.remove("btn-loading");
-      submitBtn.textContent = "Create Account";
+      submitBtn.textContent = "Create account";
     }
 
     if (data.success) {
@@ -976,7 +988,7 @@ registerBusinessForm.addEventListener("submit", async (e) => {
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.classList.remove("btn-loading");
-      submitBtn.textContent = "Create Account";
+      submitBtn.textContent = "Create account";
     }
     showNotification("Network error during registration.", "error");
   }

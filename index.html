@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="owner/owner.css?v=155">
+  <link rel="stylesheet" href="owner/owner.css?v=159">
   <script>
     (function() {
       try {
@@ -340,8 +340,10 @@
             <span class="field-error-msg" id="phoneErrorMsg" style="display: none;"></span>
           </div>
 
-          <button type="submit" class="btn-primary" id="submitRegisterBtn">Create Account</button>
-          <button type="button" class="register-logout-btn" id="registerLogoutBtn">Log out</button>
+          <div class="register-btn-row">
+            <button type="button" class="btn-register-logout register-logout-btn" id="registerLogoutBtn">Log out</button>
+            <button type="submit" class="btn-primary" id="submitRegisterBtn">Create account</button>
+          </div>
         </form>
       </div>
 
@@ -537,6 +539,6 @@
     </section>
   </main>
 
-  <script src="owner/owner.js?v=63"></script>
+  <script src="owner/owner.js?v=65"></script>
 </body>
 </html>

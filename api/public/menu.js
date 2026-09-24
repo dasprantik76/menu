@@ -34,7 +34,7 @@ module.exports = async function handler(req, res) {
     const { db } = await connectToDatabase();
 
     // 1. Fetch business by slug
-    const business = await db.collection(COLLECTIONS.BUSINESSES).findOne(
+    let business = await db.collection(COLLECTIONS.BUSINESSES).findOne(
       { slug: cleanSlug },
       {
         projection: {

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Jost:wght@200;300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
 
 /* ==========================================================================
    ROYAL FOOD CORNER - Minimalist Clean Menu
@@ -83,7 +83,7 @@ img {
 }
 
 .page-loader-by-text {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: clamp(1.25rem, 3.6vw, 1.45rem);
   font-weight: 600;
   color: #1e293b;
@@ -127,7 +127,7 @@ html, body {
   overscroll-behavior: none;
   overscroll-behavior-y: none;
   background-color: #fbefe1; /* Warm parchment page background */
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   color: #000000;
   -webkit-tap-highlight-color: transparent !important;
   -webkit-touch-callout: none !important;
@@ -185,7 +185,7 @@ body {
 }
 
 .brand-title {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: clamp(1.4rem, 5.2vw, 1.8rem);
   font-weight: 800;
   letter-spacing: -0.3px;
@@ -515,7 +515,7 @@ body {
   display: flex;
   align-items: center;
   width: 100%;
-  font-family: 'Jost', sans-serif !important;
+  font-family: 'Google Sans', sans-serif !important;
   font-size: 1.02rem;
   line-height: 1.35;
   padding-left: 16px;
@@ -580,7 +580,7 @@ body {
 
 .dish-name {
   color: #000000; /* Menu text color black */
-  font-family: 'Jost', sans-serif !important;
+  font-family: 'Google Sans', sans-serif !important;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -599,7 +599,7 @@ body {
 }
 
 .dish-note {
-  font-family: 'Jost', sans-serif !important;
+  font-family: 'Google Sans', sans-serif !important;
   font-size: 0.82em;
   color: #555555; /* Subtle dark gray for bracketed text */
   font-weight: 400;
@@ -620,7 +620,7 @@ body {
 
 .dish-price {
   color: #b60000; /* Price color #b60000 */
-  font-family: 'Jost', sans-serif !important;
+  font-family: 'Google Sans', sans-serif !important;
   font-weight: 700;
   white-space: nowrap;
   letter-spacing: 0.5px;
@@ -666,7 +666,7 @@ body {
   height: 42px;
   background-color: #991e2e; /* Royal crimson matching sticky top header */
   color: #ffffff; /* Crisp white */
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-weight: 600;
   font-size: 0.88rem;
   letter-spacing: 0.8px;
@@ -749,7 +749,7 @@ body {
   top: 50%;
   left: 49%;
   transform: translate(-50%, -50%);
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-weight: 800;
   font-size: 0.88rem;
   color: #991e2e;
@@ -816,7 +816,7 @@ body {
 .sheet-header h3 {
   font-size: 1.15rem;
   font-weight: 700;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   color: #991e2e;
 }
 
@@ -907,7 +907,7 @@ body {
   border-radius: 10px;
   background: #faf4eb;
   color: #222222;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
@@ -952,13 +952,13 @@ body {
   text-align: center;
   padding: 48px 16px;
   color: #78716c;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 1rem;
   font-style: italic;
   letter-spacing: 0.3px;
 }
 
-/* 6. PLATTER DIALOG (Theme Consistent: White card, #991e2e accents, Jost typography) */
+/* 6. PLATTER DIALOG (Theme Consistent: White card, #991e2e accents, Google Sans typography) */
 .platter-sheet {
   position: absolute;
   bottom: 0;
@@ -997,7 +997,7 @@ body {
 .platter-sheet-title h3 {
   font-size: 1.15rem;
   font-weight: 700;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   color: #991e2e;
   margin: 0;
 }
@@ -1025,7 +1025,7 @@ body {
 }
 
 .platter-item-name {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-weight: 500;
   font-size: 1rem;
   color: #000000;
@@ -1072,7 +1072,7 @@ body {
   text-align: center;
   padding: 34px 16px;
   color: #777777;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.95rem;
   line-height: 1.5;
 }
@@ -1100,7 +1100,7 @@ body {
   background: transparent;
   border: 1px solid rgba(153, 30, 46, 0.3);
   color: #991e2e;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-weight: 600;
   font-size: 0.85rem;
   padding: 6px 14px;

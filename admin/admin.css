@@ -124,7 +124,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .page-loader-by-text {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: clamp(1.25rem, 3.6vw, 1.45rem);
   font-weight: 600;
   color: #1e293b;
@@ -208,7 +208,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .brand-by-text {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.8rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
@@ -228,7 +228,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   text-transform: uppercase;
   letter-spacing: 0.6px;
   border: 1px solid rgba(255, 255, 255, 0.30);
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
 }
 
 .header-right-group {
@@ -245,7 +245,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   background: #eb983e;
   color: #0e203c !important;
   border: 1px solid #eb983e;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.84rem;
   font-weight: 700;
   padding: 8px 14px;
@@ -293,7 +293,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .admin-name {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.92rem;
   font-weight: 700;
   color: #ffffff;
@@ -315,7 +315,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   color: #ffffff;
   padding: 7px 14px;
   border-radius: 8px;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
@@ -338,34 +338,23 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   margin: 0 auto;
   padding: 32px 24px 60px;
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
+
+#dashboardView {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 
 /* ==========================================================================
-   Floating Notifications Toast
+   Floating Notifications (Flash banners removed across project)
    ========================================================================== */
 .notification-banner {
-  padding: 12px 20px;
-  border-radius: 12px;
-  margin-bottom: 24px;
-  font-size: 0.92rem;
-  font-weight: 500;
-  display: none;
-  animation: viewContentFadeSlide 0.25s ease-out;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-}
-
-.notification-banner.error {
-  display: block;
-  background: #fef2f2;
-  color: #991e2e;
-  border: 1px solid #fecaca;
-}
-
-.notification-banner.success {
-  display: block;
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #bbf7d0;
+  display: none !important;
 }
 
 /* ==========================================================================
@@ -415,7 +404,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .auth-hero-logo-sub {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.95rem;
   font-weight: 700;
   color: #64748b;
@@ -430,7 +419,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   display: inline-block;
   background: #fee2e2;
   color: var(--admin-primary);
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.76rem;
   font-weight: 700;
   padding: 3px 12px;
@@ -441,7 +430,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .auth-title {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 1.7rem;
   font-weight: 800;
   color: var(--admin-dark);
@@ -467,7 +456,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.88rem;
   font-weight: 700;
   color: #334155;
@@ -488,7 +477,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   gap: 6px;
   color: var(--admin-primary);
   text-decoration: none;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.88rem;
   font-weight: 600;
   transition: all 0.15s ease;
@@ -555,7 +544,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .stat-label {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--admin-text-muted);
@@ -588,7 +577,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .stat-value {
-  font-family: 'Jost', 'SF Pro Display', sans-serif;
+  font-family: 'Google Sans', 'SF Pro Display', sans-serif;
   font-size: 2.2rem;
   font-weight: 800;
   color: var(--admin-dark);
@@ -642,41 +631,65 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .admin-tabs {
+  position: relative;
   display: inline-flex;
   background: #ede8e1;
   padding: 5px;
   border-radius: 9999px;
-  gap: 4px;
+  gap: 0;
   border: 1px solid rgba(100, 116, 139, 0.15);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.admin-tab-slider {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 0;
+  border-radius: 9999px;
+  background: var(--admin-primary);
+  box-shadow: 0 2px 8px rgba(153, 30, 46, 0.3);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), width 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 1;
+  will-change: transform, width;
 }
 
 .admin-tab {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 9px 20px;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.88rem;
   font-weight: 700;
   color: #64748b;
   border: none;
-  background: transparent;
+  background: transparent !important;
   border-radius: 9999px;
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: color 0.25s cubic-bezier(0.22, 1, 0.36, 1);
   white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .admin-tab:hover:not(.active) {
   color: var(--admin-dark);
-  background: rgba(255, 255, 255, 0.45);
 }
 
 .admin-tab.active {
-  background: var(--admin-primary);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(153, 30, 46, 0.3);
+  color: #ffffff !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .admin-tab.active svg {
@@ -691,6 +704,23 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   padding: 1px 7px;
   border-radius: 9999px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  line-height: 1.2;
+  transition: all 0.2s ease;
+}
+
+@keyframes adminTabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-card.tab-fade-in {
+  animation: adminTabFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* ==========================================================================
@@ -703,6 +733,10 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   padding: 0;
   box-shadow: none;
   margin-bottom: 28px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .card-header-bar {
@@ -720,7 +754,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .card-title {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 1.45rem;
   font-weight: 800;
   color: var(--admin-dark);
@@ -775,7 +809,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   padding: 8px 14px;
   border: 1.5px solid var(--admin-border);
   border-radius: 9999px;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
   color: #334155;
@@ -797,7 +831,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   background: #f8fafc;
   border: 1.5px solid var(--admin-border);
   border-radius: 9999px;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.84rem;
   font-weight: 700;
   color: #475569;
@@ -837,7 +871,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 .admin-table th {
   background: #fbf9f6;
   color: #475569;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.82rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -866,7 +900,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.74rem;
   font-weight: 700;
   padding: 3px 10px;
@@ -902,7 +936,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 
 .sub-pill {
   display: inline-block;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.74rem;
   font-weight: 700;
   padding: 3px 8px;
@@ -929,7 +963,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   align-items: center;
   gap: 4px;
   color: var(--admin-primary);
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.82rem;
   font-weight: 700;
   text-decoration: none;
@@ -958,7 +992,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   gap: 5px;
   padding: 6px 12px;
   border-radius: 8px;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
@@ -1040,6 +1074,123 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   gap: 12px;
 }
 
+/* Compact Business Cards (Pending, Expired, All Business) */
+.admin-biz-card.admin-compact-card,
+.admin-biz-card.admin-pending-card {
+  position: relative;
+  border-radius: 18px;
+  padding: 16px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0;
+  transition: all 0.2s ease;
+  background: #ffffff;
+  border: 1.5px solid var(--admin-border);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+}
+
+.admin-biz-card.admin-compact-card:hover,
+.admin-biz-card.admin-pending-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+}
+
+.admin-compact-center-group,
+.admin-pending-center-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  padding: 6px 12px 0;
+  box-sizing: border-box;
+}
+
+.admin-compact-title-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  max-width: 100%;
+}
+
+.admin-compact-name,
+.admin-pending-name {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 1.22rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+  text-align: center;
+  word-break: break-word;
+}
+
+/* Borderless, clean i button aligned in same horizontal line */
+.compact-info-btn,
+.pending-info-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  position: static !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s ease, transform 0.15s ease;
+  line-height: 1;
+}
+
+.compact-info-btn:hover,
+.pending-info-btn:hover {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: #0f172a;
+  transform: scale(1.15);
+}
+
+.compact-info-btn svg,
+.pending-info-btn svg {
+  display: block;
+}
+
+.admin-compact-center-group .status-pill,
+.admin-pending-center-group .status-pill {
+  margin-top: 14px;
+  margin-bottom: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 4px 14px;
+  text-transform: uppercase;
+}
+
+.admin-biz-card.admin-compact-card .admin-biz-card-actions,
+.admin-biz-card.admin-pending-card .admin-biz-card-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 0;
+}
+
+.admin-biz-card.admin-compact-card .admin-biz-card-actions button,
+.admin-biz-card.admin-pending-card .admin-biz-card-actions button {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  border-radius: 10px;
+}
+
 .admin-biz-card-header {
   display: flex;
   justify-content: space-between;
@@ -1048,7 +1199,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .admin-biz-name {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 1.15rem;
   font-weight: 800;
   color: var(--admin-dark);
@@ -1086,7 +1237,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .admin-biz-meta-label {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.76rem;
   font-weight: 700;
   color: #64748b;
@@ -1136,7 +1287,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .admin-audit-action {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-weight: 700;
   color: var(--admin-dark);
   font-size: 0.82rem;
@@ -1170,37 +1321,69 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   word-break: break-all;
 }
 
-/* Empty States */
+/* Empty States - Centered in Middle of Page */
 .empty-state-box {
   text-align: center;
-  padding: 48px 20px;
+  padding: 40px 20px;
   color: var(--admin-text-muted);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(320px, 50vh, 520px);
+  margin: auto 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.empty-state-box[style*="display: none"] {
+  display: none !important;
+}
+
+.admin-card:has(.empty-state-box:not([style*="display: none"])) {
+  margin-bottom: 0;
+}
+
+.admin-card:has(.empty-state-box:not([style*="display: none"])) .desktop-table-wrap {
+  display: none !important;
 }
 
 .empty-state-icon {
-  width: 56px;
-  height: 56px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
-  background: #f8fafc;
-  border: 1px solid var(--admin-border);
-  color: #94a3b8;
+  background: #fbfbfc;
+  border: 1.5px solid #e2e8f0;
+  color: #64748b;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 14px;
+  margin: 0 auto 16px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+}
+
+.empty-state-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke: #64748b;
 }
 
 .empty-state-box h4 {
-  font-family: 'Jost', sans-serif;
-  font-size: 1.15rem;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 1.32rem;
   font-weight: 700;
-  color: var(--admin-dark);
-  margin-bottom: 4px;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.015em;
 }
 
 .empty-state-box p {
-  font-size: 0.85rem;
+  font-family: 'Google Sans', 'Inter', sans-serif;
+  font-size: 0.95rem;
   color: #64748b;
+  margin: 0;
+  line-height: 1.45;
 }
 
 /* ==========================================================================
@@ -1256,7 +1439,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 }
 
 .modal-title {
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 1.3rem;
   font-weight: 800;
   margin: 0;
@@ -1287,7 +1470,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
 
 .form-group label {
   display: block;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.86rem;
   font-weight: 700;
   color: #334155;
@@ -1330,7 +1513,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   color: #0f172a;
   margin: 0;
   text-align: center;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   letter-spacing: -0.4px;
   line-height: 1.2;
 }
@@ -1339,7 +1522,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   background: #fde68a;
   color: #92400e;
   border: 1px solid #fcd34d;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 1.1px;
@@ -1362,7 +1545,7 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   background: #f8fafc;
   border: 1.5px solid #cbd5e1;
   border-radius: 9999px;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.8rem;
   font-weight: 700;
   color: #475569;
@@ -1461,7 +1644,7 @@ input:checked + .slider:before {
   border: none;
   padding: 11px 20px;
   border-radius: 10px;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
@@ -1482,7 +1665,7 @@ input:checked + .slider:before {
   border: 1.5px solid #cbd5e1;
   padding: 11px 20px;
   border-radius: 10px;
-  font-family: 'Jost', sans-serif;
+  font-family: 'Google Sans', sans-serif;
   font-size: 0.92rem;
   font-weight: 700;
   cursor: pointer;
@@ -1626,6 +1809,11 @@ input:checked + .slider:before {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding: 4px;
+  }
+
+  .admin-tab-slider {
+    top: 4px;
+    bottom: 4px;
   }
 
   .admin-tab {

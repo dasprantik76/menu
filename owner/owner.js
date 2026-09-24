@@ -63,23 +63,16 @@ function startTitleWordRotation() {
     const currentSpan = rotator.querySelector(".register-title-accent:not(.word-exit-up)");
     if (!currentSpan) return;
 
-    const oldWidth = currentSpan.getBoundingClientRect().width;
     currentWordIndex = (currentWordIndex + 1) % rotatingWords.length;
     const nextWord = rotatingWords[currentWordIndex];
 
     const nextSpan = document.createElement("span");
     nextSpan.className = "register-title-accent word-enter-from-bottom";
     nextSpan.textContent = nextWord;
-    nextSpan.style.visibility = "hidden";
     rotator.appendChild(nextSpan);
 
-    const newWidth = nextSpan.getBoundingClientRect().width;
-    nextSpan.style.visibility = "";
-
-    // Smoothly morph container width with hardware acceleration
-    rotator.style.width = oldWidth + "px";
-    void rotator.offsetWidth; // Force reflow
-    rotator.style.width = newWidth + "px";
+    // Force frame so word-enter-from-bottom takes effect before animating
+    void nextSpan.offsetWidth;
 
     // Old text slides up above (word-exit-up), new text slides up from bottom
     currentSpan.classList.add("word-exit-up");
@@ -89,7 +82,6 @@ function startTitleWordRotation() {
       if (currentSpan && currentSpan.parentNode) {
         currentSpan.remove();
       }
-      rotator.style.width = "";
     }, 660);
   }, 2600);
 }
@@ -129,16 +121,12 @@ if (closeDrawerBtn) closeDrawerBtn.addEventListener("click", closeDrawer);
 if (drawerOverlay) drawerOverlay.addEventListener("click", closeDrawer);
 
 /**
- * Show notification banner
+ * Show notification banner (Flash messages removed across project)
  */
 function showNotification(message, type = "error") {
-  if (type === "success") return;
-  notificationBanner.textContent = message;
-  notificationBanner.className = `notification-banner ${type}`;
-  notificationBanner.style.display = "block";
-  setTimeout(() => {
-    notificationBanner.style.display = "none";
-  }, 6000);
+  if (type === "error") {
+    console.error("[Owner Error]:", message);
+  }
 }
 
 /**
@@ -231,7 +219,10 @@ function showView(viewElement) {
       if (window.location.hash !== "#pending") {
         window.history.replaceState(null, document.title, window.location.pathname + "#pending");
       }
-      setTimeout(fitPendingBizName, 10);
+      requestAnimationFrame(fitPendingBizName);
+      setTimeout(fitPendingBizName, 40);
+      setTimeout(fitPendingBizName, 180);
+      setTimeout(fitPendingBizName, 400);
     } else if (isDashboard) {
       sessionStorage.setItem("menucard_view", "dashboard");
       localStorage.setItem("menucard_view", "dashboard");
@@ -351,6 +342,7 @@ async function checkSession() {
         const submitBtn = document.getElementById("submitRegisterBtn");
         if (submitBtn) {
           submitBtn.disabled = false;
+          submitBtn.classList.remove("btn-loading");
           submitBtn.textContent = "Create Account";
         }
         showView(registerView);
@@ -441,23 +433,36 @@ function updatePendingUserCard() {
 
 /**
  * Auto-scale pending business name so that multi-word names stay cleanly on a single line
+ * with minimum left/right padding and large bold text.
  */
 function fitPendingBizName() {
   const el = document.getElementById("pendingBizName");
   if (!el) return;
-  el.style.fontSize = "";
-  const isMobile = window.innerWidth <= 640;
-  const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-  const baseRem = isMobile ? 2.8 : 3.38;
-  let currentPx = baseRem * rootFontSize;
-  const maxW = Math.min(window.innerWidth * 0.94, (window.innerWidth - 24));
-  if (el.scrollWidth > maxW && maxW > 0) {
-    const scale = maxW / el.scrollWidth;
-    currentPx = Math.max(16, currentPx * scale);
-    el.style.fontSize = `${(currentPx / rootFontSize).toFixed(2)}rem`;
+  const pendingView = document.getElementById("pendingView");
+  if (pendingView && (pendingView.style.display === "none" || getComputedStyle(pendingView).display === "none")) {
+    return;
+  }
+
+  // Remove previous inline font-size to accurately measure natural scrollWidth
+  el.style.removeProperty("font-size");
+
+  // Minimum padding left/right: 10px on each side (total 20px)
+  const minSideMargin = 20;
+  const availableWidth = Math.max(180, window.innerWidth - minSideMargin);
+  const scrollW = el.scrollWidth;
+
+  if (scrollW > availableWidth && availableWidth > 0) {
+    const computedFontSize = parseFloat(getComputedStyle(el).fontSize) || 48;
+    const scale = availableWidth / scrollW;
+    const targetPx = Math.max(14, Math.floor(computedFontSize * scale * 0.985));
+    el.style.setProperty("font-size", `${targetPx}px`, "important");
   }
 }
 window.addEventListener("resize", fitPendingBizName);
+window.addEventListener("orientationchange", () => setTimeout(fitPendingBizName, 100));
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(fitPendingBizName);
+}
 
 /**
  * Render Pending Application Card
@@ -470,7 +475,10 @@ function renderPendingView() {
     if (slugEl) slugEl.textContent = `/r/${currentBusiness.slug}`;
   }
   updatePendingUserCard();
-  fitPendingBizName();
+  requestAnimationFrame(fitPendingBizName);
+  setTimeout(fitPendingBizName, 40);
+  setTimeout(fitPendingBizName, 180);
+  setTimeout(fitPendingBizName, 400);
 }
 
 /**
@@ -938,8 +946,11 @@ registerBusinessForm.addEventListener("submit", async (e) => {
   }
 
   const submitBtn = document.getElementById("submitRegisterBtn");
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Creating Account...";
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add("btn-loading");
+    submitBtn.innerHTML = '<span class="btn-spinner" aria-label="Loading"></span>';
+  }
 
   try {
     const res = await fetch("/api/owner/business", {
@@ -948,8 +959,11 @@ registerBusinessForm.addEventListener("submit", async (e) => {
       body: JSON.stringify({ name, ownerName, slug, phone, address, logoUrl })
     });
     const data = await res.json();
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Create Account";
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("btn-loading");
+      submitBtn.textContent = "Create Account";
+    }
 
     if (data.success) {
       currentBusiness = data.business;
@@ -959,8 +973,11 @@ registerBusinessForm.addEventListener("submit", async (e) => {
       showNotification(data.error || "Registration failed.", "error");
     }
   } catch (err) {
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Create Account";
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("btn-loading");
+      submitBtn.textContent = "Create Account";
+    }
     showNotification("Network error during registration.", "error");
   }
 });

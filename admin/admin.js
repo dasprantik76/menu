@@ -18,10 +18,12 @@ const statPendingCount = document.getElementById("statPendingCount");
 const statTotalBizCount = document.getElementById("statTotalBizCount");
 const statActiveCount = document.getElementById("statActiveCount");
 const pendingTabBadge = document.getElementById("pendingTabBadge");
+const expiredTabBadge = document.getElementById("expiredTabBadge");
 
 // Tables & Tab Containers
 const tabButtons = document.querySelectorAll(".admin-tab");
 const tabContentPending = document.getElementById("tabContentPending");
+const tabContentExpired = document.getElementById("tabContentExpired");
 const tabContentAll = document.getElementById("tabContentAll");
 const tabContentAudit = document.getElementById("tabContentAudit");
 
@@ -80,15 +82,12 @@ if (adminDevLoginBox && isLocalEnv) {
 }
 
 /**
- * Show notification toast/banner
+ * Show notification toast/banner (Flash messages removed across project)
  */
 function showNotification(message, type = "error") {
-  notificationBanner.textContent = message;
-  notificationBanner.className = `notification-banner ${type}`;
-  notificationBanner.style.display = "block";
-  setTimeout(() => {
-    notificationBanner.style.display = "none";
-  }, 6000);
+  if (type === "error") {
+    console.error("[Admin Error]:", message);
+  }
 }
 
 /**
@@ -119,7 +118,14 @@ function showView(view) {
   [loadingView, authView, dashboardView].forEach(v => {
     if (v) v.style.display = "none";
   });
-  if (view) view.style.display = view === dashboardView ? "block" : "flex";
+  if (view) {
+    view.style.display = "flex";
+    if (view === dashboardView) {
+      requestAnimationFrame(updateTabSlider);
+      setTimeout(updateTabSlider, 50);
+      setTimeout(updateTabSlider, 150);
+    }
+  }
 }
 
 /**
@@ -176,13 +182,15 @@ async function checkAdminSession() {
  */
 function updateHeader() {
   if (!currentAdmin) return;
-  adminName.textContent = currentAdmin.name || currentAdmin.email;
-  if (currentAdmin.picture) {
-    adminAvatar.src = currentAdmin.picture;
-  } else {
-    adminAvatar.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23991e2e'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+  if (adminName) adminName.textContent = currentAdmin.name || currentAdmin.email;
+  if (adminAvatar) {
+    if (currentAdmin.picture) {
+      adminAvatar.src = currentAdmin.picture;
+    } else {
+      adminAvatar.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23991e2e'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
+    }
   }
-  adminProfileArea.style.display = "flex";
+  if (adminProfileArea) adminProfileArea.style.display = "flex";
 }
 
 /**
@@ -197,6 +205,7 @@ async function fetchBusinesses() {
       allBusinesses = data.businesses || [];
       renderStats();
       renderPendingTable();
+      renderExpiredTable();
       renderAllBizTable();
     } else {
       showNotification(data.error || "Failed to load businesses.", "error");
@@ -224,12 +233,19 @@ async function fetchAuditLogs() {
   }
 }
 
+function isBusinessExpired(b) {
+  if (b.approvalStatus === "suspended") return true;
+  if (b.approvalExpiry && new Date(b.approvalExpiry) < new Date()) return true;
+  return false;
+}
+
 /**
  * Update Top Counters
  */
 function renderStats() {
   const pending = allBusinesses.filter(b => b.approvalStatus === "pending");
-  const active = allBusinesses.filter(b => b.approvalStatus === "approved" && b.isPublished);
+  const expired = allBusinesses.filter(isBusinessExpired);
+  const active = allBusinesses.filter(b => b.approvalStatus === "approved" && b.isPublished && !isBusinessExpired(b));
 
   if (statPendingCount) statPendingCount.textContent = pending.length;
   if (statTotalBizCount) statTotalBizCount.textContent = allBusinesses.length;
@@ -243,6 +259,18 @@ function renderStats() {
       pendingTabBadge.style.display = "none";
     }
   }
+
+  const expBadge = document.getElementById("expiredTabBadge");
+  if (expBadge) {
+    if (expired.length > 0) {
+      expBadge.textContent = expired.length;
+      expBadge.style.display = "inline-block";
+    } else {
+      expBadge.style.display = "none";
+    }
+  }
+  requestAnimationFrame(updateTabSlider);
+  setTimeout(updateTabSlider, 50);
 }
 
 /**
@@ -267,7 +295,7 @@ function renderPendingTable() {
   }
 
   if (pending.length === 0) {
-    if (emptyPendingState) emptyPendingState.style.display = "block";
+    if (emptyPendingState) emptyPendingState.style.display = "flex";
     return;
   }
   if (emptyPendingState) emptyPendingState.style.display = "none";
@@ -281,7 +309,16 @@ function renderPendingTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
-        <strong>${escapeHtml(biz.name)}</strong>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <strong>${escapeHtml(biz.name)}</strong>
+          <button type="button" class="info-btn" title="View details" aria-label="View application details" style="background: transparent; border: none; cursor: pointer; color: #64748b; padding: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 1;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </button>
+        </div>
       </td>
       <td>
         <div>${escapeHtml(ownerName)}</div>
@@ -302,36 +339,29 @@ function renderPendingTable() {
       </td>
     `;
 
+    const tableInfoBtn = tr.querySelector(".info-btn");
+    if (tableInfoBtn) tableInfoBtn.addEventListener("click", () => openBizDetailsModal(biz));
     tr.querySelector(".approve-btn").addEventListener("click", () => openApprovalModal(biz));
     tr.querySelector(".reject-btn").addEventListener("click", () => handleApproval(biz._id, "rejected"));
     pendingTableBody.appendChild(tr);
 
-    // 2. Mobile Card (< 768px)
+    // 2. Mobile Card (< 768px): Compact card with centered name, i button in same horizontal line, and pill below
     if (pendingCardsList) {
       const card = document.createElement("div");
-      card.className = "admin-biz-card";
+      card.className = "admin-biz-card admin-compact-card admin-pending-card";
       card.innerHTML = `
-        <div class="admin-biz-card-header">
-          <div class="admin-biz-name">${escapeHtml(biz.name)}</div>
+        <div class="admin-compact-center-group admin-pending-center-group">
+          <div class="admin-compact-title-row">
+            <div class="admin-biz-name admin-compact-name admin-pending-name">${escapeHtml(biz.name)}</div>
+            <button type="button" class="compact-info-btn pending-info-btn info-btn" title="View details" aria-label="View application details">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </button>
+          </div>
           <span class="status-pill pending">Pending</span>
-        </div>
-        <div class="admin-biz-meta-list">
-          <div class="admin-biz-meta-row">
-            <span class="admin-biz-meta-label">Owner</span>
-            <span class="admin-biz-meta-val">${escapeHtml(ownerName)}</span>
-          </div>
-          <div class="admin-biz-meta-row">
-            <span class="admin-biz-meta-label">Email</span>
-            <span class="admin-biz-meta-val">${escapeHtml(ownerEmail || "N/A")}</span>
-          </div>
-          <div class="admin-biz-meta-row">
-            <span class="admin-biz-meta-label">Applied Date</span>
-            <span class="admin-biz-meta-val">${dateStr}</span>
-          </div>
-          <div class="admin-biz-meta-row">
-            <span class="admin-biz-meta-label">Menu URL</span>
-            <a href="/r/${biz.slug}" target="_blank" class="public-menu-pill">/r/${biz.slug} &nearr;</a>
-          </div>
         </div>
         <div class="admin-biz-card-actions">
           <button type="button" class="btn-admin btn-approve approve-btn" data-id="${biz._id}">Approve</button>
@@ -339,9 +369,116 @@ function renderPendingTable() {
         </div>
       `;
 
+      card.querySelector(".info-btn").addEventListener("click", () => openBizDetailsModal(biz));
       card.querySelector(".approve-btn").addEventListener("click", () => openApprovalModal(biz));
       card.querySelector(".reject-btn").addEventListener("click", () => handleApproval(biz._id, "rejected"));
       pendingCardsList.appendChild(card);
+    }
+  });
+}
+
+/**
+ * Render Expired Applications (Desktop Table + Mobile Cards)
+ */
+function renderExpiredTable() {
+  const expiredTableBody = document.getElementById("expiredTableBody");
+  const expiredCardsList = document.getElementById("expiredCardsList");
+  const emptyExpiredState = document.getElementById("emptyExpiredState");
+  const expiredSearchInput = document.getElementById("expiredSearchInput");
+
+  if (expiredTableBody) expiredTableBody.innerHTML = "";
+  if (expiredCardsList) expiredCardsList.innerHTML = "";
+
+  const query = expiredSearchInput ? expiredSearchInput.value.toLowerCase().trim() : "";
+  let expired = allBusinesses.filter(isBusinessExpired);
+
+  if (query) {
+    expired = expired.filter(biz => {
+      const name = (biz.name || "").toLowerCase();
+      const addr = (biz.address || "").toLowerCase();
+      const slug = (biz.slug || "").toLowerCase();
+      const ownerName = (biz.owner && biz.owner.name ? biz.owner.name : "").toLowerCase();
+      const ownerEmail = (biz.owner && biz.owner.email ? biz.owner.email : "").toLowerCase();
+      return name.includes(query) || addr.includes(query) || slug.includes(query) || ownerName.includes(query) || ownerEmail.includes(query);
+    });
+  }
+
+  if (expired.length === 0) {
+    if (emptyExpiredState) emptyExpiredState.style.display = "flex";
+    return;
+  }
+  if (emptyExpiredState) emptyExpiredState.style.display = "none";
+
+  expired.forEach(biz => {
+    const ownerName = (biz.owner && biz.owner.name) || "Unknown";
+    const ownerEmail = (biz.owner && biz.owner.email) || "";
+    const expiryDateStr = biz.approvalExpiry ? new Date(biz.approvalExpiry).toLocaleDateString() : "Expired";
+
+    // 1. Desktop Table Row (>= 768px)
+    if (expiredTableBody) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <strong>${escapeHtml(biz.name)}</strong>
+            <button type="button" class="info-btn" title="View details" aria-label="View application details" style="background: transparent; border: none; cursor: pointer; color: #64748b; padding: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 1;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </button>
+          </div>
+        </td>
+        <td>
+          <div>${escapeHtml(ownerName)}</div>
+          <div style="font-size:0.78rem; color:#64748b;">${escapeHtml(ownerEmail)}</div>
+        </td>
+        <td>
+          <a href="/r/${biz.slug}" target="_blank" class="public-menu-pill">/r/${biz.slug} &nearr;</a>
+        </td>
+        <td>
+          <div style="font-size: 0.84rem; font-weight: 600; color: #dc2626;">${expiryDateStr}</div>
+        </td>
+        <td>
+          <span class="status-pill suspended">Expired</span>
+        </td>
+        <td>
+          <button type="button" class="btn-admin btn-reactivate reactivate-btn" data-id="${biz._id}">Reactivate</button>
+        </td>
+      `;
+      const tableInfoBtn = tr.querySelector(".info-btn");
+      if (tableInfoBtn) tableInfoBtn.addEventListener("click", () => openBizDetailsModal(biz));
+      const reactivateBtn = tr.querySelector(".reactivate-btn");
+      if (reactivateBtn) reactivateBtn.addEventListener("click", () => openApprovalModal(biz));
+      expiredTableBody.appendChild(tr);
+    }
+
+    // 2. Mobile Compact Card (< 768px): Name and i button in same horizontal line
+    if (expiredCardsList) {
+      const card = document.createElement("div");
+      card.className = "admin-biz-card admin-compact-card admin-pending-card";
+      card.innerHTML = `
+        <div class="admin-compact-center-group admin-pending-center-group">
+          <div class="admin-compact-title-row">
+            <div class="admin-biz-name admin-compact-name admin-pending-name">${escapeHtml(biz.name)}</div>
+            <button type="button" class="compact-info-btn pending-info-btn info-btn" title="View details" aria-label="View application details">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </button>
+          </div>
+          <span class="status-pill suspended">Expired</span>
+        </div>
+        <div class="admin-biz-card-actions">
+          <button type="button" class="btn-admin btn-reactivate reactivate-btn" data-id="${biz._id}" style="width: 100%;">Reactivate</button>
+        </div>
+      `;
+      card.querySelector(".info-btn").addEventListener("click", () => openBizDetailsModal(biz));
+      card.querySelector(".reactivate-btn").addEventListener("click", () => openApprovalModal(biz));
+      expiredCardsList.appendChild(card);
     }
   });
 }
@@ -374,7 +511,7 @@ function renderAllBizTable() {
   }
 
   if (filtered.length === 0) {
-    if (emptyAllBizState) emptyAllBizState.style.display = "block";
+    if (emptyAllBizState) emptyAllBizState.style.display = "flex";
     return;
   }
   if (emptyAllBizState) emptyAllBizState.style.display = "none";
@@ -386,9 +523,20 @@ function renderAllBizTable() {
     const itemCount = (biz.stats && biz.stats.items) || 0;
 
     let statusPillClass = "pending";
-    if (biz.approvalStatus === "approved") statusPillClass = "approved";
-    if (biz.approvalStatus === "rejected") statusPillClass = "rejected";
-    if (biz.approvalStatus === "suspended") statusPillClass = "suspended";
+    let statusText = biz.approvalStatus || "pending";
+    if (isBusinessExpired(biz)) {
+      statusPillClass = "suspended";
+      statusText = "expired";
+    } else if (biz.approvalStatus === "approved") {
+      statusPillClass = "approved";
+      statusText = "approved";
+    } else if (biz.approvalStatus === "rejected") {
+      statusPillClass = "rejected";
+      statusText = "rejected";
+    } else if (biz.approvalStatus === "suspended") {
+      statusPillClass = "suspended";
+      statusText = "suspended";
+    }
 
     let expiryHint = "";
     if (biz.approvalStatus === "approved" && biz.approvalExpiry) {
@@ -408,7 +556,16 @@ function renderAllBizTable() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>
-        <strong>${escapeHtml(biz.name)}</strong>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <strong>${escapeHtml(biz.name)}</strong>
+          <button type="button" class="info-btn" title="View details" aria-label="View restaurant details" style="background: transparent; border: none; cursor: pointer; color: #64748b; padding: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 1;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </button>
+        </div>
       </td>
       <td>
         <div>${escapeHtml(ownerName)}</div>
@@ -440,6 +597,9 @@ function renderAllBizTable() {
       </td>
     `;
 
+    const tableInfoBtn = tr.querySelector(".info-btn");
+    if (tableInfoBtn) tableInfoBtn.addEventListener("click", () => openBizDetailsModal(biz));
+
     const suspendBtn = tr.querySelector(".suspend-btn");
     if (suspendBtn) suspendBtn.addEventListener("click", () => handleApproval(biz._id, "suspended"));
 
@@ -452,43 +612,23 @@ function renderAllBizTable() {
     tr.querySelector(".config-sub-btn").addEventListener("click", () => openSubModal(biz));
     allBizTableBody.appendChild(tr);
 
-    // 2. Mobile Card (< 768px)
+    // 2. Mobile Compact Card (< 768px): Name and i button in same horizontal line
     if (allBizCardsList) {
       const card = document.createElement("div");
-      card.className = "admin-biz-card";
+      card.className = "admin-biz-card admin-compact-card admin-pending-card";
       card.innerHTML = `
-        <div class="admin-biz-card-header">
-          <div class="admin-biz-name">${escapeHtml(biz.name)}</div>
-          <span class="status-pill ${statusPillClass}">${biz.approvalStatus}</span>
-        </div>
-        <div class="admin-biz-meta-list">
-          <div class="admin-biz-meta-row">
-            <span class="admin-biz-meta-label">Owner</span>
-            <span class="admin-biz-meta-val">${escapeHtml(ownerName)}</span>
+        <div class="admin-compact-center-group admin-pending-center-group">
+          <div class="admin-compact-title-row">
+            <div class="admin-biz-name admin-compact-name admin-pending-name">${escapeHtml(biz.name)}</div>
+            <button type="button" class="compact-info-btn pending-info-btn info-btn" title="View details" aria-label="View restaurant details">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </button>
           </div>
-          <div class="admin-biz-meta-row">
-            <span class="admin-biz-meta-label">Email</span>
-            <span class="admin-biz-meta-val">${escapeHtml(ownerEmail || "N/A")}</span>
-          </div>
-          ${biz.approvalStatus === "approved" && biz.approvalExpiry ? `
-          <div class="admin-biz-meta-row">
-            <span class="admin-biz-meta-label">Approval Period</span>
-            <span class="admin-biz-meta-val" style="color:#047857; font-weight:700;">
-              ${Math.max(0, Math.ceil((new Date(biz.approvalExpiry) - new Date()) / 86400000))}d left (${new Date(biz.approvalExpiry).toLocaleDateString()})
-            </span>
-          </div>` : ""}
-          <div class="admin-biz-meta-row">
-            <span class="admin-biz-meta-label">Subscription</span>
-            <span class="sub-pill ${subClass}">${subStatus.toUpperCase()}</span>
-          </div>
-          <div class="admin-biz-meta-row">
-            <span class="admin-biz-meta-label">Catalog</span>
-            <span class="admin-biz-meta-val">${catCount} cats, ${itemCount} items</span>
-          </div>
-          <div class="admin-biz-meta-row">
-            <span class="admin-biz-meta-label">Public Menu</span>
-            <a href="/r/${biz.slug}" target="_blank" class="public-menu-pill">/r/${biz.slug} &nearr;</a>
-          </div>
+          <span class="status-pill ${statusPillClass}">${statusText}</span>
         </div>
         <div class="admin-biz-card-actions">
           ${biz.approvalStatus === "approved" 
@@ -500,6 +640,8 @@ function renderAllBizTable() {
           <button type="button" class="btn-admin btn-settings config-sub-btn" data-id="${biz._id}">Tier &amp; Features</button>
         </div>
       `;
+
+      card.querySelector(".info-btn").addEventListener("click", () => openBizDetailsModal(biz));
 
       const mSuspendBtn = card.querySelector(".suspend-btn");
       if (mSuspendBtn) mSuspendBtn.addEventListener("click", () => handleApproval(biz._id, "suspended"));
@@ -537,7 +679,7 @@ function renderAuditLogsTable() {
   }
 
   if (filtered.length === 0) {
-    if (emptyAuditState) emptyAuditState.style.display = "block";
+    if (emptyAuditState) emptyAuditState.style.display = "flex";
     return;
   }
   if (emptyAuditState) emptyAuditState.style.display = "none";
@@ -635,6 +777,112 @@ function updateApprovalExpiryPreview() {
   const year = expiryDate.getFullYear();
   const formatted = `${day} ${month}, ${year}`;
   approvalExpiryText.textContent = `EXPIRES ON : ${formatted}`;
+}
+
+/**
+ * Restaurant Details Modal (Opened via Cornered Info "i" Button)
+ */
+function openBizDetailsModal(biz) {
+  if (!biz) return;
+  const modal = document.getElementById("bizDetailsModal");
+  if (!modal) return;
+
+  const titleEl = document.getElementById("bizDetailsModalTitle");
+  if (titleEl) titleEl.textContent = biz.name || "Restaurant Details";
+
+  const isExp = isBusinessExpired(biz);
+  const statusEl = document.getElementById("bizDetailsModalStatus");
+  if (statusEl) {
+    if (isExp) {
+      statusEl.className = "status-pill suspended";
+      statusEl.textContent = "EXPIRED";
+    } else {
+      const st = (biz.approvalStatus || "pending").toLowerCase();
+      statusEl.className = `status-pill ${st}`;
+      statusEl.textContent = st.toUpperCase();
+    }
+  }
+
+  const ownerName = (biz.owner && biz.owner.name) || biz.ownerName || (biz.ownerId && typeof biz.ownerId === "object" ? biz.ownerId.name : "") || "Owner";
+  const ownerEmail = (biz.owner && biz.owner.email) || biz.ownerEmail || (biz.ownerId && typeof biz.ownerId === "object" ? biz.ownerId.email : "") || "";
+  const dateStr = biz.createdAt ? new Date(biz.createdAt).toLocaleDateString() : "Recent";
+  const phone = biz.phone || (biz.owner && biz.owner.phone) || (biz.ownerId && typeof biz.ownerId === "object" ? biz.ownerId.phone : "") || "N/A";
+  const address = biz.address || "";
+  const catCount = (biz.stats && biz.stats.categories) || 0;
+  const itemCount = (biz.stats && biz.stats.items) || 0;
+  const subStatus = biz.subscriptionStatus || (biz.subscription && biz.subscription.status) || "trial";
+  const expiryDate = biz.approvalExpiry ? new Date(biz.approvalExpiry).toLocaleDateString() : null;
+  const daysLeft = biz.approvalExpiry ? Math.max(0, Math.ceil((new Date(biz.approvalExpiry) - new Date()) / 86400000)) : null;
+
+  const bodyEl = document.getElementById("bizDetailsModalBody");
+  if (bodyEl) {
+    bodyEl.innerHTML = `
+      <div class="admin-biz-meta-row">
+        <span class="admin-biz-meta-label">Restaurant</span>
+        <span class="admin-biz-meta-val" style="font-weight: 700; color: #0f172a;">${escapeHtml(biz.name)}</span>
+      </div>
+      <div class="admin-biz-meta-row">
+        <span class="admin-biz-meta-label">Owner</span>
+        <span class="admin-biz-meta-val">${escapeHtml(ownerName)}</span>
+      </div>
+      <div class="admin-biz-meta-row">
+        <span class="admin-biz-meta-label">Email</span>
+        <span class="admin-biz-meta-val">${escapeHtml(ownerEmail || "N/A")}</span>
+      </div>
+      <div class="admin-biz-meta-row">
+        <span class="admin-biz-meta-label">Phone</span>
+        <span class="admin-biz-meta-val">${escapeHtml(phone)}</span>
+      </div>
+      ${address ? `
+      <div class="admin-biz-meta-row">
+        <span class="admin-biz-meta-label">Address</span>
+        <span class="admin-biz-meta-val">${escapeHtml(address)}</span>
+      </div>` : ''}
+      <div class="admin-biz-meta-row">
+        <span class="admin-biz-meta-label">Applied Date</span>
+        <span class="admin-biz-meta-val">${dateStr}</span>
+      </div>
+      ${expiryDate ? `
+      <div class="admin-biz-meta-row">
+        <span class="admin-biz-meta-label">Approval Period</span>
+        <span class="admin-biz-meta-val" style="color: ${daysLeft > 0 ? '#047857' : '#e11d48'}; font-weight: 700;">
+          ${daysLeft > 0 ? `${daysLeft}d left (${expiryDate})` : `Expired (${expiryDate})`}
+        </span>
+      </div>` : ''}
+      <div class="admin-biz-meta-row">
+        <span class="admin-biz-meta-label">Subscription</span>
+        <span class="sub-pill ${subStatus === 'active' ? 'active' : ''}">${subStatus.toUpperCase()}</span>
+      </div>
+      <div class="admin-biz-meta-row">
+        <span class="admin-biz-meta-label">Menu Catalog</span>
+        <span class="admin-biz-meta-val" style="font-weight: 600; color: #334155;">${catCount} cats, ${itemCount} items</span>
+      </div>
+      <div class="admin-biz-meta-row">
+        <span class="admin-biz-meta-label">Menu URL</span>
+        <a href="/r/${biz.slug}" target="_blank" class="public-menu-pill">/r/${biz.slug} &nearr;</a>
+      </div>
+    `;
+  }
+
+  modal.style.display = "flex";
+}
+
+function closeBizDetailsModal() {
+  const modal = document.getElementById("bizDetailsModal");
+  if (modal) modal.style.display = "none";
+}
+
+const closeBizDetailsModalBtn = document.getElementById("closeBizDetailsModalBtn");
+if (closeBizDetailsModalBtn) closeBizDetailsModalBtn.addEventListener("click", closeBizDetailsModal);
+
+const closeBizDetailsModalBtn2 = document.getElementById("closeBizDetailsModalBtn2");
+if (closeBizDetailsModalBtn2) closeBizDetailsModalBtn2.addEventListener("click", closeBizDetailsModal);
+
+const bizDetailsModal = document.getElementById("bizDetailsModal");
+if (bizDetailsModal) {
+  bizDetailsModal.addEventListener("click", (e) => {
+    if (e.target === bizDetailsModal) closeBizDetailsModal();
+  });
 }
 
 function openApprovalModal(biz) {
@@ -748,6 +996,31 @@ subForm.addEventListener("submit", async (e) => {
 });
 
 /**
+ * Smooth Capsule Tab Slider Positioning
+ */
+function updateTabSlider() {
+  const slider = document.getElementById("adminTabSlider");
+  const activeTab = document.querySelector(".admin-tab.active");
+  const tabsContainer = document.querySelector(".admin-tabs");
+  if (!slider || !activeTab || !tabsContainer) return;
+
+  const containerRect = tabsContainer.getBoundingClientRect();
+  const tabRect = activeTab.getBoundingClientRect();
+
+  const leftOffset = tabRect.left - containerRect.left;
+  const width = tabRect.width;
+
+  slider.style.transform = `translateX(${leftOffset}px)`;
+  slider.style.width = `${width}px`;
+}
+
+window.addEventListener("resize", updateTabSlider);
+window.addEventListener("orientationchange", () => setTimeout(updateTabSlider, 100));
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(updateTabSlider);
+}
+
+/**
  * Tab Navigation Switcher
  */
 function switchTab(tab) {
@@ -756,9 +1029,28 @@ function switchTab(tab) {
     else b.classList.remove("active");
   });
 
-  if (tabContentPending) tabContentPending.style.display = tab === "pending" ? "block" : "none";
-  if (tabContentAll) tabContentAll.style.display = tab === "all" ? "block" : "none";
-  if (tabContentAudit) tabContentAudit.style.display = tab === "audit" ? "block" : "none";
+  updateTabSlider();
+
+  const tabPending = document.getElementById("tabContentPending");
+  const tabExpired = document.getElementById("tabContentExpired");
+  const tabAll = document.getElementById("tabContentAll");
+  const tabAudit = document.getElementById("tabContentAudit");
+
+  [tabPending, tabExpired, tabAll, tabAudit].forEach(tc => {
+    if (tc) tc.classList.remove("tab-fade-in");
+  });
+
+  const activeContent = tab === "pending" ? tabPending : tab === "expired" ? tabExpired : tab === "all" ? tabAll : tab === "audit" ? tabAudit : null;
+
+  if (tabPending) tabPending.style.display = tab === "pending" ? "flex" : "none";
+  if (tabExpired) tabExpired.style.display = tab === "expired" ? "flex" : "none";
+  if (tabAll) tabAll.style.display = tab === "all" ? "flex" : "none";
+  if (tabAudit) tabAudit.style.display = tab === "audit" ? "flex" : "none";
+
+  if (activeContent) {
+    void activeContent.offsetWidth; // force reflow for smooth animation
+    activeContent.classList.add("tab-fade-in");
+  }
 }
 
 tabButtons.forEach(btn => {
@@ -768,12 +1060,18 @@ tabButtons.forEach(btn => {
 });
 
 if (refreshPendingBtn) refreshPendingBtn.addEventListener("click", () => fetchBusinesses());
+const refreshExpiredBtn = document.getElementById("refreshExpiredBtn");
+if (refreshExpiredBtn) refreshExpiredBtn.addEventListener("click", () => fetchBusinesses());
 if (refreshAllBtn) refreshAllBtn.addEventListener("click", () => fetchBusinesses());
 if (refreshLogsBtn) refreshLogsBtn.addEventListener("click", () => fetchAuditLogs());
 
 // Real-Time Search & Status Filtering
 if (pendingSearchInput) {
   pendingSearchInput.addEventListener("input", () => renderPendingTable());
+}
+const expSearchInput = document.getElementById("expiredSearchInput");
+if (expSearchInput) {
+  expSearchInput.addEventListener("input", () => renderExpiredTable());
 }
 if (bizSearchInput) {
   bizSearchInput.addEventListener("input", () => renderAllBizTable());

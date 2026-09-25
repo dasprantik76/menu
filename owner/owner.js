@@ -9,6 +9,15 @@ const registerView = document.getElementById("registerView");
 const pendingView = document.getElementById("pendingView");
 const dashboardView = document.getElementById("dashboardView");
 const brandingView = document.getElementById("brandingView");
+const qrCodeView = document.getElementById("qrCodeView");
+
+// QR Code DOM Elements
+const qrCodeGraphic = document.getElementById("qrCodeGraphic");
+const qrCodeUrlText = document.getElementById("qrCodeUrlText");
+const qrCodeOpenLink = document.getElementById("qrCodeOpenLink");
+const qrDownloadBtn = document.getElementById("qrDownloadBtn");
+const qrCopyLinkBtn = document.getElementById("qrCopyLinkBtn");
+const qrCopyBtnText = document.getElementById("qrCopyBtnText");
 
 // Branding DOM Elements
 const brandingForm = document.getElementById("brandingForm");
@@ -145,6 +154,7 @@ const drawerSidebar = document.getElementById("drawerSidebar");
 const closeDrawerBtn = document.getElementById("closeDrawerBtn");
 const drawerMenuLink = document.getElementById("drawerMenuLink");
 const drawerBrandingLink = document.getElementById("drawerBrandingLink");
+const drawerQrLink = document.getElementById("drawerQrLink");
 
 function updateAccountExpiryBadge() {
   const drawerAccountExpiry = document.getElementById("drawerAccountExpiry");
@@ -245,6 +255,15 @@ if (drawerBrandingLink) {
   });
 }
 
+if (drawerQrLink) {
+  drawerQrLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeDrawer();
+    renderQrCodeView();
+    showView(qrCodeView);
+  });
+}
+
 /**
  * Show notification banner (Flash messages removed across project)
  */
@@ -271,7 +290,7 @@ function revealPage() {
     }
     // Trigger visible entrance animation once overlay starts dissolving
     setTimeout(() => {
-      const activeView = [pendingView, dashboardView, registerView, authView, brandingView].find(v => v && v.style.display !== "none");
+      const activeView = [pendingView, dashboardView, registerView, authView, brandingView, qrCodeView].find(v => v && v.style.display !== "none");
       if (activeView) {
         activeView.classList.remove("fade-in-active");
         void activeView.offsetWidth;
@@ -296,6 +315,7 @@ function showView(viewElement) {
   const isPending = (viewElement === pendingView);
   const isDashboard = (viewElement === dashboardView);
   const isBranding = (viewElement === brandingView);
+  const isQrCode = (viewElement === qrCodeView);
   const header = document.querySelector(".owner-header");
 
   if (header) {
@@ -317,7 +337,7 @@ function showView(viewElement) {
   document.body.classList.toggle("pending-mode", isPending);
   document.documentElement.classList.toggle("pending-mode", isPending);
 
-  [loadingView, authView, registerView, pendingView, dashboardView, brandingView].forEach(v => {
+  [loadingView, authView, registerView, pendingView, dashboardView, brandingView, qrCodeView].forEach(v => {
     if (v) {
       v.style.display = "none";
       v.classList.remove("fade-in-active");
@@ -335,6 +355,7 @@ function showView(viewElement) {
   if (drawerMenuLink && drawerBrandingLink) {
     drawerMenuLink.classList.toggle("active", isDashboard);
     drawerBrandingLink.classList.toggle("active", isBranding);
+    if (drawerQrLink) drawerQrLink.classList.toggle("active", isQrCode);
   }
 
   // Persist current view state so page refresh preserves view without flashing login or food-outline
@@ -366,6 +387,12 @@ function showView(viewElement) {
       localStorage.setItem("menucard_view", "branding");
       if (window.location.hash !== "#branding") {
         window.history.replaceState(null, document.title, window.location.pathname + "#branding");
+      }
+    } else if (isQrCode) {
+      sessionStorage.setItem("menucard_view", "qrcode");
+      localStorage.setItem("menucard_view", "qrcode");
+      if (window.location.hash !== "#qrcode") {
+        window.history.replaceState(null, document.title, window.location.pathname + "#qrcode");
       }
     } else if (isAuth) {
       sessionStorage.removeItem("menucard_view");
@@ -498,6 +525,9 @@ async function checkSession() {
         if (hash === "#branding" || savedView === "branding") {
           populateBrandingForm();
           showView(brandingView);
+        } else if (hash === "#qrcode" || savedView === "qrcode") {
+          renderQrCodeView();
+          showView(qrCodeView);
         } else {
           showView(dashboardView);
         }
@@ -1196,12 +1226,24 @@ const closeLogoutModalBtn = document.getElementById("closeLogoutModalBtn");
 const cancelLogoutBtn = document.getElementById("cancelLogoutBtn");
 const confirmLogoutBtn = document.getElementById("confirmLogoutBtn");
 
+function openModal(modalElement) {
+  if (!modalElement) return;
+  modalElement.style.display = "flex";
+  const content = modalElement.querySelector(".modal-content");
+  if (content) {
+    content.style.animation = "none";
+    void content.offsetWidth;
+    content.style.animation = "";
+  }
+  modalElement.style.animation = "none";
+  void modalElement.offsetWidth;
+  modalElement.style.animation = "";
+  updateScrollLock();
+}
+
 function openLogoutModal() {
   const lm = document.getElementById("logoutModal");
-  if (lm) {
-    lm.style.display = "flex";
-    updateScrollLock();
-  }
+  if (lm) openModal(lm);
 }
 
 function closeLogoutModal() {
@@ -1217,7 +1259,7 @@ if (logoutBtn) {
 }
 
 if (registerLogoutBtn) {
-  registerLogoutBtn.addEventListener("click", openLogoutModal);
+  registerLogoutBtn.addEventListener("click", handleLogout);
 }
 
 if (pendingLogoutBtn) {
@@ -1661,8 +1703,7 @@ function openEditCategoryModalById(catId) {
   categoryModalTitle.textContent = "Rename Category";
   categoryIdInput.value = cat._id;
   categoryNameInput.value = cat.name;
-  categoryModal.style.display = "flex";
-  updateScrollLock();
+  openModal(categoryModal);
   categoryNameInput.focus();
 }
 
@@ -2285,8 +2326,7 @@ function openAddCategoryModal() {
   categoryModalTitle.textContent = "Add New Category";
   categoryIdInput.value = "";
   categoryNameInput.value = "";
-  categoryModal.style.display = "flex";
-  updateScrollLock();
+  openModal(categoryModal);
   categoryNameInput.focus();
 }
 
@@ -2298,8 +2338,7 @@ function openEditCategoryModal() {
   categoryModalTitle.textContent = "Rename Category";
   categoryIdInput.value = activeCat._id;
   categoryNameInput.value = activeCat.name;
-  categoryModal.style.display = "flex";
-  updateScrollLock();
+  openModal(categoryModal);
   categoryNameInput.focus();
 }
 
@@ -2381,8 +2420,7 @@ function openAddDishModal() {
     dishCategorySelect.value = categories[0]._id;
   }
 
-  dishModal.style.display = "flex";
-  updateScrollLock();
+  openModal(dishModal);
   dishNameInput.focus();
 }
 
@@ -2394,8 +2432,7 @@ function openEditDishModal(dish) {
   dishAvailableInput.checked = dish.isAvailable !== false;
   dishCategorySelect.value = dish.categoryId;
 
-  dishModal.style.display = "flex";
-  updateScrollLock();
+  openModal(dishModal);
   dishNameInput.focus();
 }
 
@@ -2925,12 +2962,166 @@ if (brandingPhoneInput) {
   });
 }
 
+// ==========================================================================
+// 7. QR Code View Functions
+// ==========================================================================
+let qrCodeInstance = null;
+
+function renderQrCodeView() {
+  if (!qrCodeGraphic) return;
+  const slug = (currentBusiness && currentBusiness.slug) ? currentBusiness.slug : "";
+  if (!slug) {
+    qrCodeGraphic.innerHTML = '<p class="qrcode-loading-text">Loading menu link...</p>';
+    if (qrCodeUrlText) qrCodeUrlText.textContent = "Loading link...";
+    return;
+  }
+
+  const fullUrl = `${window.location.origin}/r/${slug}`;
+
+  if (qrCodeUrlText) {
+    qrCodeUrlText.textContent = fullUrl;
+  }
+  if (qrCodeOpenLink) {
+    qrCodeOpenLink.href = fullUrl;
+  }
+
+  qrCodeGraphic.innerHTML = "";
+  if (typeof QRCode !== "undefined") {
+    qrCodeInstance = new QRCode(qrCodeGraphic, {
+      text: fullUrl,
+      width: 260,
+      height: 260,
+      colorDark: "#111827",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  } else {
+    qrCodeGraphic.innerHTML = '<p class="qrcode-loading-text">Generating QR Code...</p>';
+  }
+}
+
+function downloadQrCode() {
+  const slug = (currentBusiness && currentBusiness.slug) ? currentBusiness.slug : "";
+  if (!slug) return;
+  const fullUrl = `${window.location.origin}/r/${slug}`;
+
+  const exportCanvas = document.createElement("canvas");
+  const size = 1000;
+  exportCanvas.width = size;
+  exportCanvas.height = size;
+  const ctx = exportCanvas.getContext("2d");
+
+  // Pure white background
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, size, size);
+
+  const margin = 60;
+  const qrDimension = size - (margin * 2); // 880x880 with 60px quiet margin
+
+  // Generate dedicated high-res QR code for 1000x1000 export
+  const tempDiv = document.createElement("div");
+  tempDiv.style.position = "fixed";
+  tempDiv.style.left = "-99999px";
+  tempDiv.style.top = "-99999px";
+  document.body.appendChild(tempDiv);
+
+  try {
+    if (typeof QRCode !== "undefined") {
+      new QRCode(tempDiv, {
+        text: fullUrl,
+        width: qrDimension,
+        height: qrDimension,
+        colorDark: "#111827",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    const canvas = tempDiv.querySelector("canvas");
+    const img = tempDiv.querySelector("img");
+    const source = canvas || img;
+
+    if (source) {
+      ctx.drawImage(source, margin, margin, qrDimension, qrDimension);
+    } else if (qrCodeGraphic) {
+      const screenSource = qrCodeGraphic.querySelector("canvas") || qrCodeGraphic.querySelector("img");
+      if (screenSource) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(screenSource, margin, margin, qrDimension, qrDimension);
+      }
+    }
+
+    const dataUrl = exportCanvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.download = `${slug}-qr-code.png`;
+    a.href = dataUrl;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } finally {
+    if (tempDiv.parentNode) {
+      tempDiv.parentNode.removeChild(tempDiv);
+    }
+  }
+}
+
+function copyQrLink() {
+  const slug = (currentBusiness && currentBusiness.slug) ? currentBusiness.slug : "";
+  if (!slug) return;
+  const fullUrl = `${window.location.origin}/r/${slug}`;
+
+  const setBtnSuccess = () => {
+    if (qrCopyBtnText) {
+      const orig = qrCopyBtnText.textContent;
+      qrCopyBtnText.textContent = "Copied!";
+      setTimeout(() => {
+        qrCopyBtnText.textContent = orig;
+      }, 2000);
+    }
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(fullUrl).then(setBtnSuccess).catch(() => {
+      fallbackCopyText(fullUrl);
+      setBtnSuccess();
+    });
+  } else {
+    fallbackCopyText(fullUrl);
+    setBtnSuccess();
+  }
+}
+
+function fallbackCopyText(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-999999px";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+  try {
+    document.execCommand("copy");
+  } catch (err) {}
+  document.body.removeChild(textArea);
+}
+
+if (qrDownloadBtn) {
+  qrDownloadBtn.addEventListener("click", downloadQrCode);
+}
+
+if (qrCopyLinkBtn) {
+  qrCopyLinkBtn.addEventListener("click", copyQrLink);
+}
+
 window.addEventListener("hashchange", () => {
   const hash = window.location.hash;
   if (!currentBusiness || currentBusiness.approvalStatus !== "approved") return;
   if (hash === "#branding") {
     populateBrandingForm();
     showView(brandingView);
+  } else if (hash === "#qrcode") {
+    renderQrCodeView();
+    showView(qrCodeView);
   } else if (hash === "#menu" || hash === "#dashboard") {
     showView(dashboardView);
   }

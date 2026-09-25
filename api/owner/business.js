@@ -200,6 +200,8 @@ module.exports = async function handler(req, res) {
       business = await checkAndExpireApproval(db, business);
 
       // Security: Only allow updating safe fields. Disallow modifying approvalStatus, subscription, ownerId.
+      // CRITICAL: The restaurant slug is permanent and immutable for the business. It is NEVER modified upon
+      // business name or branding updates so that printed QR codes and shared public links never change or break.
       const safeUpdates = { updatedAt: new Date() };
 
       if (body.name && typeof body.name === "string" && body.name.trim().length >= 2) {

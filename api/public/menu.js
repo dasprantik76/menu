@@ -33,9 +33,15 @@ module.exports = async function handler(req, res) {
   try {
     const { db } = await connectToDatabase();
 
-    // 1. Fetch business by slug
+    // 1. Fetch business by permanent slug (or fallback by business _id)
+    let businessQuery = { slug: cleanSlug };
+    if (/^[0-9a-fA-F]{24}$/.test(cleanSlug)) {
+      const { ObjectId } = require("mongodb");
+      businessQuery = { $or: [{ slug: cleanSlug }, { _id: new ObjectId(cleanSlug) }] };
+    }
+
     let business = await db.collection(COLLECTIONS.BUSINESSES).findOne(
-      { slug: cleanSlug },
+      businessQuery,
       {
         projection: {
           _id: 1,

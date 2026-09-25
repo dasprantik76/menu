@@ -237,7 +237,8 @@ module.exports = async function handler(req, res) {
       } else if (business.approvalStatus === "approved") {
         redirectTarget = "/?view=dashboard";
       }
-      res.writeHead(302, { Location: redirectTarget });
+      res.setHeader("Location", redirectTarget);
+      res.writeHead(302);
       return res.end();
     }
 

@@ -61,7 +61,10 @@ module.exports = async function handler(req, res) {
       business: business ? {
         id: String(business._id),
         name: business.name,
+        ownerName: business.ownerName || "",
         slug: business.slug,
+        contact: business.contact || {},
+        branding: business.branding || { accentColor: "#991e2e", logoUrl: "" },
         approvalStatus: business.approvalStatus,
         approvalExpiry: business.approvalExpiry,
         approvalDays: business.approvalDays,

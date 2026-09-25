@@ -8,6 +8,30 @@ const authView = document.getElementById("authView");
 const registerView = document.getElementById("registerView");
 const pendingView = document.getElementById("pendingView");
 const dashboardView = document.getElementById("dashboardView");
+const brandingView = document.getElementById("brandingView");
+
+// Branding DOM Elements
+const brandingForm = document.getElementById("brandingForm");
+const brandingLogoInput = document.getElementById("brandingLogoInput");
+const brandingLogoDropzone = document.getElementById("brandingLogoDropzone");
+const brandingLogoPlaceholder = document.getElementById("brandingLogoPlaceholder");
+const brandingLogoPreviewWrapper = document.getElementById("brandingLogoPreviewWrapper");
+const brandingLogoPreviewImg = document.getElementById("brandingLogoPreviewImg");
+const brandingLogoFileName = document.getElementById("brandingLogoFileName");
+const brandingLogoFileSize = document.getElementById("brandingLogoFileSize");
+const brandingChangeLogoBtn = document.getElementById("brandingChangeLogoBtn");
+const brandingRemoveLogoBtn = document.getElementById("brandingRemoveLogoBtn");
+const brandingBizNameInput = document.getElementById("brandingBizNameInput");
+const brandingBizNameErrorMsg = document.getElementById("brandingBizNameErrorMsg");
+const brandingOwnerNameInput = document.getElementById("brandingOwnerNameInput");
+const brandingOwnerNameErrorMsg = document.getElementById("brandingOwnerNameErrorMsg");
+const brandingPhoneInput = document.getElementById("brandingPhoneInput");
+const brandingPhoneErrorMsg = document.getElementById("brandingPhoneErrorMsg");
+const brandingSubmitBtn = document.getElementById("brandingSubmitBtn");
+const brandingBtnLabel = document.getElementById("brandingBtnLabel");
+const brandingSaveSpinner = document.getElementById("brandingSaveSpinner");
+
+let brandingUploadedLogoData = "";
 
 const userProfileArea = document.getElementById("userProfileArea");
 const userAvatar = document.getElementById("userAvatar");
@@ -92,10 +116,37 @@ const hamburgerBtn = document.getElementById("hamburgerBtn");
 const drawerOverlay = document.getElementById("drawerOverlay");
 const drawerSidebar = document.getElementById("drawerSidebar");
 const closeDrawerBtn = document.getElementById("closeDrawerBtn");
-const drawerPublicMenuLink = document.getElementById("drawerPublicMenuLink");
+const drawerMenuLink = document.getElementById("drawerMenuLink");
+const drawerBrandingLink = document.getElementById("drawerBrandingLink");
+
+function updateAccountExpiryBadge() {
+  const drawerAccountExpiry = document.getElementById("drawerAccountExpiry");
+  const drawerAccountExpiryText = document.getElementById("drawerAccountExpiryText");
+  if (!drawerAccountExpiry || !drawerAccountExpiryText) return;
+
+  const expiryVal = currentBusiness ? (currentBusiness.approvalExpiry || currentBusiness.subscriptionExpiry) : null;
+  if (expiryVal) {
+    const expiry = new Date(expiryVal);
+    if (!isNaN(expiry.getTime())) {
+      const now = new Date();
+      const diffMs = expiry.getTime() - now.getTime();
+      const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      drawerAccountExpiryText.textContent = `${days} ${days === 1 ? "day" : "days"} left`;
+      if (days <= 5) {
+        drawerAccountExpiryText.classList.add("is-urgent");
+      } else {
+        drawerAccountExpiryText.classList.remove("is-urgent");
+      }
+      drawerAccountExpiry.style.display = "flex";
+      return;
+    }
+  }
+  drawerAccountExpiry.style.display = "none";
+}
 
 function openDrawer() {
   if (drawerOverlay && drawerSidebar) {
+    updateAccountExpiryBadge();
     drawerOverlay.style.display = "block";
     requestAnimationFrame(() => {
       drawerOverlay.classList.add("open");
@@ -119,6 +170,23 @@ function closeDrawer() {
 if (hamburgerBtn) hamburgerBtn.addEventListener("click", openDrawer);
 if (closeDrawerBtn) closeDrawerBtn.addEventListener("click", closeDrawer);
 if (drawerOverlay) drawerOverlay.addEventListener("click", closeDrawer);
+
+if (drawerMenuLink) {
+  drawerMenuLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeDrawer();
+    showView(dashboardView);
+  });
+}
+
+if (drawerBrandingLink) {
+  drawerBrandingLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeDrawer();
+    populateBrandingForm();
+    showView(brandingView);
+  });
+}
 
 /**
  * Show notification banner (Flash messages removed across project)
@@ -146,7 +214,7 @@ function revealPage() {
     }
     // Trigger visible entrance animation once overlay starts dissolving
     setTimeout(() => {
-      const activeView = [pendingView, dashboardView, registerView, authView].find(v => v && v.style.display !== "none");
+      const activeView = [pendingView, dashboardView, registerView, authView, brandingView].find(v => v && v.style.display !== "none");
       if (activeView) {
         activeView.classList.remove("fade-in-active");
         void activeView.offsetWidth;
@@ -170,6 +238,7 @@ function showView(viewElement) {
   const isRegister = (viewElement === registerView);
   const isPending = (viewElement === pendingView);
   const isDashboard = (viewElement === dashboardView);
+  const isBranding = (viewElement === brandingView);
   const header = document.querySelector(".owner-header");
 
   if (header) {
@@ -191,7 +260,7 @@ function showView(viewElement) {
   document.body.classList.toggle("pending-mode", isPending);
   document.documentElement.classList.toggle("pending-mode", isPending);
 
-  [loadingView, authView, registerView, pendingView, dashboardView].forEach(v => {
+  [loadingView, authView, registerView, pendingView, dashboardView, brandingView].forEach(v => {
     if (v) {
       v.style.display = "none";
       v.classList.remove("fade-in-active");
@@ -204,6 +273,12 @@ function showView(viewElement) {
     viewElement.classList.add("fade-in-active");
   }
   if (isRegister) startTitleWordRotation();
+
+  // Drawer nav item active states
+  if (drawerMenuLink && drawerBrandingLink) {
+    drawerMenuLink.classList.toggle("active", isDashboard);
+    drawerBrandingLink.classList.toggle("active", isBranding);
+  }
 
   // Persist current view state so page refresh preserves view without flashing login or food-outline
   try {
@@ -226,8 +301,14 @@ function showView(viewElement) {
     } else if (isDashboard) {
       sessionStorage.setItem("menucard_view", "dashboard");
       localStorage.setItem("menucard_view", "dashboard");
-      if (window.location.hash !== "#dashboard") {
+      if (window.location.hash !== "#dashboard" && window.location.hash !== "#menu") {
         window.history.replaceState(null, document.title, window.location.pathname + "#dashboard");
+      }
+    } else if (isBranding) {
+      sessionStorage.setItem("menucard_view", "branding");
+      localStorage.setItem("menucard_view", "branding");
+      if (window.location.hash !== "#branding") {
+        window.history.replaceState(null, document.title, window.location.pathname + "#branding");
       }
     } else if (isAuth) {
       sessionStorage.removeItem("menucard_view");
@@ -355,7 +436,14 @@ async function checkSession() {
         showView(pendingView);
       } else if (currentBusiness.approvalStatus === "approved") {
         renderDashboardView();
-        showView(dashboardView);
+        const hash = window.location.hash || "";
+        const savedView = sessionStorage.getItem("menucard_view") || "";
+        if (hash === "#branding" || savedView === "branding") {
+          populateBrandingForm();
+          showView(brandingView);
+        } else {
+          showView(dashboardView);
+        }
       } else {
         renderPendingView();
         showView(pendingView);
@@ -369,9 +457,12 @@ async function checkSession() {
         localStorage.removeItem("menucard_view");
       } catch (e) {}
       userProfileArea.style.display = "none";
+      const drawerRestaurantCard = document.getElementById("drawerRestaurantCard");
+      if (drawerRestaurantCard) drawerRestaurantCard.style.display = "none";
+      const drawerAccountExpiry = document.getElementById("drawerAccountExpiry");
+      if (drawerAccountExpiry) drawerAccountExpiry.style.display = "none";
       const viewBtn = document.getElementById("viewPublicMenuBtn");
       if (viewBtn) viewBtn.style.display = "none";
-      if (drawerPublicMenuLink) drawerPublicMenuLink.style.display = "none";
       closeDrawer();
       showView(authView);
       setupGoogleButton();
@@ -401,6 +492,17 @@ function updateHeaderProfile() {
     userAvatar.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23991e2e'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
   }
   userProfileArea.style.display = "flex";
+
+  const drawerRestaurantCard = document.getElementById("drawerRestaurantCard");
+  const drawerRestaurantName = document.getElementById("drawerRestaurantName");
+  if (currentBusiness && currentBusiness.name) {
+    if (drawerRestaurantName) drawerRestaurantName.textContent = currentBusiness.name;
+    if (drawerRestaurantCard) drawerRestaurantCard.style.display = "flex";
+  } else {
+    if (drawerRestaurantCard) drawerRestaurantCard.style.display = "none";
+  }
+
+  updateAccountExpiryBadge();
   updatePendingUserCard();
 }
 
@@ -499,15 +601,17 @@ function renderPendingView() {
 function renderDashboardView() {
   const dashBizEl = document.getElementById("dashBizName");
   if (dashBizEl) dashBizEl.textContent = currentBusiness.name;
+  const drawerRestaurantCard = document.getElementById("drawerRestaurantCard");
+  const drawerRestaurantName = document.getElementById("drawerRestaurantName");
+  if (currentBusiness && currentBusiness.name) {
+    if (drawerRestaurantName) drawerRestaurantName.textContent = currentBusiness.name;
+    if (drawerRestaurantCard) drawerRestaurantCard.style.display = "flex";
+  }
   const menuUrl = `/r/${currentBusiness.slug}`;
   const viewBtn = document.getElementById("viewPublicMenuBtn");
   if (viewBtn) {
     viewBtn.href = menuUrl;
     viewBtn.style.display = "inline-flex";
-  }
-  if (drawerPublicMenuLink) {
-    drawerPublicMenuLink.href = menuUrl;
-    drawerPublicMenuLink.style.display = "flex";
   }
 
   initViewSwitcher();
@@ -1220,6 +1324,9 @@ function switchDashboardView(view) {
     void categoryViewGroup.offsetWidth;
     categoryViewGroup.classList.add("view-content-smooth");
 
+    if (categoriesCountLabel) categoriesCountLabel.style.display = "flex";
+    if (dishCountLabel) dishCountLabel.style.display = "none";
+
     if (isFetchingMenuData) {
       const catLoader = document.getElementById("categoryCenterLoader");
       if (catLoader) catLoader.style.display = "flex";
@@ -1240,6 +1347,9 @@ function switchDashboardView(view) {
     menuViewGroup.classList.remove("view-content-smooth");
     void menuViewGroup.offsetWidth;
     menuViewGroup.classList.add("view-content-smooth");
+
+    if (categoriesCountLabel) categoriesCountLabel.style.display = "none";
+    if (dishCountLabel) dishCountLabel.style.display = "flex";
 
     if (isFetchingMenuData) {
       const menuLoader = document.getElementById("menuCenterLoader");
@@ -1867,7 +1977,10 @@ async function toggleDishAvailability(dishId, isAvailable, card, checkbox) {
  * Toggle Category Availability directly (smooth in-place update)
  */
 async function toggleCategoryAvailability(catId, isAvailable, card, checkbox) {
-  const c = categories.find(x => String(x._id) === String(catId));
+  let c = categories.find(x => String(x._id) === String(catId));
+  if (!c && (catId === "today_special_fixed" || catId === "today_special")) {
+    c = categories.find(x => x.isFixed || (x.name && x.name.toUpperCase() === "TODAY'S SPECIAL"));
+  }
   if (c) {
     c.isAvailable = isAvailable;
     c.isVisible = isAvailable;
@@ -1892,6 +2005,10 @@ async function toggleCategoryAvailability(catId, isAvailable, card, checkbox) {
         const switchLbl = card.querySelector(".switch-label");
         if (switchLbl) switchLbl.title = !isAvailable ? 'Available (click to toggle)' : 'Sold Out / Unavailable (click to toggle)';
       }
+    } else if (data.category && c) {
+      c._id = data.category._id;
+      if (checkbox) checkbox.dataset.id = data.category._id;
+      if (card) card.dataset.id = data.category._id;
     }
   } catch (err) {
     showNotification("Network error updating category.", "error");
@@ -1906,6 +2023,160 @@ async function toggleCategoryAvailability(catId, isAvailable, card, checkbox) {
       if (switchLbl) switchLbl.title = !isAvailable ? 'Available (click to toggle)' : 'Sold Out / Unavailable (click to toggle)';
     }
   }
+}
+
+/**
+ * Create a blank category row with empty fields below 'Today's Special'
+ */
+function createBlankCategoryRow() {
+  if (!categoriesGrid) return;
+
+  // If a blank row is already being edited, focus it and scroll it into view
+  const existingRow = categoriesGrid.querySelector(".category-admin-card.is-new-blank-row");
+  if (existingRow) {
+    const existingInput = existingRow.querySelector(".category-inline-input");
+    if (existingInput) {
+      existingInput.focus();
+      existingInput.select();
+    }
+    existingRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    return;
+  }
+
+  if (emptyCategoriesState) emptyCategoriesState.style.display = "none";
+
+  // Find the 'Today's Special' card (first card in grid)
+  const todaySpecialCard = categoriesGrid.querySelector(".today-special-card") || categoriesGrid.firstElementChild;
+
+  const row = document.createElement("div");
+  row.className = "category-admin-card is-new-blank-row";
+  row.innerHTML = `
+    <div class="category-row-info">
+      <label class="switch-label category-row-switch" title="Available (click to toggle)">
+        <span class="switch">
+          <input type="checkbox" class="category-avail-checkbox" checked>
+          <span class="slider"></span>
+        </span>
+      </label>
+      <div class="category-card-name is-editing" style="flex: 1; min-width: 0;">
+        <input type="text" class="dish-inline-input category-inline-input" placeholder="Category Name" aria-label="New category name">
+      </div>
+    </div>
+    <div class="category-row-actions">
+      <span class="category-dish-count-badge">0 items</span>
+      <button type="button" class="delete-cat-btn delete-icon-btn cancel-new-cat-btn" title="Cancel" aria-label="Cancel">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  // Insert below Today's Special
+  if (todaySpecialCard && todaySpecialCard.nextSibling) {
+    categoriesGrid.insertBefore(row, todaySpecialCard.nextSibling);
+  } else {
+    categoriesGrid.appendChild(row);
+  }
+
+  const input = row.querySelector(".category-inline-input");
+  const cancelBtn = row.querySelector(".cancel-new-cat-btn");
+  const availCheckbox = row.querySelector(".category-avail-checkbox");
+
+  let isCommitting = false;
+  let isDiscarded = false;
+
+  function discardRow() {
+    if (isDiscarded) return;
+    isDiscarded = true;
+    row.remove();
+    if (categories.length === 0 && !isFetchingMenuData && emptyCategoriesState) {
+      emptyCategoriesState.style.display = "flex";
+    }
+  }
+
+  async function commitNewCategory() {
+    if (isCommitting || isDiscarded) return;
+    const nameVal = input.value.trim();
+
+    if (!nameVal) {
+      discardRow();
+      return;
+    }
+
+    isCommitting = true;
+    input.disabled = true;
+
+    try {
+      const isAvail = availCheckbox ? availCheckbox.checked : true;
+      const res = await fetch("/api/owner/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: nameVal,
+          displayOrder: 0,
+          isAvailable: isAvail,
+          isVisible: isAvail
+        })
+      });
+
+      const data = await res.json();
+      if (data.success && data.category) {
+        row.remove();
+        await loadMenuData();
+        showNotification(`Category "${data.category.name}" added successfully.`);
+      } else {
+        showNotification(data.error || "Failed to add category.", "error");
+        input.disabled = false;
+        isCommitting = false;
+        input.focus();
+      }
+    } catch (err) {
+      showNotification("Network error adding category.", "error");
+      input.disabled = false;
+      isCommitting = false;
+      input.focus();
+    }
+  }
+
+  cancelBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    discardRow();
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commitNewCategory();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      discardRow();
+    }
+  });
+
+  input.addEventListener("blur", (e) => {
+    if (e.relatedTarget && e.relatedTarget.closest(".cancel-new-cat-btn")) {
+      return;
+    }
+    setTimeout(() => {
+      if (!isCommitting && !isDiscarded) {
+        if (!input.value.trim()) {
+          discardRow();
+        } else {
+          commitNewCategory();
+        }
+      }
+    }, 130);
+  });
+
+  setTimeout(() => {
+    if (input && !isDiscarded) {
+      input.focus();
+    }
+  }, 40);
+
+  row.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 /**
@@ -1981,8 +2252,8 @@ if (categorySelectDropdown) {
     renderDishesGrid();
   });
 }
-if (openAddCategoryHeaderBtn) openAddCategoryHeaderBtn.addEventListener("click", openAddCategoryModal);
-if (emptyStateAddCategoryBtn) emptyStateAddCategoryBtn.addEventListener("click", openAddCategoryModal);
+if (openAddCategoryHeaderBtn) openAddCategoryHeaderBtn.addEventListener("click", createBlankCategoryRow);
+if (emptyStateAddCategoryBtn) emptyStateAddCategoryBtn.addEventListener("click", createBlankCategoryRow);
 closeCategoryModalBtn.addEventListener("click", closeCategoryModal);
 cancelCategoryBtn.addEventListener("click", closeCategoryModal);
 
@@ -1992,7 +2263,8 @@ cancelCategoryBtn.addEventListener("click", closeCategoryModal);
 function openAddDishModal() {
   if (categories.length === 0) {
     showNotification("Please create at least one category before adding dishes.", "error");
-    openAddCategoryModal();
+    switchDashboardView("category");
+    createBlankCategoryRow();
     return;
   }
   dishModalTitle.textContent = "Add New Dish";
@@ -2114,6 +2386,303 @@ function formatDishName(name) {
   const safe = escapeHtml(name || "");
   return safe.replace(/(\([^)]+\))/g, '<span class="dish-note">$1</span>');
 }
+
+/**
+ * ==========================================================================
+ * BRANDING & BUSINESS PROFILE CONTROLLER
+ * ==========================================================================
+ */
+function populateBrandingForm() {
+  if (!currentBusiness) return;
+
+  if (brandingBizNameInput) {
+    brandingBizNameInput.value = currentBusiness.name || "";
+    brandingBizNameInput.classList.remove("has-error");
+  }
+  if (brandingBizNameErrorMsg) {
+    brandingBizNameErrorMsg.textContent = "";
+    brandingBizNameErrorMsg.style.display = "none";
+  }
+
+  if (brandingOwnerNameInput) {
+    brandingOwnerNameInput.value = currentBusiness.ownerName || (currentUser && currentUser.name) || "";
+    brandingOwnerNameInput.classList.remove("has-error");
+  }
+  if (brandingOwnerNameErrorMsg) {
+    brandingOwnerNameErrorMsg.textContent = "";
+    brandingOwnerNameErrorMsg.style.display = "none";
+  }
+
+  if (brandingPhoneInput) {
+    const existingPhone = (currentBusiness.contact && currentBusiness.contact.phone) || (currentUser && currentUser.phone) || "";
+    brandingPhoneInput.value = existingPhone;
+    brandingPhoneInput.classList.remove("has-error");
+  }
+  if (brandingPhoneErrorMsg) {
+    brandingPhoneErrorMsg.textContent = "";
+    brandingPhoneErrorMsg.style.display = "none";
+  }
+
+  const existingLogo = (currentBusiness.branding && currentBusiness.branding.logoUrl) || "";
+  brandingUploadedLogoData = existingLogo;
+
+  if (existingLogo) {
+    if (brandingLogoPreviewImg) brandingLogoPreviewImg.src = existingLogo;
+    if (brandingLogoFileName) brandingLogoFileName.textContent = "Current Logo";
+    if (brandingLogoFileSize) brandingLogoFileSize.textContent = "Saved";
+    if (brandingLogoPlaceholder) brandingLogoPlaceholder.style.display = "none";
+    if (brandingLogoPreviewWrapper) brandingLogoPreviewWrapper.style.display = "flex";
+  } else {
+    clearBrandingLogo();
+  }
+}
+
+function clearBrandingLogo() {
+  brandingUploadedLogoData = "";
+  if (brandingLogoInput) brandingLogoInput.value = "";
+  if (brandingLogoPreviewImg) brandingLogoPreviewImg.src = "";
+  if (brandingLogoFileName) brandingLogoFileName.textContent = "";
+  if (brandingLogoFileSize) brandingLogoFileSize.textContent = "";
+  if (brandingLogoPlaceholder) brandingLogoPlaceholder.style.display = "flex";
+  if (brandingLogoPreviewWrapper) brandingLogoPreviewWrapper.style.display = "none";
+}
+
+function handleBrandingLogoFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    showNotification("Please select an image file (PNG, JPG, WEBP, or SVG).", "error");
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showNotification("Logo file size must be less than 5MB.", "error");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const rawData = e.target.result;
+    if (file.type !== "image/svg+xml") {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 512;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        brandingUploadedLogoData = canvas.toDataURL(file.type === "image/png" ? "image/png" : "image/jpeg", 0.9);
+        displayBrandingLogoPreview(brandingUploadedLogoData, file.name, file.size);
+      };
+      img.onerror = () => {
+        brandingUploadedLogoData = rawData;
+        displayBrandingLogoPreview(rawData, file.name, file.size);
+      };
+      img.src = rawData;
+    } else {
+      brandingUploadedLogoData = rawData;
+      displayBrandingLogoPreview(rawData, file.name, file.size);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function displayBrandingLogoPreview(dataUrl, name, size) {
+  if (brandingLogoPreviewImg) brandingLogoPreviewImg.src = dataUrl;
+  if (brandingLogoFileName) brandingLogoFileName.textContent = name;
+  if (brandingLogoFileSize) {
+    const kb = Math.round(size / 1024);
+    brandingLogoFileSize.textContent = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`;
+  }
+  if (brandingLogoPlaceholder) brandingLogoPlaceholder.style.display = "none";
+  if (brandingLogoPreviewWrapper) brandingLogoPreviewWrapper.style.display = "flex";
+}
+
+if (brandingLogoDropzone && brandingLogoInput) {
+  brandingLogoDropzone.addEventListener("click", (e) => {
+    if (e.target.closest("#brandingRemoveLogoBtn")) return;
+    brandingLogoInput.click();
+  });
+
+  brandingLogoDropzone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      brandingLogoInput.click();
+    }
+  });
+
+  brandingLogoInput.addEventListener("change", () => {
+    if (brandingLogoInput.files && brandingLogoInput.files[0]) {
+      handleBrandingLogoFile(brandingLogoInput.files[0]);
+    }
+  });
+
+  brandingLogoDropzone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    brandingLogoDropzone.classList.add("dragover");
+  });
+
+  brandingLogoDropzone.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    brandingLogoDropzone.classList.remove("dragover");
+  });
+
+  brandingLogoDropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    brandingLogoDropzone.classList.remove("dragover");
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleBrandingLogoFile(e.dataTransfer.files[0]);
+    }
+  });
+}
+
+if (brandingChangeLogoBtn && brandingLogoInput) {
+  brandingChangeLogoBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    brandingLogoInput.click();
+  });
+}
+
+if (brandingRemoveLogoBtn) {
+  brandingRemoveLogoBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    clearBrandingLogo();
+  });
+}
+
+if (brandingForm) {
+  brandingForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const name = brandingBizNameInput ? brandingBizNameInput.value.trim() : "";
+    const ownerName = brandingOwnerNameInput ? brandingOwnerNameInput.value.trim() : "";
+    const phone = brandingPhoneInput ? brandingPhoneInput.value.trim() : "";
+
+    let hasError = false;
+
+    if (!name || name.length < 2) {
+      if (brandingBizNameInput) brandingBizNameInput.classList.add("has-error");
+      if (brandingBizNameErrorMsg) {
+        brandingBizNameErrorMsg.textContent = "Please enter a valid business name (min 2 characters).";
+        brandingBizNameErrorMsg.style.display = "block";
+      }
+      hasError = true;
+    } else {
+      if (brandingBizNameInput) brandingBizNameInput.classList.remove("has-error");
+      if (brandingBizNameErrorMsg) brandingBizNameErrorMsg.style.display = "none";
+    }
+
+    if (!ownerName || ownerName.length < 2) {
+      if (brandingOwnerNameInput) brandingOwnerNameInput.classList.add("has-error");
+      if (brandingOwnerNameErrorMsg) {
+        brandingOwnerNameErrorMsg.textContent = "Please enter a valid owner name (min 2 characters).";
+        brandingOwnerNameErrorMsg.style.display = "block";
+      }
+      hasError = true;
+    } else {
+      if (brandingOwnerNameInput) brandingOwnerNameInput.classList.remove("has-error");
+      if (brandingOwnerNameErrorMsg) brandingOwnerNameErrorMsg.style.display = "none";
+    }
+
+    if (!phone || !/^[0-9]{10}$/.test(phone)) {
+      if (brandingPhoneInput) brandingPhoneInput.classList.add("has-error");
+      if (brandingPhoneErrorMsg) {
+        brandingPhoneErrorMsg.textContent = "Please enter a valid 10-digit mobile number.";
+        brandingPhoneErrorMsg.style.display = "block";
+      }
+      hasError = true;
+    } else {
+      if (brandingPhoneInput) brandingPhoneInput.classList.remove("has-error");
+      if (brandingPhoneErrorMsg) brandingPhoneErrorMsg.style.display = "none";
+    }
+
+    if (hasError) return;
+
+    if (brandingSubmitBtn) brandingSubmitBtn.disabled = true;
+    if (brandingBtnLabel) brandingBtnLabel.style.display = "none";
+    if (brandingSaveSpinner) brandingSaveSpinner.style.display = "inline-block";
+
+    try {
+      const res = await fetch("/api/owner/business", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          ownerName,
+          phone,
+          logoUrl: brandingUploadedLogoData
+        })
+      });
+
+      const data = await res.json();
+      if (data.success && data.business) {
+        currentBusiness = data.business;
+        brandingUploadedLogoData = (currentBusiness.branding && currentBusiness.branding.logoUrl) || "";
+        if (brandingUploadedLogoData) {
+          if (brandingLogoPreviewImg) brandingLogoPreviewImg.src = brandingUploadedLogoData;
+          if (brandingLogoFileSize) brandingLogoFileSize.textContent = "Saved";
+        }
+        if (currentUser) {
+          currentUser.name = ownerName;
+          currentUser.phone = phone;
+        }
+
+        updateHeaderProfile();
+
+        const drawerRestaurantName = document.getElementById("drawerRestaurantName");
+        if (drawerRestaurantName) drawerRestaurantName.textContent = currentBusiness.name;
+
+        const dashBizEl = document.getElementById("dashboardBizName");
+        if (dashBizEl) dashBizEl.textContent = currentBusiness.name;
+
+        const bizNameEl = document.getElementById("bizNameDisplay");
+        if (bizNameEl) bizNameEl.textContent = currentBusiness.name;
+
+        if (brandingBtnLabel) {
+          brandingBtnLabel.textContent = "Saved ✓";
+          setTimeout(() => {
+            if (brandingBtnLabel) brandingBtnLabel.textContent = "Save Changes";
+          }, 2400);
+        }
+      } else {
+        if (brandingBizNameErrorMsg) {
+          brandingBizNameErrorMsg.textContent = data.error || "Failed to update branding.";
+          brandingBizNameErrorMsg.style.display = "block";
+        }
+      }
+    } catch (err) {
+      if (brandingBizNameErrorMsg) {
+        brandingBizNameErrorMsg.textContent = "Network error updating branding. Please try again.";
+        brandingBizNameErrorMsg.style.display = "block";
+      }
+    } finally {
+      if (brandingSubmitBtn) brandingSubmitBtn.disabled = false;
+      if (brandingBtnLabel) brandingBtnLabel.style.display = "inline";
+      if (brandingSaveSpinner) brandingSaveSpinner.style.display = "none";
+    }
+  });
+}
+
+window.addEventListener("hashchange", () => {
+  const hash = window.location.hash;
+  if (!currentBusiness || currentBusiness.approvalStatus !== "approved") return;
+  if (hash === "#branding") {
+    populateBrandingForm();
+    showView(brandingView);
+  } else if (hash === "#menu" || hash === "#dashboard") {
+    showView(dashboardView);
+  }
+});
 
 // Start initialization on page load
 document.addEventListener("DOMContentLoaded", () => {

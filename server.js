@@ -1,7 +1,12 @@
-require("dotenv").config();
-const http = require("http");
 const fs = require("fs");
 const path = require("path");
+
+if (fs.existsSync(path.join(__dirname, ".env.local"))) {
+  require("dotenv").config({ path: path.join(__dirname, ".env.local") });
+}
+require("dotenv").config();
+
+const http = require("http");
 const url = require("url");
 
 const PORT = process.env.PORT || 3000;

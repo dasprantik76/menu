@@ -435,7 +435,30 @@ body {
 .drawer-content {
   flex: 1;
   overflow-y: auto;
-  padding: 18px 20px;
+  padding: 18px 20px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Restaurant Name in Drawer (Big Red, No Box, No Icon, No Extra Text) */
+.drawer-restaurant-block {
+  padding: 6px 4px 18px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+.drawer-restaurant-name {
+  font-family: 'Google Sans', sans-serif;
+  font-size: clamp(1.35rem, 5.2vw, 1.65rem);
+  font-weight: 700;
+  color: #991e2e;
+  line-height: 1.25;
+  letter-spacing: -0.2px;
+  margin: 0;
+  padding: 0;
+  word-break: break-word;
 }
 
 .drawer-user-card {
@@ -507,9 +530,40 @@ body {
   font-weight: 600;
 }
 
+/* Drawer Account Expiry (above the line, horizontally centered) */
+.drawer-account-expiry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  margin-top: auto;
+  padding: 16px 0 10px;
+}
+
+.drawer-account-expiry-text {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #b45309;
+  letter-spacing: 0.2px;
+  line-height: 1;
+  text-align: center;
+}
+
+.drawer-account-expiry-text.is-urgent {
+  color: #dc2626;
+}
+
 .drawer-footer {
   padding: 16px 20px 24px;
   border-top: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-footer .drawer-user-card {
+  margin-bottom: 12px;
 }
 
 .drawer-logout-btn {
@@ -2583,6 +2637,53 @@ html.pending-mode .owner-header .brand-tag {
 }
 
 /* ==========================================================================
+   STICKY TOP NAVIGATION BAR (CAPSULE SWITCHER & COUNT LABEL)
+   ========================================================================== */
+.owner-sticky-bar {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 82px;
+  z-index: 95;
+  background: #f8f6f2;
+  margin-top: -32px;
+  padding-top: 24px;
+  padding-bottom: 14px;
+  margin-left: -20px;
+  margin-right: -20px;
+  padding-left: 20px;
+  padding-right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.owner-sticky-bar .capsule-switcher-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.owner-sticky-bar .categories-center-count {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #334155;
+  letter-spacing: 0.3px;
+  margin: 14px 0 0 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
    VIEW SWITCHER CAPSULE (CATEGORY - MENU)
    ========================================================================== */
 .capsule-switcher-wrapper {
@@ -2829,6 +2930,44 @@ html.pending-mode .owner-header .brand-tag {
 .category-admin-card.unavailable {
   opacity: 0.65;
   background: #f8fafc;
+}
+
+.category-admin-card.is-new-blank-row {
+  border-color: #991e2e;
+  box-shadow: 0 0 0 2px rgba(153, 30, 46, 0.12);
+  background: #ffffff;
+  animation: blankRowFadeIn 0.2s ease-out;
+}
+
+@keyframes blankRowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.category-admin-card .cancel-new-cat-btn {
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.category-admin-card .cancel-new-cat-btn:hover {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+.category-inline-input {
+  font-family: 'Google Sans', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
 }
 
 .category-row-actions {
@@ -3638,6 +3777,21 @@ input:checked + .slider:before {
     word-break: break-all;
   }
 
+  .owner-sticky-bar {
+    margin-top: -16px;
+    padding-top: 16px;
+    padding-bottom: 12px;
+    margin-left: -10px;
+    margin-right: -10px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .owner-sticky-bar .categories-center-count {
+    margin: 12px 0 0 0;
+    font-size: 1.05rem;
+  }
+
   .capsule-switcher-wrapper {
     margin-bottom: 0;
   }
@@ -3810,5 +3964,119 @@ input:checked + .slider:before {
     margin-top: 11px;
   }
 }
+
+/* ==========================================================================
+   BRANDING VIEW (BUSINESS BRANDING & PROFILE)
+   ========================================================================== */
+.branding-view-section {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  box-sizing: border-box;
+}
+
+.branding-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.branding-main-title {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+  margin: 0 0 6px 0;
+}
+
+.branding-subtitle {
+  font-size: 0.88rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.branding-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.branding-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.branding-field-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 8px;
+}
+
+.branding-logo-dropzone {
+  min-height: 120px;
+  cursor: pointer;
+}
+
+.branding-logo-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.branding-change-logo-btn {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #991e2e;
+  background: #fdf2f2;
+  border: 1px solid #fecaca;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.branding-change-logo-btn:hover {
+  background: #fee2e2;
+}
+
+.branding-btn-row {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.branding-submit-btn {
+  min-width: 155px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+}
+
+.branding-save-spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+@media (max-width: 640px) {
+  .branding-view-section {
+    padding: 16px 14px 48px;
+  }
+  .branding-main-title {
+    font-size: 1.3rem;
+  }
+  .branding-btn-row .branding-submit-btn {
+    width: 100%;
+  }
+}
+
 
 

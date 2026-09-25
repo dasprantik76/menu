@@ -1,4 +1,19 @@
 const { MongoClient, ObjectId } = require("mongodb");
+const fs = require("fs");
+const path = require("path");
+
+if (!process.env.MONGODB_URI) {
+  try {
+    const envLocalPath = path.resolve(process.cwd(), ".env.local");
+    if (fs.existsSync(envLocalPath)) {
+      require("dotenv").config({ path: envLocalPath });
+    }
+    const envPath = path.resolve(process.cwd(), ".env");
+    if (fs.existsSync(envPath)) {
+      require("dotenv").config({ path: envPath });
+    }
+  } catch (e) {}
+}
 
 const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB_NAME || "menucard_saas";
@@ -340,6 +355,11 @@ function createMockCollection(name) {
         if (matchesQuery(doc, query)) {
           if (update.$set) {
             Object.assign(doc, update.$set);
+          }
+          if (update.$inc) {
+            for (const [key, incVal] of Object.entries(update.$inc)) {
+              doc[key] = (typeof doc[key] === "number" ? doc[key] : 0) + Number(incVal);
+            }
           }
           if (update.$unset) {
             for (const key of Object.keys(update.$unset)) {

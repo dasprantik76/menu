@@ -176,6 +176,10 @@ module.exports = async function handler(req, res) {
       }
       if (typeof isAvailable === "boolean") {
         updates.isAvailable = isAvailable;
+        updates.isVisible = isAvailable;
+      } else if (typeof isVisible === "boolean") {
+        updates.isVisible = isVisible;
+        updates.isAvailable = isVisible;
       }
       if (typeof isFeatured === "boolean") {
         updates.isFeatured = isFeatured;

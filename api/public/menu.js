@@ -74,18 +74,31 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 2. Fetch visible categories sorted by display order
-    let categories = await db.collection(COLLECTIONS.CATEGORIES)
-      .find({
-        businessId: business._id,
-        isVisible: { $ne: false }
-      })
+    // 2. Fetch all categories for this restaurant sorted by display order
+    const allCategories = await db.collection(COLLECTIONS.CATEGORIES)
+      .find({ businessId: business._id })
       .sort({ displayOrder: 1, _id: 1 })
       .toArray();
 
-    // Ensure fixed "TODAY'S SPECIAL" is present at the top
-    let specialCat = categories.find(c => c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
-    if (!specialCat) {
+    // Clean up or find Today's Special if present
+    const specials = allCategories.filter(c => c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
+    let specialCat = null;
+
+    if (specials.length > 0) {
+      specialCat = specials[0];
+      // Clean up any duplicate specials created previously
+      if (specials.length > 1) {
+        for (let i = 1; i < specials.length; i++) {
+          const dupId = specials[i]._id;
+          await db.collection(COLLECTIONS.MENU_ITEMS).updateMany(
+            { categoryId: dupId, businessId: business._id },
+            { $set: { categoryId: specialCat._id } }
+          );
+          await db.collection(COLLECTIONS.CATEGORIES).deleteOne({ _id: dupId, businessId: business._id });
+        }
+      }
+    } else {
+      // Only insert if no special category exists at all in the database for this restaurant
       const newFixedCat = {
         businessId: business._id,
         name: "TODAY'S SPECIAL",
@@ -97,24 +110,37 @@ module.exports = async function handler(req, res) {
       };
       const insertRes = await db.collection(COLLECTIONS.CATEGORIES).insertOne(newFixedCat);
       newFixedCat._id = insertRes.insertedId;
-      categories.unshift(newFixedCat);
+      allCategories.unshift(newFixedCat);
+      specialCat = newFixedCat;
     }
 
-    // 3. Fetch available menu items
+    // Filter categories: A category is ACTIVE only when its toggle switch is ON
+    // (both isVisible !== false and isAvailable !== false)
+    // When a category's toggle switch is off (including Today's Special), it is excluded completely.
+    const activeCategories = allCategories.filter(cat => {
+      return cat.isVisible !== false && cat.isAvailable !== false;
+    });
+
+    // 3. Fetch available menu items whose toggle switch is ON (isAvailable !== false && isVisible !== false)
     const menuItems = await db.collection(COLLECTIONS.MENU_ITEMS)
       .find({
         businessId: business._id,
-        isAvailable: { $ne: false }
+        isAvailable: { $ne: false },
+        isVisible: { $ne: false }
       })
       .sort({ displayOrder: 1, _id: 1 })
       .toArray();
 
-    // 4. Group items under categories to match the frontend schema
-    // Always include fixed "TODAY'S SPECIAL" category at the top; for other categories only include if they have items
-    const formattedCategories = categories
+    // 4. Group items under active categories to match frontend schema
+    const formattedCategories = activeCategories
       .map(cat => {
+        const isSpecial = cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL");
         const itemsInCat = menuItems
-          .filter(item => String(item.categoryId) === String(cat._id))
+          .filter(item => {
+            return String(item.categoryId) === String(cat._id) &&
+              item.isAvailable !== false &&
+              item.isVisible !== false;
+          })
           .map(item => ({
             name: item.name,
             price: typeof item.price === "number" ? `₹${item.price}` : String(item.price || ""),
@@ -126,11 +152,19 @@ module.exports = async function handler(req, res) {
         return {
           category: cat.name,
           items: itemsInCat,
-          isFixed: !!cat.isFixed,
-          isVisible: cat.isVisible !== false
+          isFixed: isSpecial,
+          isVisible: true
         };
       })
-      .filter(cat => cat.isFixed || cat.category === "TODAY'S SPECIAL" || cat.items.length > 0 || cat.isVisible !== false);
+      .filter(cat => {
+        // If it's Today's Special and active, show it (even if 0 items, shows empty notice)
+        // If Today's Special toggle switch is OFF, it was already excluded by activeCategories!
+        if (cat.isFixed || (cat.category && cat.category.toUpperCase() === "TODAY'S SPECIAL")) {
+          return true;
+        }
+        // For other active categories, only include if they have at least 1 available item
+        return cat.items.length > 0;
+      });
 
     // Disable caching so newly added items/categories reflect immediately
     res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");

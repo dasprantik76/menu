@@ -1754,22 +1754,87 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function renderBrandTitleText(brandTitle, name) {
+  if (!name) return;
+  const words = name.trim().split(/\s+/);
+  if (words.length >= 3) {
+    brandTitle.innerHTML = `${escapeHtml(words[0])} <span class="brand-accent">${escapeHtml(words[1])}</span> ${escapeHtml(words.slice(2).join(" "))}`;
+  } else if (words.length === 2) {
+    brandTitle.innerHTML = `${escapeHtml(words[0])} <span class="brand-accent">${escapeHtml(words[1])}</span>`;
+  } else {
+    brandTitle.textContent = name;
+  }
+}
+
 function updateRestaurantBranding(restaurant) {
   const brandTitle = document.querySelector(".brand-title") || document.getElementById("brandTitle");
-  if (brandTitle && restaurant && restaurant.name) {
-    const words = restaurant.name.trim().split(/\s+/);
-    if (words.length >= 3) {
-      brandTitle.innerHTML = `${escapeHtml(words[0])} <span class="brand-accent">${escapeHtml(words[1])}</span> ${escapeHtml(words.slice(2).join(" "))}`;
-    } else if (words.length === 2) {
-      brandTitle.innerHTML = `${escapeHtml(words[0])} <span class="brand-accent">${escapeHtml(words[1])}</span>`;
-    } else {
-      brandTitle.textContent = restaurant.name;
+  let brandLogo = document.getElementById("brandLogo");
+
+  if (!brandLogo) {
+    const stickyHeader = document.querySelector(".sticky-header");
+    if (stickyHeader) {
+      brandLogo = document.createElement("img");
+      brandLogo.id = "brandLogo";
+      brandLogo.className = "brand-logo";
+      brandLogo.style.display = "none";
+      stickyHeader.insertBefore(brandLogo, stickyHeader.firstChild);
     }
+  }
+
+  if (restaurant && restaurant.name) {
     document.title = `${restaurant.name} - Menu`;
   }
 
+  const logoUrl = (restaurant && restaurant.branding && restaurant.branding.logoUrl && typeof restaurant.branding.logoUrl === "string")
+    ? restaurant.branding.logoUrl.trim()
+    : "";
+
+  const stickyHeader = document.querySelector(".sticky-header");
+
+  if (logoUrl) {
+    // If a logo is added in the branding page, prioritize the logo on the topbar.
+    // No business name will be shown only then.
+    if (stickyHeader) {
+      stickyHeader.classList.add("has-logo");
+    }
+    if (brandTitle) {
+      brandTitle.style.display = "none";
+      brandTitle.innerHTML = "";
+    }
+    if (brandLogo) {
+      brandLogo.src = logoUrl;
+      brandLogo.alt = (restaurant && restaurant.name) ? `${restaurant.name} Logo` : "Business Logo";
+      brandLogo.style.display = "block";
+      brandLogo.onerror = function() {
+        // Fallback to name if logo image fails to load
+        brandLogo.style.display = "none";
+        if (stickyHeader) {
+          stickyHeader.classList.remove("has-logo");
+        }
+        if (brandTitle && restaurant && restaurant.name) {
+          brandTitle.style.display = "";
+          renderBrandTitleText(brandTitle, restaurant.name);
+        }
+      };
+    }
+  } else {
+    // No logo: show business name as usual
+    if (stickyHeader) {
+      stickyHeader.classList.remove("has-logo");
+    }
+    if (brandLogo) {
+      brandLogo.style.display = "none";
+      brandLogo.src = "";
+    }
+    if (brandTitle) {
+      brandTitle.style.display = "";
+      if (restaurant && restaurant.name) {
+        renderBrandTitleText(brandTitle, restaurant.name);
+      }
+    }
+  }
+
   if (restaurant && restaurant.branding && restaurant.branding.accentColor) {
-    const stickyHeader = document.querySelector(".sticky-header");
     if (stickyHeader) {
       stickyHeader.style.backgroundColor = restaurant.branding.accentColor;
     }
@@ -1778,16 +1843,26 @@ function updateRestaurantBranding(restaurant) {
 
 function handleMenuLoadError(slug, status, errorMsg) {
   const brandTitle = document.querySelector(".brand-title") || document.getElementById("brandTitle");
+  const brandLogo = document.getElementById("brandLogo");
+  const stickyHeader = document.querySelector(".sticky-header");
   const heading = document.getElementById("categoryHeading");
   const scrollBox = document.getElementById("menuScrollBox");
   const dots = document.getElementById("categoryPageDots");
   const browseBtn = document.getElementById("browseBtn");
+
+  if (stickyHeader) {
+    stickyHeader.classList.remove("has-logo");
+  }
+  if (brandLogo) {
+    brandLogo.style.display = "none";
+  }
 
   const readableName = slug && slug !== "royal-food-corner"
     ? slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
     : "Restaurant";
 
   if (brandTitle) {
+    brandTitle.style.display = "";
     brandTitle.textContent = status === 404 ? "Menu Not Found" : readableName;
   }
   document.title = status === 404 ? "Menu Not Found" : `${readableName} - Menu`;

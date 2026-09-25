@@ -111,28 +111,31 @@ module.exports = async function handler(req, res) {
     // POST: Create a new category
     // -------------------------------------------------------------
     if (req.method === "POST") {
-      const { name } = body;
+      const { name, displayOrder, isAvailable, isVisible } = body;
       if (!name || typeof name !== "string" || !name.trim()) {
         return res.status(400).json({ success: false, error: "Category name is required." });
       }
 
-      // Determine next displayOrder
-      const lastCat = await db.collection(COLLECTIONS.CATEGORIES)
-        .find({ businessId: business._id })
-        .sort({ displayOrder: -1 })
-        .limit(1)
-        .toArray();
+      let nextOrder = 0;
+      if (typeof displayOrder === "number") {
+        nextOrder = displayOrder;
+      } else {
+        // By default, insert right below Today's Special (displayOrder: 0), shifting existing non-special categories forward
+        await db.collection(COLLECTIONS.CATEGORIES).updateMany(
+          { businessId: business._id, displayOrder: { $gte: 0 } },
+          { $inc: { displayOrder: 1 } }
+        );
+        nextOrder = 0;
+      }
 
-      const nextOrder = (lastCat.length > 0 && typeof lastCat[0].displayOrder === "number")
-        ? Math.max(lastCat[0].displayOrder + 1, 0)
-        : 0;
+      const avail = typeof isAvailable === "boolean" ? isAvailable : (typeof isVisible === "boolean" ? isVisible : true);
 
       const newCategory = {
         businessId: business._id,
         name: name.trim().toUpperCase(),
         displayOrder: nextOrder,
-        isVisible: true,
-        isAvailable: true,
+        isVisible: avail,
+        isAvailable: avail,
         createdAt: new Date()
       };
 
@@ -174,6 +177,20 @@ module.exports = async function handler(req, res) {
         });
         if (existing) {
           catId = existing._id;
+        } else {
+          const targetAvail = typeof isAvailable === "boolean" ? isAvailable : (typeof isVisible === "boolean" ? isVisible : true);
+          const newFixedCat = {
+            businessId: business._id,
+            name: "TODAY'S SPECIAL",
+            displayOrder: -1,
+            isFixed: true,
+            isVisible: targetAvail,
+            isAvailable: targetAvail,
+            createdAt: new Date()
+          };
+          const insertRes = await db.collection(COLLECTIONS.CATEGORIES).insertOne(newFixedCat);
+          existing = newFixedCat;
+          catId = insertRes.insertedId;
         }
       }
 

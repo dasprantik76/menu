@@ -184,6 +184,12 @@ body {
   border: none; /* Stroke removed */
 }
 
+.sticky-header.has-logo,
+.sticky-header:has(#brandLogo:not([style*="display: none"]):not([style*="display:none"])) {
+  min-height: 86px;
+  padding: max(20px, env(safe-area-inset-top, 20px)) 18px 20px;
+}
+
 .brand-title {
   font-family: 'Google Sans', sans-serif;
   font-size: clamp(1.4rem, 5.2vw, 1.8rem);
@@ -203,6 +209,17 @@ body {
   color: #f9931c; /* Accent word in #f9931c */
   font-family: inherit;
   font-weight: inherit;
+}
+
+.brand-logo {
+  max-height: clamp(44px, 11vw, 56px);
+  max-width: min(280px, 85vw);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.14));
 }
 
 /* 2. MAIN CONTENT AREA (STAGE FOR CATEGORY BLOCKS) */

@@ -2,6 +2,7 @@ const { ObjectId } = require("mongodb");
 const { connectToDatabase } = require("../_lib/mongodb");
 const { COLLECTIONS, APPROVAL_STATUS, SUBSCRIPTION_STATUS, checkAndExpireApproval } = require("../_lib/models");
 const { requireAuth } = require("../_lib/auth");
+const { uploadToImageKit } = require("../_lib/imagekit");
 
 /**
  * Slug helper: converts string into clean lowercase URL slug
@@ -132,20 +133,43 @@ module.exports = async function handler(req, res) {
       // - approvalStatus is ALWAYS "pending" on registration
       // - subscriptionStatus is ALWAYS "trial"
       // - isPublished is ALWAYS false
-      const newBusiness = {
-        ownerId,
-        ownerName: ownerName.trim(),
-        name: name.trim(),
-        slug: cleanSlug,
-        contact: {
-          phone: phone ? String(phone).trim() : "",
-          email: email ? String(email).trim().toLowerCase() : sessionUser.email,
-          address: address ? String(address).trim() : ""
-        },
-        branding: {
-          accentColor: "#991e2e",
-          logoUrl: (body.logoUrl || (body.branding && body.branding.logoUrl) || "").trim()
-        },
+        let initialLogoUrl = (body.logoUrl || (body.branding && body.branding.logoUrl) || "").trim();
+        let logoFileId = null;
+        if (initialLogoUrl.startsWith("data:")) {
+          try {
+            const fileExtMatch = initialLogoUrl.match(/^data:image\/([a-zA-Z0-9+]+);base64,/);
+            let ext = "png";
+            if (fileExtMatch && fileExtMatch[1]) {
+              ext = fileExtMatch[1].replace("+xml", "");
+              if (ext === "jpeg") ext = "jpg";
+            }
+            const uploadRes = await uploadToImageKit({
+              file: initialLogoUrl,
+              fileName: `${cleanSlug}-logo-${Date.now()}.${ext}`,
+              folder: "/Menu/OwnerLogos/"
+            });
+            initialLogoUrl = uploadRes.url;
+            logoFileId = uploadRes.fileId;
+          } catch (uploadErr) {
+            console.error("[ImageKit Registration Upload Error]:", uploadErr);
+          }
+        }
+
+        const newBusiness = {
+          ownerId,
+          ownerName: ownerName.trim(),
+          name: name.trim(),
+          slug: cleanSlug,
+          contact: {
+            phone: phone ? String(phone).trim() : "",
+            email: email ? String(email).trim().toLowerCase() : sessionUser.email,
+            address: address ? String(address).trim() : ""
+          },
+          branding: {
+            accentColor: "#991e2e",
+            logoUrl: initialLogoUrl,
+            ...(logoFileId ? { logoFileId } : {})
+          },
         approvalStatus: APPROVAL_STATUS.PENDING,
         subscriptionStatus: SUBSCRIPTION_STATUS.TRIAL,
         subscriptionExpiry: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days free trial
@@ -182,21 +206,75 @@ module.exports = async function handler(req, res) {
         safeUpdates.name = body.name.trim();
       }
 
+      if (body.ownerName && typeof body.ownerName === "string" && body.ownerName.trim().length >= 2) {
+        safeUpdates.ownerName = body.ownerName.trim();
+        try {
+          await db.collection(COLLECTIONS.USERS).updateOne(
+            { _id: ownerId },
+            { $set: { name: body.ownerName.trim(), updatedAt: new Date() } }
+          );
+        } catch (e) {}
+      }
+
+      const phoneVal = body.phone !== undefined ? body.phone : (body.contact && body.contact.phone !== undefined ? body.contact.phone : null);
+      if (phoneVal !== null) {
+        const cleanPhone = String(phoneVal).trim();
+        if (/^[0-9]{10}$/.test(cleanPhone)) {
+          if (!safeUpdates.contact) safeUpdates.contact = { ...(business.contact || {}) };
+          safeUpdates.contact.phone = cleanPhone;
+          try {
+            await db.collection(COLLECTIONS.USERS).updateOne(
+              { _id: ownerId },
+              { $set: { phone: cleanPhone, updatedAt: new Date() } }
+            );
+          } catch (e) {}
+        }
+      }
+
       if (body.contact && typeof body.contact === "object") {
         safeUpdates.contact = {
-          ...business.contact,
-          phone: body.contact.phone !== undefined ? String(body.contact.phone).trim() : business.contact.phone,
-          email: body.contact.email !== undefined ? String(body.contact.email).trim().toLowerCase() : business.contact.email,
-          address: body.contact.address !== undefined ? String(body.contact.address).trim() : business.contact.address
+          ...(business.contact || {}),
+          ...(safeUpdates.contact || {}),
+          email: body.contact.email !== undefined ? String(body.contact.email).trim().toLowerCase() : (business.contact ? business.contact.email : ""),
+          address: body.contact.address !== undefined ? String(body.contact.address).trim() : (business.contact ? business.contact.address : "")
         };
       }
 
-      if (body.branding && typeof body.branding === "object") {
+      const logoVal = body.logoUrl !== undefined ? body.logoUrl : (body.branding && body.branding.logoUrl !== undefined ? body.branding.logoUrl : null);
+      if (logoVal !== null || (body.branding && typeof body.branding === "object")) {
         safeUpdates.branding = {
-          ...business.branding,
-          accentColor: body.branding.accentColor || business.branding.accentColor || "#991e2e",
-          logoUrl: body.branding.logoUrl !== undefined ? String(body.branding.logoUrl).trim() : business.branding.logoUrl
+          ...(business.branding || { accentColor: "#991e2e", logoUrl: "" }),
+          ...(body.branding && typeof body.branding === "object" ? body.branding : {})
         };
+        if (logoVal !== null) {
+          const rawLogo = String(logoVal).trim();
+          if (rawLogo.startsWith("data:")) {
+            try {
+              const fileExtMatch = rawLogo.match(/^data:image\/([a-zA-Z0-9+]+);base64,/);
+              let ext = "png";
+              if (fileExtMatch && fileExtMatch[1]) {
+                ext = fileExtMatch[1].replace("+xml", "");
+                if (ext === "jpeg") ext = "jpg";
+              }
+              const slugPart = business.slug || "owner";
+              const uploadRes = await uploadToImageKit({
+                file: rawLogo,
+                fileName: `${slugPart}-logo-${Date.now()}.${ext}`,
+                folder: "/Menu/OwnerLogos/"
+              });
+              safeUpdates.branding.logoUrl = uploadRes.url;
+              safeUpdates.branding.logoFileId = uploadRes.fileId;
+            } catch (uploadErr) {
+              console.error("[ImageKit Logo Upload Error]:", uploadErr);
+              return res.status(500).json({
+                success: false,
+                error: `ImageKit logo upload failed: ${uploadErr.message}`
+              });
+            }
+          } else {
+            safeUpdates.branding.logoUrl = rawLogo;
+          }
+        }
       }
 
       // Can only toggle isPublished if approved and subscription active

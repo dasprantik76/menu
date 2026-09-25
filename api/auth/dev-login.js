@@ -14,14 +14,24 @@ module.exports = async function handler(req, res) {
 
   try {
     const { db } = await connectToDatabase();
-    const email = ((req.query && req.query.email) || "owner@royalfoodcorner.com").toLowerCase().trim();
+    const emailQuery = req.query && req.query.email ? req.query.email.toLowerCase().trim() : null;
 
-    let user = await db.collection(COLLECTIONS.USERS).findOne({ email });
+    let user = null;
+    if (emailQuery) {
+      user = await db.collection(COLLECTIONS.USERS).findOne({ email: emailQuery });
+    }
+    if (!user) {
+      // Default to Rajput Hotel owner
+      user = await db.collection(COLLECTIONS.USERS).findOne({ email: "rcavirup@gmail.com" });
+    }
     if (!user) {
       const approvedBiz = await db.collection(COLLECTIONS.BUSINESSES).findOne({ approvalStatus: "approved" });
       if (approvedBiz && approvedBiz.ownerId) {
         user = await db.collection(COLLECTIONS.USERS).findOne({ _id: approvedBiz.ownerId });
       }
+    }
+    if (!user) {
+      user = await db.collection(COLLECTIONS.USERS).findOne({ role: "owner" });
     }
 
     if (!user) {
@@ -36,7 +46,8 @@ module.exports = async function handler(req, res) {
 
     setSessionCookie(res, token);
 
-    res.writeHead(302, { Location: "/?view=dashboard#dashboard" });
+    res.setHeader("Location", "/?view=dashboard#dashboard");
+    res.writeHead(302);
     return res.end();
   } catch (err) {
     console.error("[Dev Login Error]:", err);

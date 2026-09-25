@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="owner/owner.css?v=207">
+  <link rel="stylesheet" href="owner/owner.css?v=209">
   <script>
     (function() {
       try {
@@ -19,7 +19,7 @@
 
         var isRegister = search.indexOf("view=register") !== -1 || hash === "#register" || saved === "register";
         var isPending = search.indexOf("view=pending") !== -1 || hash === "#pending" || saved === "pending";
-        var isDashboard = search.indexOf("view=dashboard") !== -1 || hash === "#dashboard" || saved === "dashboard" || hash === "#branding" || saved === "branding" || hash === "#qrcode" || saved === "qrcode";
+        var isDashboard = search.indexOf("view=dashboard") !== -1 || hash === "#dashboard" || saved === "dashboard" || hash === "#branding" || saved === "branding" || hash === "#themecolors" || saved === "themecolors" || hash === "#qrcode" || saved === "qrcode";
 
         if (isRegister) {
           document.documentElement.className = "register-mode";
@@ -189,6 +189,15 @@
             <circle cx="16.5" cy="11.5" r="1.5" fill="currentColor"></circle>
           </svg>
           <span>Branding</span>
+        </a>
+        <a href="#themecolors" class="drawer-nav-item" id="drawerThemeLink">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"></path>
+            <path d="m5 2 5 5"></path>
+            <path d="M2 13h15"></path>
+            <path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"></path>
+          </svg>
+          <span>Theme Colors</span>
         </a>
         <a href="#qrcode" class="drawer-nav-item" id="drawerQrLink">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -677,6 +686,96 @@
       </form>
     </section>
 
+    <!-- 8. Theme Colors View -->
+    <section id="themeColorsView" class="theme-view-section" style="display: none;">
+      <div class="theme-header">
+        <svg class="theme-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m19 11-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2c.8.8 2 .8 2.8 0L19 11Z"></path>
+          <path d="m5 2 5 5"></path>
+          <path d="M2 13h15"></path>
+          <path d="M22 20a2 2 0 1 1-4 0c0-1.6 1.7-2.4 2-4 .3 1.6 2 2.4 2 4Z"></path>
+        </svg>
+        <h1 class="theme-main-title">Public Menu Theme</h1>
+        <p class="theme-subtitle">Customize the brand color displayed on your customer menu page.</p>
+      </div>
+
+      <div class="theme-content">
+        <!-- Live Public Menu Mockup Preview -->
+        <div class="theme-preview-card">
+          <div class="theme-preview-header-label">Live Preview on Public Menu</div>
+          <div class="theme-mockup-wrapper" id="themeMockupWrapper">
+            <div class="theme-mockup-topbar" id="themeMockupTopbar">
+              <span class="theme-mockup-restaurant-name" id="themeMockupBizName">Restaurant Name</span>
+            </div>
+            <div class="theme-mockup-body" id="themeMockupBody">
+              <div class="theme-mockup-item">
+                <div class="theme-mockup-item-info">
+                  <div class="theme-mockup-line title"></div>
+                  <div class="theme-mockup-line sub"></div>
+                </div>
+                <div class="theme-mockup-price" id="themeMockupPrice">&#8377;240</div>
+              </div>
+              <div class="theme-mockup-button-row">
+                <div class="theme-mockup-btn" id="themeMockupBtn">Browse Menu</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Curated Color Swatches -->
+        <div class="theme-section-block">
+          <div class="theme-section-title">Curated Palettes (Top Bar & Background)</div>
+          <div class="theme-swatches-grid" id="themeSwatchesGrid">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Custom Hex/Picker -->
+        <div class="theme-section-block">
+          <div class="theme-section-title">Custom Brand Colors</div>
+          <div class="theme-custom-pickers-grid">
+            <!-- 1. Top Bar Color -->
+            <div class="theme-custom-card">
+              <span class="theme-picker-field-label">Top Bar Color</span>
+              <div class="theme-custom-picker-row">
+                <div class="theme-color-input-wrapper" title="Choose Top Bar Color">
+                  <input type="color" id="themeTopColorNativeInput" class="theme-color-native-input" value="#991e2e" aria-label="Top Bar Color">
+                  <span class="theme-color-indicator" id="themeTopColorIndicator"></span>
+                </div>
+                <div class="theme-hex-input-wrapper">
+                  <span class="theme-hex-prefix">#</span>
+                  <input type="text" id="themeTopHexInput" class="theme-hex-input" maxlength="6" placeholder="991E2E" spellcheck="false" autocomplete="off" aria-label="Top Bar Hex">
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Main Background Color -->
+            <div class="theme-custom-card">
+              <span class="theme-picker-field-label">Main Background Color</span>
+              <div class="theme-custom-picker-row">
+                <div class="theme-color-input-wrapper" title="Choose Main Background Color">
+                  <input type="color" id="themeBgColorNativeInput" class="theme-color-native-input" value="#fbefe1" aria-label="Main Background Color">
+                  <span class="theme-color-indicator" id="themeBgColorIndicator"></span>
+                </div>
+                <div class="theme-hex-input-wrapper">
+                  <span class="theme-hex-prefix">#</span>
+                  <input type="text" id="themeBgHexInput" class="theme-hex-input" maxlength="6" placeholder="FBEFE1" spellcheck="false" autocomplete="off" aria-label="Main Background Hex">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Row -->
+        <div class="theme-btn-row">
+          <button type="button" class="btn-primary theme-save-btn" id="themeSaveBtn" disabled>
+            <span id="themeSaveBtnLabel">Save Theme Colors</span>
+            <div class="btn-spinner theme-save-spinner" id="themeSaveSpinner" style="display: none;"></div>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- 7. QR Code View -->
     <section id="qrCodeView" class="qrcode-view-section" style="display: none;">
       <div class="qrcode-header">
@@ -736,6 +835,6 @@
   </main>
 
   <script src="owner/qrcode.min.js"></script>
-  <script src="owner/owner.js?v=103"></script>
+  <script src="owner/owner.js?v=105"></script>
 </body>
 </html>

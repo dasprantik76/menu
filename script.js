@@ -1834,9 +1834,21 @@ function updateRestaurantBranding(restaurant) {
     }
   }
 
-  if (restaurant && restaurant.branding && restaurant.branding.accentColor) {
-    if (stickyHeader) {
-      stickyHeader.style.backgroundColor = restaurant.branding.accentColor;
+  if (restaurant && restaurant.branding) {
+    if (restaurant.branding.accentColor) {
+      const brandColor = restaurant.branding.accentColor;
+      document.documentElement.style.setProperty("--brand-color", brandColor);
+      if (stickyHeader) {
+        stickyHeader.style.backgroundColor = brandColor;
+      }
+      const browseBtn = document.getElementById("browseBtn");
+      if (browseBtn) {
+        browseBtn.style.backgroundColor = brandColor;
+      }
+    }
+    if (restaurant.branding.backgroundColor) {
+      const bgColor = restaurant.branding.backgroundColor;
+      document.documentElement.style.setProperty("--menu-bg-color", bgColor);
     }
   }
 }

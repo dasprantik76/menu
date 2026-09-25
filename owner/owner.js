@@ -9,6 +9,7 @@ const registerView = document.getElementById("registerView");
 const pendingView = document.getElementById("pendingView");
 const dashboardView = document.getElementById("dashboardView");
 const brandingView = document.getElementById("brandingView");
+const themeColorsView = document.getElementById("themeColorsView");
 const qrCodeView = document.getElementById("qrCodeView");
 
 // QR Code DOM Elements
@@ -154,6 +155,7 @@ const drawerSidebar = document.getElementById("drawerSidebar");
 const closeDrawerBtn = document.getElementById("closeDrawerBtn");
 const drawerMenuLink = document.getElementById("drawerMenuLink");
 const drawerBrandingLink = document.getElementById("drawerBrandingLink");
+const drawerThemeLink = document.getElementById("drawerThemeLink");
 const drawerQrLink = document.getElementById("drawerQrLink");
 
 function updateAccountExpiryBadge() {
@@ -255,6 +257,15 @@ if (drawerBrandingLink) {
   });
 }
 
+if (drawerThemeLink) {
+  drawerThemeLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeDrawer();
+    renderThemeColorsView();
+    showView(themeColorsView);
+  });
+}
+
 if (drawerQrLink) {
   drawerQrLink.addEventListener("click", (e) => {
     e.preventDefault();
@@ -290,7 +301,7 @@ function revealPage() {
     }
     // Trigger visible entrance animation once overlay starts dissolving
     setTimeout(() => {
-      const activeView = [pendingView, dashboardView, registerView, authView, brandingView, qrCodeView].find(v => v && v.style.display !== "none");
+      const activeView = [pendingView, dashboardView, registerView, authView, brandingView, themeColorsView, qrCodeView].find(v => v && v.style.display !== "none");
       if (activeView) {
         activeView.classList.remove("fade-in-active");
         void activeView.offsetWidth;
@@ -315,6 +326,7 @@ function showView(viewElement) {
   const isPending = (viewElement === pendingView);
   const isDashboard = (viewElement === dashboardView);
   const isBranding = (viewElement === brandingView);
+  const isThemeColors = (viewElement === themeColorsView);
   const isQrCode = (viewElement === qrCodeView);
   const header = document.querySelector(".owner-header");
 
@@ -337,7 +349,7 @@ function showView(viewElement) {
   document.body.classList.toggle("pending-mode", isPending);
   document.documentElement.classList.toggle("pending-mode", isPending);
 
-  [loadingView, authView, registerView, pendingView, dashboardView, brandingView, qrCodeView].forEach(v => {
+  [loadingView, authView, registerView, pendingView, dashboardView, brandingView, themeColorsView, qrCodeView].forEach(v => {
     if (v) {
       v.style.display = "none";
       v.classList.remove("fade-in-active");
@@ -355,6 +367,7 @@ function showView(viewElement) {
   if (drawerMenuLink && drawerBrandingLink) {
     drawerMenuLink.classList.toggle("active", isDashboard);
     drawerBrandingLink.classList.toggle("active", isBranding);
+    if (drawerThemeLink) drawerThemeLink.classList.toggle("active", isThemeColors);
     if (drawerQrLink) drawerQrLink.classList.toggle("active", isQrCode);
   }
 
@@ -387,6 +400,12 @@ function showView(viewElement) {
       localStorage.setItem("menucard_view", "branding");
       if (window.location.hash !== "#branding") {
         window.history.replaceState(null, document.title, window.location.pathname + "#branding");
+      }
+    } else if (isThemeColors) {
+      sessionStorage.setItem("menucard_view", "themecolors");
+      localStorage.setItem("menucard_view", "themecolors");
+      if (window.location.hash !== "#themecolors") {
+        window.history.replaceState(null, document.title, window.location.pathname + "#themecolors");
       }
     } else if (isQrCode) {
       sessionStorage.setItem("menucard_view", "qrcode");
@@ -525,6 +544,9 @@ async function checkSession() {
         if (hash === "#branding" || savedView === "branding") {
           populateBrandingForm();
           showView(brandingView);
+        } else if (hash === "#themecolors" || savedView === "themecolors") {
+          renderThemeColorsView();
+          showView(themeColorsView);
         } else if (hash === "#qrcode" || savedView === "qrcode") {
           renderQrCodeView();
           showView(qrCodeView);
@@ -3113,12 +3135,297 @@ if (qrCopyLinkBtn) {
   qrCopyLinkBtn.addEventListener("click", copyQrLink);
 }
 
+/* ==========================================================================
+   Theme Colors (Public Menu Brand Accent & Background)
+   ========================================================================== */
+const themeMockupWrapper = document.getElementById("themeMockupWrapper");
+const themeMockupTopbar = document.getElementById("themeMockupTopbar");
+const themeMockupBizName = document.getElementById("themeMockupBizName");
+const themeMockupBody = document.getElementById("themeMockupBody");
+const themeMockupPrice = document.getElementById("themeMockupPrice");
+const themeMockupBtn = document.getElementById("themeMockupBtn");
+const themeSwatchesGrid = document.getElementById("themeSwatchesGrid");
+
+// Custom Top Bar color elements
+const themeTopColorNativeInput = document.getElementById("themeTopColorNativeInput");
+const themeTopColorIndicator = document.getElementById("themeTopColorIndicator");
+const themeTopHexInput = document.getElementById("themeTopHexInput");
+
+// Custom Main Background color elements
+const themeBgColorNativeInput = document.getElementById("themeBgColorNativeInput");
+const themeBgColorIndicator = document.getElementById("themeBgColorIndicator");
+const themeBgHexInput = document.getElementById("themeBgHexInput");
+
+const themeSaveBtn = document.getElementById("themeSaveBtn");
+const themeSaveBtnLabel = document.getElementById("themeSaveBtnLabel");
+const themeSaveSpinner = document.getElementById("themeSaveSpinner");
+
+const THEME_PALETTES = [
+  { name: "Crimson & Parchment", top: "#991E2E", bg: "#FBEFE1" },
+  { name: "Royal Amber & Ivory", top: "#C25E00", bg: "#FDF6ED" },
+  { name: "Forest Olive & Cream", top: "#1B5E20", bg: "#F1F7F1" },
+  { name: "Emerald Mint & Frost", top: "#00796B", bg: "#EDF7F5" },
+  { name: "Deep Navy & Ice Blue", top: "#0D47A1", bg: "#EEF3F9" },
+  { name: "Indigo Velvet & Lilac", top: "#311B92", bg: "#F3F0FA" },
+  { name: "Plum Berry & Silk", top: "#880E4F", bg: "#FAF0F4" },
+  { name: "Terracotta & Peach", top: "#BF360C", bg: "#FAF1ED" },
+  { name: "Espresso & Sand", top: "#4E342E", bg: "#F6F2EE" },
+  { name: "Charcoal & Pearl", top: "#212121", bg: "#F5F5F5" }
+];
+
+let currentTopColor = "#991E2E";
+let savedTopColor = "#991E2E";
+let currentBgColor = "#FBEFE1";
+let savedBgColor = "#FBEFE1";
+
+function normalizeHexColor(val) {
+  if (!val) return "";
+  let clean = String(val).trim().replace(/^#/, "");
+  if (clean.length === 3) {
+    clean = clean.split("").map(c => c + c).join("");
+  }
+  if (/^[0-9A-Fa-f]{6}$/.test(clean)) {
+    return "#" + clean.toUpperCase();
+  }
+  return "";
+}
+
+function updateThemeColorsUI(topHex, bgHex, source = "all") {
+  const normTop = normalizeHexColor(topHex);
+  const normBg = normalizeHexColor(bgHex);
+  if (normTop) currentTopColor = normTop;
+  if (normBg) currentBgColor = normBg;
+
+  // Live preview mockup updates
+  if (themeMockupTopbar) themeMockupTopbar.style.backgroundColor = currentTopColor;
+  if (themeMockupPrice) themeMockupPrice.style.color = currentTopColor;
+  if (themeMockupBtn) themeMockupBtn.style.backgroundColor = currentTopColor;
+  if (themeMockupWrapper) themeMockupWrapper.style.backgroundColor = currentBgColor;
+  if (themeMockupBody) themeMockupBody.style.backgroundColor = currentBgColor;
+
+  // Top Bar color picker inputs
+  if (themeTopColorIndicator) themeTopColorIndicator.style.backgroundColor = currentTopColor;
+  if (source !== "topNative" && themeTopColorNativeInput) {
+    themeTopColorNativeInput.value = currentTopColor;
+  }
+  if (source !== "topHex" && themeTopHexInput) {
+    themeTopHexInput.value = currentTopColor.replace("#", "");
+  }
+
+  // Background color picker inputs
+  if (themeBgColorIndicator) themeBgColorIndicator.style.backgroundColor = currentBgColor;
+  if (source !== "bgNative" && themeBgColorNativeInput) {
+    themeBgColorNativeInput.value = currentBgColor;
+  }
+  if (source !== "bgHex" && themeBgHexInput) {
+    themeBgHexInput.value = currentBgColor.replace("#", "");
+  }
+
+  // Update active swatch state
+  if (themeSwatchesGrid) {
+    const swatches = themeSwatchesGrid.querySelectorAll(".theme-swatch-card");
+    swatches.forEach(swatch => {
+      const swTop = swatch.getAttribute("data-top");
+      const swBg = swatch.getAttribute("data-bg");
+      if (swTop && swBg && swTop.toUpperCase() === currentTopColor.toUpperCase() && swBg.toUpperCase() === currentBgColor.toUpperCase()) {
+        swatch.classList.add("active");
+      } else {
+        swatch.classList.remove("active");
+      }
+    });
+  }
+
+  // Check if modified compared to saved state
+  const isChanged = (
+    currentTopColor.toUpperCase() !== savedTopColor.toUpperCase() ||
+    currentBgColor.toUpperCase() !== savedBgColor.toUpperCase()
+  );
+  if (themeSaveBtn) {
+    themeSaveBtn.disabled = !isChanged;
+  }
+}
+
+function renderThemeSwatches() {
+  if (!themeSwatchesGrid) return;
+  themeSwatchesGrid.innerHTML = "";
+
+  THEME_PALETTES.forEach(palette => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "theme-swatch-card";
+    card.setAttribute("data-top", palette.top);
+    card.setAttribute("data-bg", palette.bg);
+    card.setAttribute("aria-label", `Select theme ${palette.name}`);
+
+    if (palette.top.toUpperCase() === currentTopColor.toUpperCase() && palette.bg.toUpperCase() === currentBgColor.toUpperCase()) {
+      card.classList.add("active");
+    }
+
+    const circle = document.createElement("span");
+    circle.className = "theme-swatch-circle";
+
+    const topHalf = document.createElement("span");
+    topHalf.className = "theme-swatch-top-half";
+    topHalf.style.backgroundColor = palette.top;
+
+    const bgHalf = document.createElement("span");
+    bgHalf.className = "theme-swatch-bottom-half";
+    bgHalf.style.backgroundColor = palette.bg;
+
+    circle.appendChild(topHalf);
+    circle.appendChild(bgHalf);
+
+    const name = document.createElement("span");
+    name.className = "theme-swatch-name";
+    name.textContent = palette.name;
+
+    card.appendChild(circle);
+    card.appendChild(name);
+
+    card.addEventListener("click", () => {
+      updateThemeColorsUI(palette.top, palette.bg, "swatch");
+    });
+
+    themeSwatchesGrid.appendChild(card);
+  });
+}
+
+function renderThemeColorsView() {
+  const bizName = (currentBusiness && currentBusiness.name) ? currentBusiness.name : "Your Restaurant";
+  if (themeMockupBizName) {
+    themeMockupBizName.textContent = bizName;
+  }
+
+  const existingTop = (currentBusiness && currentBusiness.branding && currentBusiness.branding.accentColor) 
+    ? normalizeHexColor(currentBusiness.branding.accentColor) 
+    : "#991E2E";
+  const existingBg = (currentBusiness && currentBusiness.branding && currentBusiness.branding.backgroundColor) 
+    ? normalizeHexColor(currentBusiness.branding.backgroundColor) 
+    : "#FBEFE1";
+
+  savedTopColor = existingTop || "#991E2E";
+  currentTopColor = savedTopColor;
+  savedBgColor = existingBg || "#FBEFE1";
+  currentBgColor = savedBgColor;
+
+  renderThemeSwatches();
+  updateThemeColorsUI(currentTopColor, currentBgColor);
+
+  if (themeSaveBtn) {
+    themeSaveBtn.disabled = true;
+  }
+}
+
+async function saveThemeColors() {
+  if (!themeSaveBtn || themeSaveBtn.disabled) return;
+  const topToSave = normalizeHexColor(currentTopColor);
+  const bgToSave = normalizeHexColor(currentBgColor);
+  if (!topToSave || !bgToSave) return;
+
+  themeSaveBtn.disabled = true;
+  if (themeSaveSpinner) themeSaveSpinner.style.display = "inline-block";
+  if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Saving...";
+
+  try {
+    const res = await fetch("/api/owner/business", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accentColor: topToSave, backgroundColor: bgToSave })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.message || "Failed to update theme colors");
+    }
+
+    if (data.business) {
+      currentBusiness = data.business;
+    } else {
+      if (!currentBusiness) currentBusiness = {};
+      if (!currentBusiness.branding) currentBusiness.branding = {};
+      currentBusiness.branding.accentColor = topToSave;
+      currentBusiness.branding.backgroundColor = bgToSave;
+    }
+
+    savedTopColor = topToSave;
+    savedBgColor = bgToSave;
+    if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Saved!";
+    setTimeout(() => {
+      if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Save Theme Colors";
+      const stillChanged = (
+        currentTopColor.toUpperCase() !== savedTopColor.toUpperCase() ||
+        currentBgColor.toUpperCase() !== savedBgColor.toUpperCase()
+      );
+      if (themeSaveBtn) themeSaveBtn.disabled = !stillChanged;
+    }, 1400);
+  } catch (err) {
+    console.error("Save Theme Colors Error:", err);
+    if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Failed - Retry";
+    if (themeSaveBtn) themeSaveBtn.disabled = false;
+  } finally {
+    if (themeSaveSpinner) themeSaveSpinner.style.display = "none";
+  }
+}
+
+// Top Bar color picker listeners
+if (themeTopColorNativeInput) {
+  themeTopColorNativeInput.addEventListener("input", (e) => {
+    updateThemeColorsUI(e.target.value, null, "topNative");
+  });
+}
+
+if (themeTopHexInput) {
+  themeTopHexInput.addEventListener("input", (e) => {
+    const raw = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6);
+    e.target.value = raw.toUpperCase();
+    if (raw.length === 6) {
+      updateThemeColorsUI("#" + raw, null, "topHex");
+    } else {
+      if (themeSaveBtn) themeSaveBtn.disabled = true;
+    }
+  });
+
+  themeTopHexInput.addEventListener("blur", () => {
+    themeTopHexInput.value = currentTopColor.replace("#", "");
+  });
+}
+
+// Background color picker listeners
+if (themeBgColorNativeInput) {
+  themeBgColorNativeInput.addEventListener("input", (e) => {
+    updateThemeColorsUI(null, e.target.value, "bgNative");
+  });
+}
+
+if (themeBgHexInput) {
+  themeBgHexInput.addEventListener("input", (e) => {
+    const raw = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6);
+    e.target.value = raw.toUpperCase();
+    if (raw.length === 6) {
+      updateThemeColorsUI(null, "#" + raw, "bgHex");
+    } else {
+      if (themeSaveBtn) themeSaveBtn.disabled = true;
+    }
+  });
+
+  themeBgHexInput.addEventListener("blur", () => {
+    themeBgHexInput.value = currentBgColor.replace("#", "");
+  });
+}
+
+if (themeSaveBtn) {
+  themeSaveBtn.addEventListener("click", saveThemeColors);
+}
+
 window.addEventListener("hashchange", () => {
   const hash = window.location.hash;
   if (!currentBusiness || currentBusiness.approvalStatus !== "approved") return;
   if (hash === "#branding") {
     populateBrandingForm();
     showView(brandingView);
+  } else if (hash === "#themecolors") {
+    renderThemeColorsView();
+    showView(themeColorsView);
   } else if (hash === "#qrcode") {
     renderQrCodeView();
     showView(qrCodeView);

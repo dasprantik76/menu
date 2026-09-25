@@ -167,6 +167,7 @@ module.exports = async function handler(req, res) {
           },
           branding: {
             accentColor: "#991e2e",
+            backgroundColor: "#fbefe1",
             logoUrl: initialLogoUrl,
             ...(logoFileId ? { logoFileId } : {})
           },
@@ -245,13 +246,35 @@ module.exports = async function handler(req, res) {
       const logoVal = body.logoUrl !== undefined ? body.logoUrl : (body.branding && body.branding.logoUrl !== undefined ? body.branding.logoUrl : null);
       if (logoVal !== null || (body.branding && typeof body.branding === "object")) {
         safeUpdates.branding = {
-          ...(business.branding || { accentColor: "#991e2e", logoUrl: "" }),
+          ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" }),
           ...(body.branding && typeof body.branding === "object" ? body.branding : {})
         };
-        if (logoVal !== null) {
-          const rawLogo = String(logoVal).trim();
-          const prevLogoFileId = business.branding && business.branding.logoFileId;
-          const prevLogoUrl = business.branding && business.branding.logoUrl;
+      }
+
+      const accentColorVal = body.accentColor || (body.branding && body.branding.accentColor);
+      if (accentColorVal && typeof accentColorVal === "string" && /^#[0-9a-fA-F]{3,8}$/.test(accentColorVal.trim())) {
+        if (!safeUpdates.branding) {
+          safeUpdates.branding = {
+            ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
+          };
+        }
+        safeUpdates.branding.accentColor = accentColorVal.trim();
+      }
+
+      const bgColorVal = body.backgroundColor || (body.branding && body.branding.backgroundColor);
+      if (bgColorVal && typeof bgColorVal === "string" && /^#[0-9a-fA-F]{3,8}$/.test(bgColorVal.trim())) {
+        if (!safeUpdates.branding) {
+          safeUpdates.branding = {
+            ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
+          };
+        }
+        safeUpdates.branding.backgroundColor = bgColorVal.trim();
+      }
+
+      if (logoVal !== null) {
+        const rawLogo = String(logoVal).trim();
+        const prevLogoFileId = business.branding && business.branding.logoFileId;
+        const prevLogoUrl = business.branding && business.branding.logoUrl;
 
           if (rawLogo.startsWith("data:")) {
             try {
@@ -316,7 +339,6 @@ module.exports = async function handler(req, res) {
             }
           }
         }
-      }
 
       // Can only toggle isPublished if approved and subscription active
       if (typeof body.isPublished === "boolean") {

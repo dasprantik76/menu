@@ -2,7 +2,7 @@ const { ObjectId } = require("mongodb");
 const { connectToDatabase } = require("../_lib/mongodb");
 const { COLLECTIONS, APPROVAL_STATUS, SUBSCRIPTION_STATUS, checkAndExpireApproval } = require("../_lib/models");
 const { requireAuth } = require("../_lib/auth");
-const { uploadToImageKit } = require("../_lib/imagekit");
+const { uploadToImageKit, deleteFromImageKit, deleteImageKitFileByUrl } = require("../_lib/imagekit");
 
 /**
  * Slug helper: converts string into clean lowercase URL slug
@@ -248,6 +248,9 @@ module.exports = async function handler(req, res) {
         };
         if (logoVal !== null) {
           const rawLogo = String(logoVal).trim();
+          const prevLogoFileId = business.branding && business.branding.logoFileId;
+          const prevLogoUrl = business.branding && business.branding.logoUrl;
+
           if (rawLogo.startsWith("data:")) {
             try {
               const fileExtMatch = rawLogo.match(/^data:image\/([a-zA-Z0-9+]+);base64,/);
@@ -264,6 +267,17 @@ module.exports = async function handler(req, res) {
               });
               safeUpdates.branding.logoUrl = uploadRes.url;
               safeUpdates.branding.logoFileId = uploadRes.fileId;
+
+              // Auto-delete previous logo from ImageKit
+              if (prevLogoFileId) {
+                deleteFromImageKit(prevLogoFileId).catch(err => {
+                  console.error("[ImageKit] Failed to delete previous logo by fileId:", err);
+                });
+              } else if (prevLogoUrl) {
+                deleteImageKitFileByUrl(prevLogoUrl).catch(err => {
+                  console.error("[ImageKit] Failed to delete previous logo by URL:", err);
+                });
+              }
             } catch (uploadErr) {
               console.error("[ImageKit Logo Upload Error]:", uploadErr);
               return res.status(500).json({
@@ -271,8 +285,33 @@ module.exports = async function handler(req, res) {
                 error: `ImageKit logo upload failed: ${uploadErr.message}`
               });
             }
+          } else if (!rawLogo) {
+            // Owner removed the logo
+            safeUpdates.branding.logoUrl = "";
+            safeUpdates.branding.logoFileId = "";
+
+            if (prevLogoFileId) {
+              deleteFromImageKit(prevLogoFileId).catch(err => {
+                console.error("[ImageKit] Failed to delete removed logo by fileId:", err);
+              });
+            } else if (prevLogoUrl) {
+              deleteImageKitFileByUrl(prevLogoUrl).catch(err => {
+                console.error("[ImageKit] Failed to delete removed logo by URL:", err);
+              });
+            }
           } else {
             safeUpdates.branding.logoUrl = rawLogo;
+            if (prevLogoUrl && rawLogo !== prevLogoUrl) {
+              if (prevLogoFileId) {
+                deleteFromImageKit(prevLogoFileId).catch(err => {
+                  console.error("[ImageKit] Failed to delete replaced logo by fileId:", err);
+                });
+              } else {
+                deleteImageKitFileByUrl(prevLogoUrl).catch(err => {
+                  console.error("[ImageKit] Failed to delete replaced logo by URL:", err);
+                });
+              }
+            }
           }
         }
       }

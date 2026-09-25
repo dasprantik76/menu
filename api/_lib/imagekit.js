@@ -52,7 +52,87 @@ async function uploadToImageKit({ file, fileName, folder = OWNER_LOGOS_FOLDER })
   };
 }
 
+/**
+ * Delete a file from ImageKit by fileId
+ * @param {string} fileId
+ * @returns {Promise<boolean>}
+ */
+async function deleteFromImageKit(fileId) {
+  if (!fileId) return false;
+  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+  if (!privateKey) {
+    console.warn("[ImageKit] Cannot delete, IMAGEKIT_PRIVATE_KEY is not configured.");
+    return false;
+  }
+
+  const authHeader = "Basic " + Buffer.from(privateKey + ":").toString("base64");
+  try {
+    const response = await fetch(`https://api.imagekit.io/v1/files/${fileId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: authHeader
+      }
+    });
+
+    if (response.status === 204 || response.status === 200 || response.status === 404) {
+      return true;
+    }
+    const errText = await response.text();
+    console.warn(`[ImageKit] Delete fileId ${fileId} responded with status ${response.status}:`, errText);
+    return false;
+  } catch (err) {
+    console.error(`[ImageKit] Error deleting fileId ${fileId}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Delete an ImageKit file given its URL (searches file by name and path in folder)
+ * @param {string} fileUrl
+ * @param {string} [folder]
+ * @returns {Promise<boolean>}
+ */
+async function deleteImageKitFileByUrl(fileUrl, folder = OWNER_LOGOS_FOLDER) {
+  if (!fileUrl || typeof fileUrl !== "string") return false;
+  if (!fileUrl.includes("imagekit.io")) return false;
+
+  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
+  if (!privateKey) return false;
+
+  const authHeader = "Basic " + Buffer.from(privateKey + ":").toString("base64");
+
+  try {
+    const cleanUrl = fileUrl.split("?")[0];
+    const fileName = cleanUrl.split("/").pop();
+    if (!fileName) return false;
+
+    const cleanFolder = folder.replace(/\/$/, "");
+    const searchUrl = `https://api.imagekit.io/v1/files?name=${encodeURIComponent(fileName)}&path=${encodeURIComponent(cleanFolder)}`;
+
+    const searchRes = await fetch(searchUrl, {
+      headers: { Authorization: authHeader }
+    });
+
+    if (!searchRes.ok) return false;
+    const files = await searchRes.json();
+    if (Array.isArray(files) && files.length > 0) {
+      for (const item of files) {
+        if (item.fileId) {
+          await deleteFromImageKit(item.fileId);
+        }
+      }
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error("[ImageKit] Error deleting file by URL:", err);
+    return false;
+  }
+}
+
 module.exports = {
   uploadToImageKit,
+  deleteFromImageKit,
+  deleteImageKitFileByUrl,
   OWNER_LOGOS_FOLDER
 };

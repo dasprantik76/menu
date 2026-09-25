@@ -19,6 +19,8 @@ const brandingLogoPreviewWrapper = document.getElementById("brandingLogoPreviewW
 const brandingLogoPreviewImg = document.getElementById("brandingLogoPreviewImg");
 const brandingLogoFileName = document.getElementById("brandingLogoFileName");
 const brandingLogoFileSize = document.getElementById("brandingLogoFileSize");
+const brandingLogoCaption = document.getElementById("brandingLogoCaption");
+const brandingNoPhotoText = document.getElementById("brandingNoPhotoText");
 const brandingChangeLogoBtn = document.getElementById("brandingChangeLogoBtn");
 const brandingRemoveLogoBtn = document.getElementById("brandingRemoveLogoBtn");
 const brandingBizNameInput = document.getElementById("brandingBizNameInput");
@@ -32,10 +34,35 @@ const brandingBtnLabel = document.getElementById("brandingBtnLabel");
 const brandingSaveSpinner = document.getElementById("brandingSaveSpinner");
 
 let brandingUploadedLogoData = "";
+let brandingInitialValues = {
+  name: "",
+  ownerName: "",
+  phone: "",
+  logoUrl: ""
+};
+
+function checkBrandingFormChanged() {
+  if (!brandingSubmitBtn) return false;
+  const currentOwnerName = brandingOwnerNameInput ? brandingOwnerNameInput.value.trim() : "";
+  const currentBizName = brandingBizNameInput ? brandingBizNameInput.value.trim() : "";
+  const currentPhone = brandingPhoneInput ? brandingPhoneInput.value.trim() : "";
+  const currentLogo = (brandingUploadedLogoData || "").trim();
+
+  const isChanged = (
+    currentOwnerName !== (brandingInitialValues.ownerName || "") ||
+    currentBizName !== (brandingInitialValues.name || "") ||
+    currentPhone !== (brandingInitialValues.phone || "") ||
+    currentLogo !== (brandingInitialValues.logoUrl || "")
+  );
+
+  brandingSubmitBtn.disabled = !isChanged;
+  return isChanged;
+}
 
 const userProfileArea = document.getElementById("userProfileArea");
 const userAvatar = document.getElementById("userAvatar");
 const userName = document.getElementById("userName");
+const userEmail = document.getElementById("userEmail");
 const userRole = document.getElementById("userRole");
 const logoutBtn = document.getElementById("logoutBtn");
 const notificationBanner = document.getElementById("notificationBanner");
@@ -144,6 +171,29 @@ function updateAccountExpiryBadge() {
   drawerAccountExpiry.style.display = "none";
 }
 
+/**
+ * Lock/unlock background scrolling when drawer or modal dialog is open
+ */
+function updateScrollLock() {
+  const dSidebar = document.getElementById("drawerSidebar");
+  const catModal = document.getElementById("categoryModal");
+  const dModal = document.getElementById("dishModal");
+  const lModal = document.getElementById("logoutModal");
+
+  const isDrawerOpen = !!(dSidebar && dSidebar.classList.contains("open"));
+  const isCatModalOpen = !!(catModal && catModal.style.display === "flex");
+  const isDishModalOpen = !!(dModal && dModal.style.display === "flex");
+  const isLogoutModalOpen = !!(lModal && lModal.style.display === "flex");
+
+  if (isDrawerOpen || isCatModalOpen || isDishModalOpen || isLogoutModalOpen) {
+    document.documentElement.classList.add("scroll-locked");
+    document.body.classList.add("scroll-locked");
+  } else {
+    document.documentElement.classList.remove("scroll-locked");
+    document.body.classList.remove("scroll-locked");
+  }
+}
+
 function openDrawer() {
   if (drawerOverlay && drawerSidebar) {
     updateAccountExpiryBadge();
@@ -151,6 +201,7 @@ function openDrawer() {
     requestAnimationFrame(() => {
       drawerOverlay.classList.add("open");
       drawerSidebar.classList.add("open");
+      updateScrollLock();
     });
   }
 }
@@ -159,6 +210,7 @@ function closeDrawer() {
   if (drawerOverlay && drawerSidebar) {
     drawerOverlay.classList.remove("open");
     drawerSidebar.classList.remove("open");
+    updateScrollLock();
     setTimeout(() => {
       if (!drawerOverlay.classList.contains("open")) {
         drawerOverlay.style.display = "none";
@@ -169,7 +221,12 @@ function closeDrawer() {
 
 if (hamburgerBtn) hamburgerBtn.addEventListener("click", openDrawer);
 if (closeDrawerBtn) closeDrawerBtn.addEventListener("click", closeDrawer);
-if (drawerOverlay) drawerOverlay.addEventListener("click", closeDrawer);
+if (drawerOverlay) {
+  drawerOverlay.addEventListener("click", closeDrawer);
+  drawerOverlay.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+  }, { passive: false });
+}
 
 if (drawerMenuLink) {
   drawerMenuLink.addEventListener("click", (e) => {
@@ -484,7 +541,11 @@ async function checkSession() {
 function updateHeaderProfile() {
   if (!currentUser) return;
   userName.textContent = currentUser.name || currentUser.email;
-  userRole.textContent = currentUser.role === "admin" ? "Super Admin" : "Restaurant Owner";
+  if (userEmail) {
+    userEmail.textContent = currentUser.email || "";
+    userEmail.title = currentUser.email || "";
+  }
+  if (userRole) userRole.textContent = currentUser.role === "admin" ? "Super Admin" : "Restaurant Owner";
   if (currentUser.picture) {
     userAvatar.src = currentUser.picture;
     userAvatar.style.display = "block";
@@ -1130,16 +1191,53 @@ async function handleLogout() {
   }
 }
 
+const logoutModal = document.getElementById("logoutModal");
+const closeLogoutModalBtn = document.getElementById("closeLogoutModalBtn");
+const cancelLogoutBtn = document.getElementById("cancelLogoutBtn");
+const confirmLogoutBtn = document.getElementById("confirmLogoutBtn");
+
+function openLogoutModal() {
+  const lm = document.getElementById("logoutModal");
+  if (lm) {
+    lm.style.display = "flex";
+    updateScrollLock();
+  }
+}
+
+function closeLogoutModal() {
+  const lm = document.getElementById("logoutModal");
+  if (lm) {
+    lm.style.display = "none";
+    updateScrollLock();
+  }
+}
+
 if (logoutBtn) {
-  logoutBtn.addEventListener("click", handleLogout);
+  logoutBtn.addEventListener("click", openLogoutModal);
 }
 
 if (registerLogoutBtn) {
-  registerLogoutBtn.addEventListener("click", handleLogout);
+  registerLogoutBtn.addEventListener("click", openLogoutModal);
 }
 
 if (pendingLogoutBtn) {
-  pendingLogoutBtn.addEventListener("click", handleLogout);
+  pendingLogoutBtn.addEventListener("click", openLogoutModal);
+}
+
+if (closeLogoutModalBtn) {
+  closeLogoutModalBtn.addEventListener("click", closeLogoutModal);
+}
+
+if (cancelLogoutBtn) {
+  cancelLogoutBtn.addEventListener("click", closeLogoutModal);
+}
+
+if (confirmLogoutBtn) {
+  confirmLogoutBtn.addEventListener("click", async () => {
+    closeLogoutModal();
+    if (typeof closeDrawer === "function") closeDrawer();
+    await handleLogout();
+  });
 }
 
 // ============================================================================
@@ -1564,6 +1662,7 @@ function openEditCategoryModalById(catId) {
   categoryIdInput.value = cat._id;
   categoryNameInput.value = cat.name;
   categoryModal.style.display = "flex";
+  updateScrollLock();
   categoryNameInput.focus();
 }
 
@@ -2187,6 +2286,7 @@ function openAddCategoryModal() {
   categoryIdInput.value = "";
   categoryNameInput.value = "";
   categoryModal.style.display = "flex";
+  updateScrollLock();
   categoryNameInput.focus();
 }
 
@@ -2199,11 +2299,13 @@ function openEditCategoryModal() {
   categoryIdInput.value = activeCat._id;
   categoryNameInput.value = activeCat.name;
   categoryModal.style.display = "flex";
+  updateScrollLock();
   categoryNameInput.focus();
 }
 
 function closeCategoryModal() {
   categoryModal.style.display = "none";
+  updateScrollLock();
 }
 
 categoryForm.addEventListener("submit", async (e) => {
@@ -2280,6 +2382,7 @@ function openAddDishModal() {
   }
 
   dishModal.style.display = "flex";
+  updateScrollLock();
   dishNameInput.focus();
 }
 
@@ -2292,11 +2395,13 @@ function openEditDishModal(dish) {
   dishCategorySelect.value = dish.categoryId;
 
   dishModal.style.display = "flex";
+  updateScrollLock();
   dishNameInput.focus();
 }
 
 function closeDishModal() {
   dishModal.style.display = "none";
+  updateScrollLock();
 }
 
 dishForm.addEventListener("submit", async (e) => {
@@ -2369,6 +2474,39 @@ if (emptyStateAddDishBtn) emptyStateAddDishBtn.addEventListener("click", openAdd
 if (closeDishModalBtn) closeDishModalBtn.addEventListener("click", closeDishModal);
 if (cancelDishBtn) cancelDishBtn.addEventListener("click", closeDishModal);
 
+// Backdrop click and touch prevention for modals
+[categoryModal, dishModal, logoutModal].forEach(modal => {
+  if (!modal) return;
+  modal.addEventListener("touchmove", (e) => {
+    if (e.target === modal) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      if (modal === categoryModal) closeCategoryModal();
+      if (modal === dishModal) closeDishModal();
+      if (modal === logoutModal) closeLogoutModal();
+    }
+  });
+});
+
+// Escape key to close any active modal or drawer
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    const lm = document.getElementById("logoutModal");
+    if (lm && lm.style.display === "flex") {
+      closeLogoutModal();
+    } else if (categoryModal && categoryModal.style.display === "flex") {
+      closeCategoryModal();
+    } else if (dishModal && dishModal.style.display === "flex") {
+      closeDishModal();
+    } else if (drawerSidebar && drawerSidebar.classList.contains("open")) {
+      closeDrawer();
+    }
+  }
+});
+
 /**
  * Safe HTML string escape helper
  */
@@ -2392,59 +2530,138 @@ function formatDishName(name) {
  * BRANDING & BUSINESS PROFILE CONTROLLER
  * ==========================================================================
  */
-function populateBrandingForm() {
-  if (!currentBusiness) return;
-
-  if (brandingBizNameInput) {
-    brandingBizNameInput.value = currentBusiness.name || "";
-    brandingBizNameInput.classList.remove("has-error");
+function showBrandingOwnerNameError(msg = "Please enter a valid name of owner") {
+  if (brandingOwnerNameErrorMsg) {
+    brandingOwnerNameErrorMsg.textContent = msg;
+    brandingOwnerNameErrorMsg.style.display = "block";
   }
-  if (brandingBizNameErrorMsg) {
-    brandingBizNameErrorMsg.textContent = "";
-    brandingBizNameErrorMsg.style.display = "none";
-  }
-
   if (brandingOwnerNameInput) {
-    brandingOwnerNameInput.value = currentBusiness.ownerName || (currentUser && currentUser.name) || "";
-    brandingOwnerNameInput.classList.remove("has-error");
+    brandingOwnerNameInput.classList.add("has-error");
   }
+}
+
+function hideBrandingOwnerNameError() {
   if (brandingOwnerNameErrorMsg) {
     brandingOwnerNameErrorMsg.textContent = "";
     brandingOwnerNameErrorMsg.style.display = "none";
   }
-
-  if (brandingPhoneInput) {
-    const existingPhone = (currentBusiness.contact && currentBusiness.contact.phone) || (currentUser && currentUser.phone) || "";
-    brandingPhoneInput.value = existingPhone;
-    brandingPhoneInput.classList.remove("has-error");
+  if (brandingOwnerNameInput) {
+    brandingOwnerNameInput.classList.remove("has-error");
   }
+}
+
+function showBrandingBizNameError(msg = "Please enter a valid name of business") {
+  if (brandingBizNameErrorMsg) {
+    brandingBizNameErrorMsg.textContent = msg;
+    brandingBizNameErrorMsg.style.display = "block";
+  }
+  if (brandingBizNameInput) {
+    brandingBizNameInput.classList.add("has-error");
+  }
+}
+
+function hideBrandingBizNameError() {
+  if (brandingBizNameErrorMsg) {
+    brandingBizNameErrorMsg.textContent = "";
+    brandingBizNameErrorMsg.style.display = "none";
+  }
+  if (brandingBizNameInput) {
+    brandingBizNameInput.classList.remove("has-error");
+  }
+}
+
+function showBrandingPhoneError(msg = "Please enter a valid phone number.") {
+  if (brandingPhoneErrorMsg) {
+    brandingPhoneErrorMsg.textContent = msg;
+    brandingPhoneErrorMsg.style.display = "block";
+  }
+  if (brandingPhoneInput) {
+    brandingPhoneInput.classList.add("has-error");
+  }
+}
+
+function hideBrandingPhoneError() {
   if (brandingPhoneErrorMsg) {
     brandingPhoneErrorMsg.textContent = "";
     brandingPhoneErrorMsg.style.display = "none";
   }
-
-  const existingLogo = (currentBusiness.branding && currentBusiness.branding.logoUrl) || "";
-  brandingUploadedLogoData = existingLogo;
-
-  if (existingLogo) {
-    if (brandingLogoPreviewImg) brandingLogoPreviewImg.src = existingLogo;
-    if (brandingLogoFileName) brandingLogoFileName.textContent = "Current Logo";
-    if (brandingLogoFileSize) brandingLogoFileSize.textContent = "Saved";
-    if (brandingLogoPlaceholder) brandingLogoPlaceholder.style.display = "none";
-    if (brandingLogoPreviewWrapper) brandingLogoPreviewWrapper.style.display = "flex";
-  } else {
-    clearBrandingLogo();
+  if (brandingPhoneInput) {
+    brandingPhoneInput.classList.remove("has-error");
   }
 }
 
-function clearBrandingLogo() {
+function populateBrandingForm() {
+  if (!currentBusiness) return;
+
+  const existingName = currentBusiness.name || "";
+  const existingOwnerName = currentBusiness.ownerName || (currentUser && currentUser.name) || "";
+  const existingPhone = (currentBusiness.contact && currentBusiness.contact.phone) || (currentUser && currentUser.phone) || "";
+  const existingLogo = (currentBusiness.branding && currentBusiness.branding.logoUrl) || "";
+
+  brandingUploadedLogoData = existingLogo;
+
+  brandingInitialValues = {
+    name: existingName,
+    ownerName: existingOwnerName,
+    phone: existingPhone,
+    logoUrl: existingLogo
+  };
+
+  hideBrandingOwnerNameError();
+  hideBrandingBizNameError();
+  hideBrandingPhoneError();
+
+  if (brandingBizNameInput) {
+    brandingBizNameInput.value = existingName;
+  }
+  if (brandingOwnerNameInput) {
+    brandingOwnerNameInput.value = existingOwnerName;
+  }
+  if (brandingPhoneInput) {
+    brandingPhoneInput.value = existingPhone;
+  }
+
+  if (existingLogo) {
+    brandingUploadedLogoData = existingLogo;
+    if (brandingLogoPreviewImg) {
+      brandingLogoPreviewImg.src = existingLogo;
+      brandingLogoPreviewImg.style.display = "block";
+    }
+    if (brandingLogoCaption) brandingLogoCaption.style.display = "block";
+    if (brandingNoPhotoText) brandingNoPhotoText.style.display = "none";
+    if (brandingChangeLogoBtn) {
+      brandingChangeLogoBtn.textContent = "Change";
+      brandingChangeLogoBtn.title = "Change Logo";
+    }
+    if (brandingRemoveLogoBtn) brandingRemoveLogoBtn.disabled = false;
+    if (brandingLogoPlaceholder) brandingLogoPlaceholder.style.display = "none";
+    if (brandingLogoPreviewWrapper) brandingLogoPreviewWrapper.style.display = "flex";
+  } else {
+    clearBrandingLogo(false);
+  }
+
+  checkBrandingFormChanged();
+}
+
+function clearBrandingLogo(triggerCheck = true) {
   brandingUploadedLogoData = "";
   if (brandingLogoInput) brandingLogoInput.value = "";
-  if (brandingLogoPreviewImg) brandingLogoPreviewImg.src = "";
-  if (brandingLogoFileName) brandingLogoFileName.textContent = "";
-  if (brandingLogoFileSize) brandingLogoFileSize.textContent = "";
-  if (brandingLogoPlaceholder) brandingLogoPlaceholder.style.display = "flex";
-  if (brandingLogoPreviewWrapper) brandingLogoPreviewWrapper.style.display = "none";
+  if (brandingLogoPreviewImg) {
+    brandingLogoPreviewImg.src = "";
+    brandingLogoPreviewImg.style.display = "none";
+  }
+  if (brandingLogoCaption) brandingLogoCaption.style.display = "none";
+  if (brandingNoPhotoText) brandingNoPhotoText.style.display = "block";
+  if (brandingChangeLogoBtn) {
+    brandingChangeLogoBtn.textContent = "Upload";
+    brandingChangeLogoBtn.title = "Upload Logo";
+  }
+  if (brandingRemoveLogoBtn) brandingRemoveLogoBtn.disabled = true;
+  if (brandingLogoPlaceholder) brandingLogoPlaceholder.style.display = "none";
+  if (brandingLogoPreviewWrapper) brandingLogoPreviewWrapper.style.display = "flex";
+  if (triggerCheck) {
+    checkBrandingFormChanged();
+  }
 }
 
 function handleBrandingLogoFile(file) {
@@ -2483,65 +2700,43 @@ function handleBrandingLogoFile(file) {
         ctx.drawImage(img, 0, 0, w, h);
         brandingUploadedLogoData = canvas.toDataURL(file.type === "image/png" ? "image/png" : "image/jpeg", 0.9);
         displayBrandingLogoPreview(brandingUploadedLogoData, file.name, file.size);
+        checkBrandingFormChanged();
       };
       img.onerror = () => {
         brandingUploadedLogoData = rawData;
         displayBrandingLogoPreview(rawData, file.name, file.size);
+        checkBrandingFormChanged();
       };
       img.src = rawData;
     } else {
       brandingUploadedLogoData = rawData;
       displayBrandingLogoPreview(rawData, file.name, file.size);
+      checkBrandingFormChanged();
     }
   };
   reader.readAsDataURL(file);
 }
 
 function displayBrandingLogoPreview(dataUrl, name, size) {
-  if (brandingLogoPreviewImg) brandingLogoPreviewImg.src = dataUrl;
-  if (brandingLogoFileName) brandingLogoFileName.textContent = name;
-  if (brandingLogoFileSize) {
-    const kb = Math.round(size / 1024);
-    brandingLogoFileSize.textContent = kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`;
+  if (brandingLogoPreviewImg) {
+    brandingLogoPreviewImg.src = dataUrl;
+    brandingLogoPreviewImg.style.display = "block";
   }
+  if (brandingLogoCaption) brandingLogoCaption.style.display = "block";
+  if (brandingNoPhotoText) brandingNoPhotoText.style.display = "none";
+  if (brandingChangeLogoBtn) {
+    brandingChangeLogoBtn.textContent = "Change";
+    brandingChangeLogoBtn.title = "Change Logo";
+  }
+  if (brandingRemoveLogoBtn) brandingRemoveLogoBtn.disabled = false;
   if (brandingLogoPlaceholder) brandingLogoPlaceholder.style.display = "none";
   if (brandingLogoPreviewWrapper) brandingLogoPreviewWrapper.style.display = "flex";
 }
 
-if (brandingLogoDropzone && brandingLogoInput) {
-  brandingLogoDropzone.addEventListener("click", (e) => {
-    if (e.target.closest("#brandingRemoveLogoBtn")) return;
-    brandingLogoInput.click();
-  });
-
-  brandingLogoDropzone.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      brandingLogoInput.click();
-    }
-  });
-
+if (brandingLogoInput) {
   brandingLogoInput.addEventListener("change", () => {
     if (brandingLogoInput.files && brandingLogoInput.files[0]) {
       handleBrandingLogoFile(brandingLogoInput.files[0]);
-    }
-  });
-
-  brandingLogoDropzone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    brandingLogoDropzone.classList.add("dragover");
-  });
-
-  brandingLogoDropzone.addEventListener("dragleave", (e) => {
-    e.preventDefault();
-    brandingLogoDropzone.classList.remove("dragover");
-  });
-
-  brandingLogoDropzone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    brandingLogoDropzone.classList.remove("dragover");
-    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleBrandingLogoFile(e.dataTransfer.files[0]);
     }
   });
 }
@@ -2564,49 +2759,27 @@ if (brandingForm) {
   brandingForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const name = brandingBizNameInput ? brandingBizNameInput.value.trim() : "";
     const ownerName = brandingOwnerNameInput ? brandingOwnerNameInput.value.trim() : "";
+    const name = brandingBizNameInput ? brandingBizNameInput.value.trim() : "";
     const phone = brandingPhoneInput ? brandingPhoneInput.value.trim() : "";
 
-    let hasError = false;
+    if (!ownerName || ownerName.length < 2) {
+      showBrandingOwnerNameError();
+      showNotification("Please enter a valid name of owner", "error");
+      return;
+    }
 
     if (!name || name.length < 2) {
-      if (brandingBizNameInput) brandingBizNameInput.classList.add("has-error");
-      if (brandingBizNameErrorMsg) {
-        brandingBizNameErrorMsg.textContent = "Please enter a valid business name (min 2 characters).";
-        brandingBizNameErrorMsg.style.display = "block";
-      }
-      hasError = true;
-    } else {
-      if (brandingBizNameInput) brandingBizNameInput.classList.remove("has-error");
-      if (brandingBizNameErrorMsg) brandingBizNameErrorMsg.style.display = "none";
+      showBrandingBizNameError();
+      showNotification("Please enter a valid name of business", "error");
+      return;
     }
 
-    if (!ownerName || ownerName.length < 2) {
-      if (brandingOwnerNameInput) brandingOwnerNameInput.classList.add("has-error");
-      if (brandingOwnerNameErrorMsg) {
-        brandingOwnerNameErrorMsg.textContent = "Please enter a valid owner name (min 2 characters).";
-        brandingOwnerNameErrorMsg.style.display = "block";
-      }
-      hasError = true;
-    } else {
-      if (brandingOwnerNameInput) brandingOwnerNameInput.classList.remove("has-error");
-      if (brandingOwnerNameErrorMsg) brandingOwnerNameErrorMsg.style.display = "none";
+    if (!phone || phone.length < 10) {
+      showBrandingPhoneError();
+      showNotification("Please enter a valid phone number.", "error");
+      return;
     }
-
-    if (!phone || !/^[0-9]{10}$/.test(phone)) {
-      if (brandingPhoneInput) brandingPhoneInput.classList.add("has-error");
-      if (brandingPhoneErrorMsg) {
-        brandingPhoneErrorMsg.textContent = "Please enter a valid 10-digit mobile number.";
-        brandingPhoneErrorMsg.style.display = "block";
-      }
-      hasError = true;
-    } else {
-      if (brandingPhoneInput) brandingPhoneInput.classList.remove("has-error");
-      if (brandingPhoneErrorMsg) brandingPhoneErrorMsg.style.display = "none";
-    }
-
-    if (hasError) return;
 
     if (brandingSubmitBtn) brandingSubmitBtn.disabled = true;
     if (brandingBtnLabel) brandingBtnLabel.style.display = "none";
@@ -2628,6 +2801,13 @@ if (brandingForm) {
       if (data.success && data.business) {
         currentBusiness = data.business;
         brandingUploadedLogoData = (currentBusiness.branding && currentBusiness.branding.logoUrl) || "";
+        brandingInitialValues = {
+          name: currentBusiness.name || "",
+          ownerName: currentBusiness.ownerName || (currentUser && currentUser.name) || "",
+          phone: (currentBusiness.contact && currentBusiness.contact.phone) || (currentUser && currentUser.phone) || "",
+          logoUrl: (currentBusiness.branding && currentBusiness.branding.logoUrl) || ""
+        };
+
         if (brandingUploadedLogoData) {
           if (brandingLogoPreviewImg) brandingLogoPreviewImg.src = brandingUploadedLogoData;
           if (brandingLogoFileSize) brandingLogoFileSize.textContent = "Saved";
@@ -2666,9 +2846,81 @@ if (brandingForm) {
         brandingBizNameErrorMsg.style.display = "block";
       }
     } finally {
-      if (brandingSubmitBtn) brandingSubmitBtn.disabled = false;
       if (brandingBtnLabel) brandingBtnLabel.style.display = "inline";
       if (brandingSaveSpinner) brandingSaveSpinner.style.display = "none";
+      checkBrandingFormChanged();
+    }
+  });
+}
+
+// 1. Owner Name input validation: validate > 1 character, show message on blur
+if (brandingOwnerNameInput) {
+  brandingOwnerNameInput.addEventListener("input", (e) => {
+    const val = e.target.value.trim();
+    if (val.length > 1 || val.length === 0) {
+      hideBrandingOwnerNameError();
+    }
+    checkBrandingFormChanged();
+  });
+
+  brandingOwnerNameInput.addEventListener("focus", () => {
+    hideBrandingOwnerNameError();
+  });
+
+  brandingOwnerNameInput.addEventListener("blur", () => {
+    const val = brandingOwnerNameInput.value.trim();
+    if (val.length === 1) {
+      showBrandingOwnerNameError();
+    } else {
+      hideBrandingOwnerNameError();
+    }
+  });
+}
+
+// 2. Business Name input validation: validate > 1 character, show message on blur
+if (brandingBizNameInput) {
+  brandingBizNameInput.addEventListener("input", (e) => {
+    const val = e.target.value.trim();
+    if (val.length > 1 || val.length === 0) {
+      hideBrandingBizNameError();
+    }
+    checkBrandingFormChanged();
+  });
+
+  brandingBizNameInput.addEventListener("focus", () => {
+    hideBrandingBizNameError();
+  });
+
+  brandingBizNameInput.addEventListener("blur", () => {
+    const val = brandingBizNameInput.value.trim();
+    if (val.length === 1) {
+      showBrandingBizNameError();
+    } else {
+      hideBrandingBizNameError();
+    }
+  });
+}
+
+// 3. Phone input validation: numbers only and max 10 digits
+if (brandingPhoneInput) {
+  brandingPhoneInput.addEventListener("input", (e) => {
+    e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
+    if (e.target.value.length === 10) {
+      hideBrandingPhoneError();
+    }
+    checkBrandingFormChanged();
+  });
+
+  brandingPhoneInput.addEventListener("focus", () => {
+    hideBrandingPhoneError();
+  });
+
+  brandingPhoneInput.addEventListener("blur", () => {
+    const val = brandingPhoneInput.value.trim();
+    if (val.length > 0 && val.length < 10) {
+      showBrandingPhoneError();
+    } else {
+      hideBrandingPhoneError();
     }
   });
 }

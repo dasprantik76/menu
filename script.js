@@ -1183,7 +1183,7 @@ function updateCategoryTitle(title, isSpecial = false, targetHeading = null) {
   if (isSpecial) {
     heading.classList.add("is-today-special");
     heading.innerHTML = `
-      <svg class="cat-star-icon" viewBox="0 0 24 24" width="17" height="17" fill="#f59e0b" stroke="#d97706" stroke-width="0.8" aria-hidden="true">
+      <svg class="cat-star-icon" viewBox="0 0 24 24" width="14" height="14" fill="#f59e0b" stroke="#d97706" stroke-width="0.8" aria-hidden="true">
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
       </svg>
       <span class="cat-heading-text">${title}</span>
@@ -1196,11 +1196,11 @@ function updateCategoryTitle(title, isSpecial = false, targetHeading = null) {
   const panel = heading.parentElement;
   const maxAllowedWidth = panel && panel.clientWidth > 0 ? (panel.clientWidth * 0.94) : (window.innerWidth * 0.94);
 
-  let size = 1.32;
-  heading.style.letterSpacing = title.length > 12 ? "0.8px" : "1.4px";
+  let size = 1.05;
+  heading.style.letterSpacing = title.length > 12 ? "0.6px" : "1.1px";
   heading.style.fontSize = `${size}rem`;
 
-  while (heading.offsetWidth > maxAllowedWidth && size > 0.85) {
+  while (heading.offsetWidth > maxAllowedWidth && size > 0.75) {
     size -= 0.02;
     heading.style.fontSize = `${size.toFixed(2)}rem`;
   }
@@ -1756,14 +1756,21 @@ function escapeHtml(text) {
 
 function renderBrandTitleText(brandTitle, name) {
   if (!name) return;
-  const words = name.trim().split(/\s+/);
-  if (words.length >= 3) {
-    brandTitle.innerHTML = `${escapeHtml(words[0])} <span class="brand-accent">${escapeHtml(words[1])}</span> ${escapeHtml(words.slice(2).join(" "))}`;
-  } else if (words.length === 2) {
-    brandTitle.innerHTML = `${escapeHtml(words[0])} <span class="brand-accent">${escapeHtml(words[1])}</span>`;
-  } else {
-    brandTitle.textContent = name;
+  brandTitle.textContent = name.trim();
+}
+
+function applyBlackOverlay(hex, opacity = 0.35) {
+  if (!hex || typeof hex !== "string") return hex;
+  let clean = hex.replace("#", "").trim();
+  if (clean.length === 3) {
+    clean = clean.split("").map(c => c + c).join("");
   }
+  if (!/^[0-9A-Fa-f]{6}$/.test(clean)) return hex;
+  const num = parseInt(clean, 16);
+  const r = Math.round(((num >> 16) & 255) * (1 - opacity));
+  const g = Math.round(((num >> 8) & 255) * (1 - opacity));
+  const b = Math.round((num & 255) * (1 - opacity));
+  return "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
 }
 
 function updateRestaurantBranding(restaurant) {
@@ -1838,17 +1845,43 @@ function updateRestaurantBranding(restaurant) {
     if (restaurant.branding.accentColor) {
       const brandColor = restaurant.branding.accentColor;
       document.documentElement.style.setProperty("--brand-color", brandColor);
+      const darkenedBrand = applyBlackOverlay(brandColor, 0.35);
+      document.documentElement.style.setProperty("--theme-darkened-brand", darkenedBrand);
       if (stickyHeader) {
         stickyHeader.style.backgroundColor = brandColor;
       }
       const browseBtn = document.getElementById("browseBtn");
       if (browseBtn) {
-        browseBtn.style.backgroundColor = brandColor;
+        browseBtn.style.backgroundColor = darkenedBrand;
       }
     }
     if (restaurant.branding.backgroundColor) {
       const bgColor = restaurant.branding.backgroundColor;
       document.documentElement.style.setProperty("--menu-bg-color", bgColor);
+    }
+    if (restaurant.branding.nameTextColor) {
+      const nameColor = restaurant.branding.nameTextColor;
+      document.documentElement.style.setProperty("--name-text-color", nameColor);
+    } else {
+      document.documentElement.style.removeProperty("--name-text-color");
+    }
+    if (restaurant.branding.hasNameStroke === false) {
+      document.documentElement.style.setProperty("--name-stroke", "0px transparent");
+    } else {
+      document.documentElement.style.removeProperty("--name-stroke");
+    }
+    if (restaurant.branding.nameFont) {
+      const fontMap = {
+        "Lobster": "'Lobster', cursive, sans-serif",
+        "Bebas Neue": "'Bebas Neue', sans-serif",
+        "Google Sans": "'Google Sans', sans-serif",
+        "Berkshire Swash": "'Berkshire Swash', cursive, serif",
+        "Kaushan Script": "'Kaushan Script', cursive"
+      };
+      const resolvedFont = fontMap[restaurant.branding.nameFont] || `'${restaurant.branding.nameFont}', cursive, sans-serif`;
+      document.documentElement.style.setProperty("--name-font", resolvedFont);
+    } else {
+      document.documentElement.style.removeProperty("--name-font");
     }
   }
 }
@@ -1948,9 +1981,13 @@ async function loadDynamicMenu() {
       updateRestaurantBranding(data.restaurant);
     }
 
-    // Update menu categories
-    if (Array.isArray(data.categories) && data.categories.length > 0) {
-      MENU_DATA = data.categories;
+    // Update menu categories - filter out any category without items (including Today's Special)
+    const validCategories = Array.isArray(data.categories)
+      ? data.categories.filter(cat => Array.isArray(cat.items) && cat.items.length > 0)
+      : [];
+
+    if (validCategories.length > 0) {
+      MENU_DATA = validCategories;
       activeCategoryIndex = 0;
       renderMenuItems(activeCategoryIndex);
       setupCategorySheet();

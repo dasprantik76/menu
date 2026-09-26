@@ -11,6 +11,7 @@ const dashboardView = document.getElementById("dashboardView");
 const brandingView = document.getElementById("brandingView");
 const themeColorsView = document.getElementById("themeColorsView");
 const qrCodeView = document.getElementById("qrCodeView");
+const importMenuView = document.getElementById("importMenuView");
 
 // QR Code DOM Elements
 const qrCodeGraphic = document.getElementById("qrCodeGraphic");
@@ -154,6 +155,7 @@ const drawerOverlay = document.getElementById("drawerOverlay");
 const drawerSidebar = document.getElementById("drawerSidebar");
 const closeDrawerBtn = document.getElementById("closeDrawerBtn");
 const drawerMenuLink = document.getElementById("drawerMenuLink");
+const drawerImportLink = document.getElementById("drawerImportLink");
 const drawerBrandingLink = document.getElementById("drawerBrandingLink");
 const drawerThemeLink = document.getElementById("drawerThemeLink");
 const drawerQrLink = document.getElementById("drawerQrLink");
@@ -248,6 +250,14 @@ if (drawerMenuLink) {
   });
 }
 
+if (drawerImportLink) {
+  drawerImportLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    closeDrawer();
+    showView(importMenuView);
+  });
+}
+
 if (drawerBrandingLink) {
   drawerBrandingLink.addEventListener("click", (e) => {
     e.preventDefault();
@@ -301,7 +311,7 @@ function revealPage() {
     }
     // Trigger visible entrance animation once overlay starts dissolving
     setTimeout(() => {
-      const activeView = [pendingView, dashboardView, registerView, authView, brandingView, themeColorsView, qrCodeView].find(v => v && v.style.display !== "none");
+      const activeView = [pendingView, dashboardView, registerView, authView, importMenuView, brandingView, themeColorsView, qrCodeView].find(v => v && v.style.display !== "none");
       if (activeView) {
         activeView.classList.remove("fade-in-active");
         void activeView.offsetWidth;
@@ -325,6 +335,7 @@ function showView(viewElement) {
   const isRegister = (viewElement === registerView);
   const isPending = (viewElement === pendingView);
   const isDashboard = (viewElement === dashboardView);
+  const isImportMenu = (viewElement === importMenuView);
   const isBranding = (viewElement === brandingView);
   const isThemeColors = (viewElement === themeColorsView);
   const isQrCode = (viewElement === qrCodeView);
@@ -349,7 +360,7 @@ function showView(viewElement) {
   document.body.classList.toggle("pending-mode", isPending);
   document.documentElement.classList.toggle("pending-mode", isPending);
 
-  [loadingView, authView, registerView, pendingView, dashboardView, brandingView, themeColorsView, qrCodeView].forEach(v => {
+  [loadingView, authView, registerView, pendingView, dashboardView, importMenuView, brandingView, themeColorsView, qrCodeView].forEach(v => {
     if (v) {
       v.style.display = "none";
       v.classList.remove("fade-in-active");
@@ -364,12 +375,11 @@ function showView(viewElement) {
   if (isRegister) startTitleWordRotation();
 
   // Drawer nav item active states
-  if (drawerMenuLink && drawerBrandingLink) {
-    drawerMenuLink.classList.toggle("active", isDashboard);
-    drawerBrandingLink.classList.toggle("active", isBranding);
-    if (drawerThemeLink) drawerThemeLink.classList.toggle("active", isThemeColors);
-    if (drawerQrLink) drawerQrLink.classList.toggle("active", isQrCode);
-  }
+  if (drawerMenuLink) drawerMenuLink.classList.toggle("active", isDashboard);
+  if (drawerImportLink) drawerImportLink.classList.toggle("active", isImportMenu);
+  if (drawerBrandingLink) drawerBrandingLink.classList.toggle("active", isBranding);
+  if (drawerThemeLink) drawerThemeLink.classList.toggle("active", isThemeColors);
+  if (drawerQrLink) drawerQrLink.classList.toggle("active", isQrCode);
 
   // Persist current view state so page refresh preserves view without flashing login or food-outline
   try {
@@ -394,6 +404,12 @@ function showView(viewElement) {
       localStorage.setItem("menucard_view", "dashboard");
       if (window.location.hash !== "#dashboard" && window.location.hash !== "#menu") {
         window.history.replaceState(null, document.title, window.location.pathname + "#dashboard");
+      }
+    } else if (isImportMenu) {
+      sessionStorage.setItem("menucard_view", "importmenu");
+      localStorage.setItem("menucard_view", "importmenu");
+      if (window.location.hash !== "#importmenu") {
+        window.history.replaceState(null, document.title, window.location.pathname + "#importmenu");
       }
     } else if (isBranding) {
       sessionStorage.setItem("menucard_view", "branding");
@@ -544,6 +560,8 @@ async function checkSession() {
         if (hash === "#branding" || savedView === "branding") {
           populateBrandingForm();
           showView(brandingView);
+        } else if (hash === "#importmenu" || savedView === "importmenu") {
+          showView(importMenuView);
         } else if (hash === "#themecolors" || savedView === "themecolors") {
           renderThemeColorsView();
           showView(themeColorsView);
@@ -3156,27 +3174,47 @@ const themeBgColorNativeInput = document.getElementById("themeBgColorNativeInput
 const themeBgColorIndicator = document.getElementById("themeBgColorIndicator");
 const themeBgHexInput = document.getElementById("themeBgHexInput");
 
+// Custom Business Name Text color elements
+const themeNameColorNativeInput = document.getElementById("themeNameColorNativeInput");
+const themeNameColorIndicator = document.getElementById("themeNameColorIndicator");
+const themeNameHexInput = document.getElementById("themeNameHexInput");
+const themeNameStrokeCheckbox = document.getElementById("themeNameStrokeCheckbox");
+
 const themeSaveBtn = document.getElementById("themeSaveBtn");
 const themeSaveBtnLabel = document.getElementById("themeSaveBtnLabel");
 const themeSaveSpinner = document.getElementById("themeSaveSpinner");
 
 const THEME_PALETTES = [
-  { name: "Crimson & Parchment", top: "#991E2E", bg: "#FBEFE1" },
-  { name: "Royal Amber & Ivory", top: "#C25E00", bg: "#FDF6ED" },
-  { name: "Forest Olive & Cream", top: "#1B5E20", bg: "#F1F7F1" },
-  { name: "Emerald Mint & Frost", top: "#00796B", bg: "#EDF7F5" },
-  { name: "Deep Navy & Ice Blue", top: "#0D47A1", bg: "#EEF3F9" },
-  { name: "Indigo Velvet & Lilac", top: "#311B92", bg: "#F3F0FA" },
-  { name: "Plum Berry & Silk", top: "#880E4F", bg: "#FAF0F4" },
-  { name: "Terracotta & Peach", top: "#BF360C", bg: "#FAF1ED" },
-  { name: "Espresso & Sand", top: "#4E342E", bg: "#F6F2EE" },
-  { name: "Charcoal & Pearl", top: "#212121", bg: "#F5F5F5" }
+  { top: "#C4122F", bg: "#FFF8F0", name: "#111111" }, // KFC (Deep Crimson, Biscuit Cream, Bold Black)
+  { top: "#006491", bg: "#F0F5FA", name: "#E31837" }, // Domino's (Royal Navy, Ice White, Domino Red)
+  { top: "#006241", bg: "#F7F5F0", name: "#1E3932" }, // Starbucks (House Forest Green, Warm Ivory, Deep Forest)
+  { top: "#702082", bg: "#FAF2FC", name: "#FFB81C" }, // Taco Bell (Vibrant Purple, Soft Lilac, Bell Gold)
+  { top: "#DA1884", bg: "#FDF2F7", name: "#004F9F" }, // Baskin-Robbins (Ice Cream Pink, Strawberry Cream, BR Blue)
+  { top: "#008C15", bg: "#FFFBE6", name: "#FFC600" }, // Subway (Fresh Green, Toasted Gold, Subway Yellow)
+  { top: "#EE3124", bg: "#FFF6EA", name: "#231F20" }, // Pizza Hut (Pizzeria Red, Pan Crust Cream, Classic Black)
+  { top: "#46166B", bg: "#F6EFFC", name: "#FED141" }, // Cadbury (Royal Purple, Silky Violet Cream, Script Gold)
+  { top: "#008B47", bg: "#F2FAF0", name: "#FFDE00" }  // Sprite (Citrus Green, Frost Lemon Fizz, Spark Yellow)
+];
+
+const THEME_FONTS = [
+  { id: "Lobster", name: "Lobster", family: "'Lobster', cursive, sans-serif" },
+  { id: "Bebas Neue", name: "Bebas Neue", family: "'Bebas Neue', sans-serif" },
+  { id: "Google Sans", name: "Google Sans", family: "'Google Sans', sans-serif" },
+  { id: "Berkshire Swash", name: "Berkshire Swash", family: "'Berkshire Swash', cursive, serif" },
+  { id: "Kaushan Script", name: "Kaushan Script", family: "'Kaushan Script', cursive" }
 ];
 
 let currentTopColor = "#991E2E";
 let savedTopColor = "#991E2E";
 let currentBgColor = "#FBEFE1";
 let savedBgColor = "#FBEFE1";
+let currentNameColor = "#63141E";
+let savedNameColor = "#63141E";
+let isCustomNameColor = false;
+let currentHasNameStroke = true;
+let savedHasNameStroke = true;
+let currentNameFont = "Lobster";
+let savedNameFont = "Lobster";
 
 function normalizeHexColor(val) {
   if (!val) return "";
@@ -3190,16 +3228,79 @@ function normalizeHexColor(val) {
   return "";
 }
 
-function updateThemeColorsUI(topHex, bgHex, source = "all") {
+function applyBlackOverlay(hex, opacity = 0.35) {
+  if (!hex || typeof hex !== "string") return hex;
+  let clean = hex.replace("#", "").trim();
+  if (clean.length === 3) {
+    clean = clean.split("").map(c => c + c).join("");
+  }
+  if (!/^[0-9A-Fa-f]{6}$/.test(clean)) return hex;
+  const num = parseInt(clean, 16);
+  const r = Math.round(((num >> 16) & 255) * (1 - opacity));
+  const g = Math.round(((num >> 8) & 255) * (1 - opacity));
+  const b = Math.round((num & 255) * (1 - opacity));
+  return "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+
+function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = "all") {
+  if (typeof strokeVal === "string" && source === "all") {
+    source = strokeVal;
+    strokeVal = null;
+  }
+
   const normTop = normalizeHexColor(topHex);
   const normBg = normalizeHexColor(bgHex);
+  const normName = normalizeHexColor(nameHex);
+
   if (normTop) currentTopColor = normTop;
   if (normBg) currentBgColor = normBg;
+  if (typeof strokeVal === "boolean") currentHasNameStroke = strokeVal;
+
+  if (source === "swatch") {
+    isCustomNameColor = true;
+    currentNameColor = normName || applyBlackOverlay(currentTopColor, 0.35);
+  } else if (source === "nameNative" || source === "nameHex") {
+    if (normName) {
+      currentNameColor = normName;
+      isCustomNameColor = true;
+    }
+  } else if (!isCustomNameColor && (source === "topNative" || source === "topHex")) {
+    currentNameColor = applyBlackOverlay(currentTopColor, 0.35);
+  } else if (source === "all") {
+    if (normName) {
+      currentNameColor = normName;
+    } else if (!isCustomNameColor) {
+      currentNameColor = applyBlackOverlay(currentTopColor, 0.35);
+    }
+  }
+
+  const darkenedTop = applyBlackOverlay(currentTopColor, 0.35);
+  const fontObj = THEME_FONTS.find(f => f.id === currentNameFont) || THEME_FONTS[0];
 
   // Live preview mockup updates
   if (themeMockupTopbar) themeMockupTopbar.style.backgroundColor = currentTopColor;
-  if (themeMockupPrice) themeMockupPrice.style.color = currentTopColor;
-  if (themeMockupBtn) themeMockupBtn.style.backgroundColor = currentTopColor;
+  if (themeMockupBizName) {
+    themeMockupBizName.style.setProperty("font-family", fontObj.family, "important");
+    themeMockupBizName.style.setProperty("--preview-name-font", fontObj.family);
+    themeMockupBizName.style.setProperty("color", currentNameColor, "important");
+    themeMockupBizName.style.setProperty("--preview-name-color", currentNameColor);
+
+    if (currentHasNameStroke) {
+      const strokeWidth = (currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans") ? "1.8px" : "2.2px";
+      const strokeVal = `${strokeWidth} ${currentBgColor}`;
+      themeMockupBizName.style.setProperty("-webkit-text-stroke", strokeVal, "important");
+      themeMockupBizName.style.setProperty("-webkit-text-stroke-width", strokeWidth, "important");
+      themeMockupBizName.style.setProperty("-webkit-text-stroke-color", currentBgColor, "important");
+      themeMockupBizName.style.setProperty("--preview-name-stroke", strokeVal);
+    } else {
+      themeMockupBizName.style.setProperty("-webkit-text-stroke", "0px transparent", "important");
+      themeMockupBizName.style.setProperty("-webkit-text-stroke-width", "0px", "important");
+      themeMockupBizName.style.setProperty("-webkit-text-stroke-color", "transparent", "important");
+      themeMockupBizName.style.setProperty("--preview-name-stroke", "0px transparent");
+    }
+  }
+  if (themeMockupPrice) themeMockupPrice.style.color = darkenedTop;
+  if (themeMockupBtn) themeMockupBtn.style.backgroundColor = darkenedTop;
   if (themeMockupWrapper) themeMockupWrapper.style.backgroundColor = currentBgColor;
   if (themeMockupBody) themeMockupBody.style.backgroundColor = currentBgColor;
 
@@ -3221,13 +3322,33 @@ function updateThemeColorsUI(topHex, bgHex, source = "all") {
     themeBgHexInput.value = currentBgColor.replace("#", "");
   }
 
+  // Business Name Text color picker inputs
+  if (themeNameColorIndicator) themeNameColorIndicator.style.backgroundColor = currentNameColor;
+  if (source !== "nameNative" && themeNameColorNativeInput) {
+    themeNameColorNativeInput.value = currentNameColor;
+  }
+  if (source !== "nameHex" && themeNameHexInput) {
+    themeNameHexInput.value = currentNameColor.replace("#", "");
+  }
+
+  // Stroke checkbox state
+  if (source !== "strokeCheckbox" && themeNameStrokeCheckbox) {
+    themeNameStrokeCheckbox.checked = currentHasNameStroke;
+  }
+
   // Update active swatch state
   if (themeSwatchesGrid) {
     const swatches = themeSwatchesGrid.querySelectorAll(".theme-swatch-card");
     swatches.forEach(swatch => {
       const swTop = swatch.getAttribute("data-top");
       const swBg = swatch.getAttribute("data-bg");
-      if (swTop && swBg && swTop.toUpperCase() === currentTopColor.toUpperCase() && swBg.toUpperCase() === currentBgColor.toUpperCase()) {
+      const swName = swatch.getAttribute("data-name");
+      if (
+        swTop && swBg && swName &&
+        swTop.toUpperCase() === currentTopColor.toUpperCase() &&
+        swBg.toUpperCase() === currentBgColor.toUpperCase() &&
+        swName.toUpperCase() === currentNameColor.toUpperCase()
+      ) {
         swatch.classList.add("active");
       } else {
         swatch.classList.remove("active");
@@ -3238,7 +3359,10 @@ function updateThemeColorsUI(topHex, bgHex, source = "all") {
   // Check if modified compared to saved state
   const isChanged = (
     currentTopColor.toUpperCase() !== savedTopColor.toUpperCase() ||
-    currentBgColor.toUpperCase() !== savedBgColor.toUpperCase()
+    currentBgColor.toUpperCase() !== savedBgColor.toUpperCase() ||
+    currentNameColor.toUpperCase() !== savedNameColor.toUpperCase() ||
+    currentHasNameStroke !== savedHasNameStroke ||
+    currentNameFont !== savedNameFont
   );
   if (themeSaveBtn) {
     themeSaveBtn.disabled = !isChanged;
@@ -3249,45 +3373,80 @@ function renderThemeSwatches() {
   if (!themeSwatchesGrid) return;
   themeSwatchesGrid.innerHTML = "";
 
-  THEME_PALETTES.forEach(palette => {
+  THEME_PALETTES.forEach((palette, idx) => {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "theme-swatch-card";
     card.setAttribute("data-top", palette.top);
     card.setAttribute("data-bg", palette.bg);
-    card.setAttribute("aria-label", `Select theme ${palette.name}`);
+    card.setAttribute("data-name", palette.name);
+    card.setAttribute("aria-label", `Color Palette Preset ${idx + 1}`);
 
-    if (palette.top.toUpperCase() === currentTopColor.toUpperCase() && palette.bg.toUpperCase() === currentBgColor.toUpperCase()) {
+    const isMatch = (
+      palette.top.toUpperCase() === currentTopColor.toUpperCase() &&
+      palette.bg.toUpperCase() === currentBgColor.toUpperCase() &&
+      palette.name.toUpperCase() === currentNameColor.toUpperCase()
+    );
+    if (isMatch) {
       card.classList.add("active");
     }
 
     const circle = document.createElement("span");
     circle.className = "theme-swatch-circle";
-
-    const topHalf = document.createElement("span");
-    topHalf.className = "theme-swatch-top-half";
-    topHalf.style.backgroundColor = palette.top;
-
-    const bgHalf = document.createElement("span");
-    bgHalf.className = "theme-swatch-bottom-half";
-    bgHalf.style.backgroundColor = palette.bg;
-
-    circle.appendChild(topHalf);
-    circle.appendChild(bgHalf);
-
-    const name = document.createElement("span");
-    name.className = "theme-swatch-name";
-    name.textContent = palette.name;
+    circle.style.background = `conic-gradient(from -60deg, ${palette.top} 0deg 120deg, ${palette.bg} 120deg 240deg, ${palette.name} 240deg 360deg)`;
 
     card.appendChild(circle);
-    card.appendChild(name);
 
     card.addEventListener("click", () => {
-      updateThemeColorsUI(palette.top, palette.bg, "swatch");
+      updateThemeColorsUI(palette.top, palette.bg, palette.name, null, "swatch");
     });
 
     themeSwatchesGrid.appendChild(card);
   });
+}
+
+function renderThemeFonts() {
+  const container = document.getElementById("themeFontsGrid");
+  if (!container) return;
+  container.innerHTML = "";
+
+  THEME_FONTS.forEach(font => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "theme-font-card" + (font.id === currentNameFont ? " active" : "");
+    btn.setAttribute("data-font", font.id);
+    btn.setAttribute("aria-label", `Font: ${font.name}`);
+
+    const label = document.createElement("span");
+    label.className = "theme-font-preview";
+    label.style.fontFamily = font.family;
+    label.textContent = font.name;
+
+    const check = document.createElement("span");
+    check.className = "theme-font-check";
+    check.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+    btn.appendChild(label);
+    btn.appendChild(check);
+
+    btn.addEventListener("click", () => {
+      selectThemeFont(font.id);
+    });
+
+    container.appendChild(btn);
+  });
+}
+
+function selectThemeFont(fontId) {
+  if (currentNameFont === fontId) return;
+  currentNameFont = fontId;
+  const container = document.getElementById("themeFontsGrid");
+  if (container) {
+    container.querySelectorAll(".theme-font-card").forEach(c => {
+      c.classList.toggle("active", c.getAttribute("data-font") === fontId);
+    });
+  }
+  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "fontSelect");
 }
 
 function renderThemeColorsView() {
@@ -3302,14 +3461,41 @@ function renderThemeColorsView() {
   const existingBg = (currentBusiness && currentBusiness.branding && currentBusiness.branding.backgroundColor) 
     ? normalizeHexColor(currentBusiness.branding.backgroundColor) 
     : "#FBEFE1";
+  const existingName = (currentBusiness && currentBusiness.branding && currentBusiness.branding.nameTextColor) 
+    ? normalizeHexColor(currentBusiness.branding.nameTextColor) 
+    : "";
+  const existingStroke = (currentBusiness && currentBusiness.branding && currentBusiness.branding.hasNameStroke !== undefined)
+    ? !!currentBusiness.branding.hasNameStroke
+    : true;
+  const existingFont = (currentBusiness && currentBusiness.branding && currentBusiness.branding.nameFont)
+    ? currentBusiness.branding.nameFont
+    : "Lobster";
 
   savedTopColor = existingTop || "#991E2E";
   currentTopColor = savedTopColor;
   savedBgColor = existingBg || "#FBEFE1";
   currentBgColor = savedBgColor;
+  savedHasNameStroke = existingStroke;
+  currentHasNameStroke = savedHasNameStroke;
+  savedNameFont = THEME_FONTS.some(f => f.id === existingFont) ? existingFont : "Lobster";
+  currentNameFont = savedNameFont;
 
+  if (themeNameStrokeCheckbox) {
+    themeNameStrokeCheckbox.checked = currentHasNameStroke;
+  }
+
+  if (existingName) {
+    savedNameColor = existingName;
+    isCustomNameColor = true;
+  } else {
+    savedNameColor = applyBlackOverlay(savedTopColor, 0.35);
+    isCustomNameColor = false;
+  }
+  currentNameColor = savedNameColor;
+
+  renderThemeFonts();
   renderThemeSwatches();
-  updateThemeColorsUI(currentTopColor, currentBgColor);
+  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "all");
 
   if (themeSaveBtn) {
     themeSaveBtn.disabled = true;
@@ -3320,22 +3506,29 @@ async function saveThemeColors() {
   if (!themeSaveBtn || themeSaveBtn.disabled) return;
   const topToSave = normalizeHexColor(currentTopColor);
   const bgToSave = normalizeHexColor(currentBgColor);
-  if (!topToSave || !bgToSave) return;
+  const nameToSave = normalizeHexColor(currentNameColor);
+  if (!topToSave || !bgToSave || !nameToSave) return;
 
   themeSaveBtn.disabled = true;
   if (themeSaveSpinner) themeSaveSpinner.style.display = "inline-block";
-  if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Saving...";
+  if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Applying";
 
   try {
     const res = await fetch("/api/owner/business", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accentColor: topToSave, backgroundColor: bgToSave })
+      body: JSON.stringify({
+        accentColor: topToSave,
+        backgroundColor: bgToSave,
+        nameTextColor: nameToSave,
+        hasNameStroke: currentHasNameStroke,
+        nameFont: currentNameFont
+      })
     });
 
     const data = await res.json();
     if (!res.ok || !data.success) {
-      throw new Error(data.message || "Failed to update theme colors");
+      throw new Error(data.message || data.error || "Failed to update theme colors");
     }
 
     if (data.business) {
@@ -3345,16 +3538,25 @@ async function saveThemeColors() {
       if (!currentBusiness.branding) currentBusiness.branding = {};
       currentBusiness.branding.accentColor = topToSave;
       currentBusiness.branding.backgroundColor = bgToSave;
+      currentBusiness.branding.nameTextColor = nameToSave;
+      currentBusiness.branding.hasNameStroke = currentHasNameStroke;
+      currentBusiness.branding.nameFont = currentNameFont;
     }
 
     savedTopColor = topToSave;
     savedBgColor = bgToSave;
-    if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Saved!";
+    savedNameColor = nameToSave;
+    savedHasNameStroke = currentHasNameStroke;
+    savedNameFont = currentNameFont;
+    if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Applied";
     setTimeout(() => {
-      if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Save Theme Colors";
+      if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Apply";
       const stillChanged = (
         currentTopColor.toUpperCase() !== savedTopColor.toUpperCase() ||
-        currentBgColor.toUpperCase() !== savedBgColor.toUpperCase()
+        currentBgColor.toUpperCase() !== savedBgColor.toUpperCase() ||
+        currentNameColor.toUpperCase() !== savedNameColor.toUpperCase() ||
+        currentHasNameStroke !== savedHasNameStroke ||
+        currentNameFont !== savedNameFont
       );
       if (themeSaveBtn) themeSaveBtn.disabled = !stillChanged;
     }, 1400);
@@ -3370,7 +3572,7 @@ async function saveThemeColors() {
 // Top Bar color picker listeners
 if (themeTopColorNativeInput) {
   themeTopColorNativeInput.addEventListener("input", (e) => {
-    updateThemeColorsUI(e.target.value, null, "topNative");
+    updateThemeColorsUI(e.target.value, null, null, null, "topNative");
   });
 }
 
@@ -3379,7 +3581,7 @@ if (themeTopHexInput) {
     const raw = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6);
     e.target.value = raw.toUpperCase();
     if (raw.length === 6) {
-      updateThemeColorsUI("#" + raw, null, "topHex");
+      updateThemeColorsUI("#" + raw, null, null, null, "topHex");
     } else {
       if (themeSaveBtn) themeSaveBtn.disabled = true;
     }
@@ -3393,7 +3595,7 @@ if (themeTopHexInput) {
 // Background color picker listeners
 if (themeBgColorNativeInput) {
   themeBgColorNativeInput.addEventListener("input", (e) => {
-    updateThemeColorsUI(null, e.target.value, "bgNative");
+    updateThemeColorsUI(null, e.target.value, null, null, "bgNative");
   });
 }
 
@@ -3402,7 +3604,7 @@ if (themeBgHexInput) {
     const raw = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6);
     e.target.value = raw.toUpperCase();
     if (raw.length === 6) {
-      updateThemeColorsUI(null, "#" + raw, "bgHex");
+      updateThemeColorsUI(null, "#" + raw, null, null, "bgHex");
     } else {
       if (themeSaveBtn) themeSaveBtn.disabled = true;
     }
@@ -3410,6 +3612,37 @@ if (themeBgHexInput) {
 
   themeBgHexInput.addEventListener("blur", () => {
     themeBgHexInput.value = currentBgColor.replace("#", "");
+  });
+}
+
+// Business Name Text color picker listeners
+if (themeNameColorNativeInput) {
+  themeNameColorNativeInput.addEventListener("input", (e) => {
+    updateThemeColorsUI(null, null, e.target.value, null, "nameNative");
+  });
+}
+
+if (themeNameHexInput) {
+  themeNameHexInput.addEventListener("input", (e) => {
+    const raw = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6);
+    e.target.value = raw.toUpperCase();
+    if (raw.length === 6) {
+      updateThemeColorsUI(null, null, "#" + raw, null, "nameHex");
+    } else {
+      if (themeSaveBtn) themeSaveBtn.disabled = true;
+    }
+  });
+
+  themeNameHexInput.addEventListener("blur", () => {
+    themeNameHexInput.value = currentNameColor.replace("#", "");
+  });
+}
+
+// Business Name Stroke checkbox listener
+if (themeNameStrokeCheckbox) {
+  themeNameStrokeCheckbox.addEventListener("change", (e) => {
+    currentHasNameStroke = e.target.checked;
+    updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "strokeCheckbox");
   });
 }
 
@@ -3423,6 +3656,8 @@ window.addEventListener("hashchange", () => {
   if (hash === "#branding") {
     populateBrandingForm();
     showView(brandingView);
+  } else if (hash === "#importmenu") {
+    showView(importMenuView);
   } else if (hash === "#themecolors") {
     renderThemeColorsView();
     showView(themeColorsView);
@@ -3434,7 +3669,557 @@ window.addEventListener("hashchange", () => {
   }
 });
 
+// ==========================================================================
+// Import Menu with AI Controller
+// ==========================================================================
+const importDropzone = document.getElementById("importDropzone");
+const menuPhotosInput = document.getElementById("menuPhotosInput");
+const importBrowseTrigger = document.getElementById("importBrowseTrigger");
+const importPhotosContainer = document.getElementById("importPhotosContainer");
+const importPhotosCountLabel = document.getElementById("importPhotosCountLabel");
+const importPhotosGrid = document.getElementById("importPhotosGrid");
+const importAddMoreBtn = document.getElementById("importAddMoreBtn");
+const analyzeMenuBtn = document.getElementById("analyzeMenuBtn");
+const analyzeMenuBtnLabel = document.getElementById("analyzeMenuBtnLabel");
+const analyzeSpinner = document.getElementById("analyzeSpinner");
+const analyzeStatusMessage = document.getElementById("analyzeStatusMessage");
+const importExtractedCard = document.getElementById("importExtractedCard");
+const extractedSummaryPill = document.getElementById("extractedSummaryPill");
+const importCategoriesContainer = document.getElementById("importCategoriesContainer");
+const selectAllDishesBtn = document.getElementById("selectAllDishesBtn");
+const deselectAllDishesBtn = document.getElementById("deselectAllDishesBtn");
+const importAddCategoryBtn = document.getElementById("importAddCategoryBtn");
+const importCommitCountLabel = document.getElementById("importCommitCountLabel");
+const importClearBtn = document.getElementById("importClearBtn");
+const importConfirmBtn = document.getElementById("importConfirmBtn");
+const importConfirmBtnLabel = document.getElementById("importConfirmBtnLabel");
+const importConfirmSpinner = document.getElementById("importConfirmSpinner");
+const importModeAppendLabel = document.getElementById("importModeAppendLabel");
+const importModeReplaceLabel = document.getElementById("importModeReplaceLabel");
+
+let importSelectedFiles = []; // { id, name, base64, mimeType }
+let extractedCategories = []; // [{ id, name, items: [{ id, name, price, description, selected }] }]
+
+function compressMenuImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1600;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        resolve({
+          id: "photo_" + Math.random().toString(36).substring(2, 9),
+          name: file.name,
+          base64: dataUrl,
+          mimeType: "image/jpeg"
+        });
+      };
+      img.onerror = () => reject(new Error(`Failed to load image ${file.name}`));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error(`Failed to read file ${file.name}`));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleFilesSelected(files) {
+  if (!files || files.length === 0) return;
+  const imageFiles = Array.from(files).filter(f => f.type.startsWith("image/"));
+  if (imageFiles.length === 0) {
+    showImportStatus("Please select valid image files (JPG, PNG, WebP).", "error");
+    return;
+  }
+
+  if (importSelectedFiles.length + imageFiles.length > 10) {
+    showImportStatus("You can upload a maximum of 10 photos at a time.", "error");
+    return;
+  }
+
+  showImportStatus("Processing photos for upload...", "loading");
+
+  try {
+    for (const f of imageFiles) {
+      const compressed = await compressMenuImage(f);
+      importSelectedFiles.push(compressed);
+    }
+    renderSelectedPhotosUI();
+    hideImportStatus();
+  } catch (err) {
+    console.error("Photo compression error:", err);
+    showImportStatus("Error loading some photos. Please try again.", "error");
+  }
+}
+
+function renderSelectedPhotosUI() {
+  if (!importPhotosGrid || !importPhotosContainer) return;
+
+  if (importSelectedFiles.length === 0) {
+    importPhotosContainer.style.display = "none";
+    if (analyzeMenuBtn) analyzeMenuBtn.disabled = true;
+    return;
+  }
+
+  importPhotosContainer.style.display = "flex";
+  if (analyzeMenuBtn) analyzeMenuBtn.disabled = false;
+  if (importPhotosCountLabel) {
+    importPhotosCountLabel.textContent = `${importSelectedFiles.length} photo${importSelectedFiles.length === 1 ? "" : "s"} selected`;
+  }
+
+  importPhotosGrid.innerHTML = "";
+  importSelectedFiles.forEach(photo => {
+    const card = document.createElement("div");
+    card.className = "import-photo-thumb-card";
+
+    const img = document.createElement("img");
+    img.className = "import-photo-thumb-img";
+    img.src = photo.base64;
+    img.alt = photo.name;
+    img.title = photo.name;
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "import-photo-remove-btn";
+    delBtn.innerHTML = "✕";
+    delBtn.title = "Remove photo";
+    delBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      importSelectedFiles = importSelectedFiles.filter(p => p.id !== photo.id);
+      renderSelectedPhotosUI();
+    });
+
+    card.appendChild(img);
+    card.appendChild(delBtn);
+    importPhotosGrid.appendChild(card);
+  });
+}
+
+function showImportStatus(msg, type = "loading") {
+  if (!analyzeStatusMessage) return;
+  analyzeStatusMessage.textContent = msg;
+  analyzeStatusMessage.className = `import-status-banner ${type}`;
+  analyzeStatusMessage.style.display = "block";
+}
+
+function hideImportStatus() {
+  if (!analyzeStatusMessage) return;
+  analyzeStatusMessage.style.display = "none";
+}
+
+// Strategy Mode radio selection toggles
+if (importModeAppendLabel && importModeReplaceLabel) {
+  const radios = document.querySelectorAll('input[name="importMode"]');
+  radios.forEach(radio => {
+    radio.addEventListener("change", () => {
+      importModeAppendLabel.classList.toggle("active", radio.value === "append" && radio.checked);
+      importModeReplaceLabel.classList.toggle("active", radio.value === "replace" && radio.checked);
+    });
+  });
+}
+
+// Dropzone interactions
+if (importDropzone && menuPhotosInput) {
+  importDropzone.addEventListener("click", (e) => {
+    if (e.target !== importBrowseTrigger && !e.target.closest("#importBrowseTrigger")) {
+      menuPhotosInput.click();
+    }
+  });
+
+  if (importBrowseTrigger) {
+    importBrowseTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menuPhotosInput.click();
+    });
+  }
+
+  if (importAddMoreBtn) {
+    importAddMoreBtn.addEventListener("click", () => {
+      menuPhotosInput.click();
+    });
+  }
+
+  menuPhotosInput.addEventListener("change", (e) => {
+    handleFilesSelected(e.target.files);
+    menuPhotosInput.value = "";
+  });
+
+  importDropzone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    importDropzone.classList.add("dragover");
+  });
+
+  importDropzone.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    importDropzone.classList.remove("dragover");
+  });
+
+  importDropzone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    importDropzone.classList.remove("dragover");
+    if (e.dataTransfer && e.dataTransfer.files) {
+      handleFilesSelected(e.dataTransfer.files);
+    }
+  });
+}
+
+// AI Analysis
+if (analyzeMenuBtn) {
+  analyzeMenuBtn.addEventListener("click", async () => {
+    if (importSelectedFiles.length === 0) return;
+
+    analyzeMenuBtn.disabled = true;
+    if (analyzeSpinner) analyzeSpinner.style.display = "inline-block";
+    if (analyzeMenuBtnLabel) analyzeMenuBtnLabel.textContent = "Analyzing Photos with AI...";
+    showImportStatus("Analyzing menu with Gemini AI... Reading categories, dishes and prices.", "loading");
+
+    try {
+      const res = await fetch("/api/owner/extract-menu", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          images: importSelectedFiles.map(f => ({ base64: f.base64, mimeType: f.mimeType }))
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to analyze menu photos.");
+      }
+
+      const cats = Array.isArray(data.categories) ? data.categories : [];
+      if (cats.length === 0) {
+        showImportStatus("No dishes or categories could be identified in the uploaded photos. Please check lighting and clarity.", "error");
+        return;
+      }
+
+      extractedCategories = cats.map(cat => ({
+        id: "cat_" + Math.random().toString(36).substring(2, 9),
+        name: cat.name || "GENERAL",
+        items: (cat.items || []).map(item => ({
+          id: "item_" + Math.random().toString(36).substring(2, 9),
+          name: item.name || "",
+          price: Number(item.price) || 0,
+          description: item.description || "",
+          selected: true
+        }))
+      }));
+
+      showImportStatus(`✓ Extracted ${data.totalDishes || 0} dishes across ${extractedCategories.length} categories! Review below.`, "success");
+      renderExtractedPreviewUI();
+
+      if (importExtractedCard) {
+        importExtractedCard.style.display = "flex";
+        importExtractedCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    } catch (err) {
+      console.error("AI Analysis Error:", err);
+      showImportStatus(err.message || "Failed to analyze menu images.", "error");
+    } finally {
+      analyzeMenuBtn.disabled = false;
+      if (analyzeSpinner) analyzeSpinner.style.display = "none";
+      if (analyzeMenuBtnLabel) analyzeMenuBtnLabel.textContent = "Analyze Menu with AI";
+    }
+  });
+}
+
+function updateCommitCounter() {
+  let count = 0;
+  extractedCategories.forEach(cat => {
+    cat.items.forEach(it => {
+      if (it.selected) count++;
+    });
+  });
+
+  if (importCommitCountLabel) {
+    importCommitCountLabel.textContent = `${count} dish${count === 1 ? "" : "es"} selected for import`;
+  }
+  if (extractedSummaryPill) {
+    extractedSummaryPill.textContent = `${count} Dishes Selected`;
+  }
+  if (importConfirmBtn) {
+    importConfirmBtn.disabled = (count === 0);
+  }
+}
+
+function renderExtractedPreviewUI() {
+  if (!importCategoriesContainer) return;
+  importCategoriesContainer.innerHTML = "";
+
+  extractedCategories.forEach(category => {
+    const card = document.createElement("div");
+    card.className = "import-category-card";
+
+    // Header
+    const header = document.createElement("div");
+    header.className = "import-category-header";
+
+    const titleWrap = document.createElement("div");
+    titleWrap.className = "import-category-title-wrap";
+
+    const titleInput = document.createElement("input");
+    titleInput.type = "text";
+    titleInput.className = "import-category-input";
+    titleInput.value = category.name;
+    titleInput.addEventListener("input", (e) => {
+      category.name = e.target.value.toUpperCase();
+    });
+
+    const countBadge = document.createElement("span");
+    countBadge.className = "import-category-dish-count";
+    countBadge.textContent = `${category.items.length} items`;
+
+    titleWrap.appendChild(titleInput);
+    titleWrap.appendChild(countBadge);
+
+    const actions = document.createElement("div");
+    actions.className = "import-category-actions";
+
+    const addDishBtn = document.createElement("button");
+    addDishBtn.type = "button";
+    addDishBtn.className = "import-btn-icon-subtle";
+    addDishBtn.innerHTML = `<span>+ Add Dish</span>`;
+    addDishBtn.addEventListener("click", () => {
+      category.items.push({
+        id: "item_" + Math.random().toString(36).substring(2, 9),
+        name: "New Dish",
+        price: 0,
+        description: "",
+        selected: true
+      });
+      renderExtractedPreviewUI();
+    });
+
+    const delCatBtn = document.createElement("button");
+    delCatBtn.type = "button";
+    delCatBtn.className = "import-btn-icon-subtle import-btn-icon-danger";
+    delCatBtn.innerHTML = `✕ Remove Category`;
+    delCatBtn.addEventListener("click", () => {
+      extractedCategories = extractedCategories.filter(c => c.id !== category.id);
+      renderExtractedPreviewUI();
+    });
+
+    actions.appendChild(addDishBtn);
+    actions.appendChild(delCatBtn);
+    header.appendChild(titleWrap);
+    header.appendChild(actions);
+    card.appendChild(header);
+
+    // Dishes List
+    const dishesList = document.createElement("div");
+    dishesList.className = "import-dishes-list";
+
+    category.items.forEach(item => {
+      const row = document.createElement("div");
+      row.className = `import-dish-row ${item.selected ? "" : "unchecked"}`;
+
+      // Checkbox
+      const check = document.createElement("input");
+      check.type = "checkbox";
+      check.className = "import-dish-check";
+      check.checked = !!item.selected;
+      check.addEventListener("change", () => {
+        item.selected = check.checked;
+        row.classList.toggle("unchecked", !check.checked);
+        updateCommitCounter();
+      });
+
+      // Fields (Name & Description)
+      const fieldsWrap = document.createElement("div");
+      fieldsWrap.className = "import-dish-fields";
+
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.className = "import-dish-name-input";
+      nameInput.value = item.name;
+      nameInput.placeholder = "Dish name";
+      nameInput.addEventListener("input", (e) => {
+        item.name = e.target.value;
+      });
+
+      const descInput = document.createElement("input");
+      descInput.type = "text";
+      descInput.className = "import-dish-desc-input";
+      descInput.value = item.description || "";
+      descInput.placeholder = "Optional description or ingredients...";
+      descInput.addEventListener("input", (e) => {
+        item.description = e.target.value;
+      });
+
+      fieldsWrap.appendChild(nameInput);
+      fieldsWrap.appendChild(descInput);
+
+      // Price
+      const priceWrap = document.createElement("div");
+      priceWrap.className = "import-dish-price-wrap";
+
+      const prefix = document.createElement("span");
+      prefix.className = "import-dish-price-prefix";
+      prefix.textContent = "₹";
+
+      const priceInput = document.createElement("input");
+      priceInput.type = "number";
+      priceInput.className = "import-dish-price-input";
+      priceInput.value = item.price;
+      priceInput.min = "0";
+      priceInput.step = "any";
+      priceInput.addEventListener("input", (e) => {
+        item.price = Number(e.target.value) || 0;
+      });
+
+      priceWrap.appendChild(prefix);
+      priceWrap.appendChild(priceInput);
+
+      // Delete Button
+      const delDishBtn = document.createElement("button");
+      delDishBtn.type = "button";
+      delDishBtn.className = "import-dish-del-btn";
+      delDishBtn.innerHTML = `✕`;
+      delDishBtn.title = "Delete item";
+      delDishBtn.addEventListener("click", () => {
+        category.items = category.items.filter(it => it.id !== item.id);
+        renderExtractedPreviewUI();
+      });
+
+      row.appendChild(check);
+      row.appendChild(fieldsWrap);
+      row.appendChild(priceWrap);
+      row.appendChild(delDishBtn);
+      dishesList.appendChild(row);
+    });
+
+    card.appendChild(dishesList);
+    importCategoriesContainer.appendChild(card);
+  });
+
+  updateCommitCounter();
+}
+
+// Bulk Controls
+if (selectAllDishesBtn) {
+  selectAllDishesBtn.addEventListener("click", () => {
+    extractedCategories.forEach(cat => cat.items.forEach(it => it.selected = true));
+    renderExtractedPreviewUI();
+  });
+}
+
+if (deselectAllDishesBtn) {
+  deselectAllDishesBtn.addEventListener("click", () => {
+    extractedCategories.forEach(cat => cat.items.forEach(it => it.selected = false));
+    renderExtractedPreviewUI();
+  });
+}
+
+if (importAddCategoryBtn) {
+  importAddCategoryBtn.addEventListener("click", () => {
+    extractedCategories.unshift({
+      id: "cat_" + Math.random().toString(36).substring(2, 9),
+      name: "NEW CATEGORY",
+      items: [
+        {
+          id: "item_" + Math.random().toString(36).substring(2, 9),
+          name: "Dish Name",
+          price: 100,
+          description: "",
+          selected: true
+        }
+      ]
+    });
+    renderExtractedPreviewUI();
+  });
+}
+
+if (importClearBtn) {
+  importClearBtn.addEventListener("click", () => {
+    if (confirm("Discard extracted items and reset?")) {
+      extractedCategories = [];
+      importSelectedFiles = [];
+      renderSelectedPhotosUI();
+      if (importExtractedCard) importExtractedCard.style.display = "none";
+      hideImportStatus();
+    }
+  });
+}
+
+// Commit Import Action
+if (importConfirmBtn) {
+  importConfirmBtn.addEventListener("click", async () => {
+    const selectedMode = document.querySelector('input[name="importMode"]:checked')?.value || "append";
+
+    let totalSelected = 0;
+    extractedCategories.forEach(c => c.items.forEach(it => { if (it.selected) totalSelected++; }));
+
+    if (totalSelected === 0) {
+      alert("Please select at least one dish to import.");
+      return;
+    }
+
+    if (selectedMode === "replace") {
+      const confirmReplace = confirm(
+        "Warning: 'Replace Entire Menu' will delete your existing dishes and replace them with these imported items.\n\nAre you sure you want to proceed?"
+      );
+      if (!confirmReplace) return;
+    }
+
+    importConfirmBtn.disabled = true;
+    if (importConfirmSpinner) importConfirmSpinner.style.display = "inline-block";
+    if (importConfirmBtnLabel) importConfirmBtnLabel.textContent = "Importing...";
+
+    try {
+      const res = await fetch("/api/owner/batch-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          categories: extractedCategories,
+          mode: selectedMode
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to import menu items.");
+      }
+
+      alert(data.message || `Successfully imported ${totalSelected} dishes!`);
+
+      // Reset import state
+      extractedCategories = [];
+      importSelectedFiles = [];
+      renderSelectedPhotosUI();
+      if (importExtractedCard) importExtractedCard.style.display = "none";
+      hideImportStatus();
+
+      // Refresh dashboard menu editor so user sees dishes immediately
+      renderDashboardView();
+      showView(dashboardView);
+    } catch (err) {
+      console.error("Batch Import Error:", err);
+      alert(err.message || "Failed to import menu.");
+    } finally {
+      importConfirmBtn.disabled = false;
+      if (importConfirmSpinner) importConfirmSpinner.style.display = "none";
+      if (importConfirmBtnLabel) importConfirmBtnLabel.textContent = "Import to Menu";
+    }
+  });
+}
+
 // Start initialization on page load
 document.addEventListener("DOMContentLoaded", () => {
   checkSession();
 });
+

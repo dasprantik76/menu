@@ -271,6 +271,41 @@ module.exports = async function handler(req, res) {
         safeUpdates.branding.backgroundColor = bgColorVal.trim();
       }
 
+      const nameColorVal = body.nameTextColor || (body.branding && body.branding.nameTextColor);
+      if (nameColorVal && typeof nameColorVal === "string" && /^#[0-9a-fA-F]{3,8}$/.test(nameColorVal.trim())) {
+        if (!safeUpdates.branding) {
+          safeUpdates.branding = {
+            ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
+          };
+        }
+        safeUpdates.branding.nameTextColor = nameColorVal.trim();
+      }
+
+      const hasStrokeVal = body.hasNameStroke !== undefined
+        ? body.hasNameStroke
+        : (body.nameStroke !== undefined
+          ? body.nameStroke
+          : (body.branding && body.branding.hasNameStroke !== undefined ? body.branding.hasNameStroke : null));
+      if (hasStrokeVal !== null && typeof hasStrokeVal === "boolean") {
+        if (!safeUpdates.branding) {
+          safeUpdates.branding = {
+            ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
+          };
+        }
+        safeUpdates.branding.hasNameStroke = hasStrokeVal;
+      }
+
+      const ALLOWED_FONTS = ["Bebas Neue", "Lobster", "Google Sans", "Berkshire Swash", "Kaushan Script"];
+      const fontVal = body.nameFont || (body.branding && body.branding.nameFont) || body.fontFamily || (body.branding && body.branding.fontFamily);
+      if (fontVal && typeof fontVal === "string" && ALLOWED_FONTS.includes(fontVal.trim())) {
+        if (!safeUpdates.branding) {
+          safeUpdates.branding = {
+            ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
+          };
+        }
+        safeUpdates.branding.nameFont = fontVal.trim();
+      }
+
       if (logoVal !== null) {
         const rawLogo = String(logoVal).trim();
         const prevLogoFileId = business.branding && business.branding.logoFileId;

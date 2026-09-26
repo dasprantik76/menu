@@ -163,13 +163,8 @@ module.exports = async function handler(req, res) {
         };
       })
       .filter(cat => {
-        // If it's Today's Special and active, show it (even if 0 items, shows empty notice)
-        // If Today's Special toggle switch is OFF, it was already excluded by activeCategories!
-        if (cat.isFixed || (cat.category && cat.category.toUpperCase() === "TODAY'S SPECIAL")) {
-          return true;
-        }
-        // For other active categories, only include if they have at least 1 available item
-        return cat.items.length > 0;
+        // Only show categories that have at least 1 menu item added (including Today's Special)
+        return Array.isArray(cat.items) && cat.items.length > 0;
       });
 
     // Disable caching so newly added items/categories reflect immediately

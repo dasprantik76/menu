@@ -143,16 +143,18 @@ module.exports = async function handler(req, res) {
         const isSpecial = cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL");
         const itemsInCat = menuItems
           .filter(item => {
-            return String(item.categoryId) === String(cat._id) &&
-              item.isAvailable !== false &&
-              item.isVisible !== false;
+            if (item.isAvailable === false || item.isVisible === false) return false;
+            if (isSpecial) {
+              return !!(item.isSpecial || item.isFeatured || String(item.categoryId) === String(cat._id));
+            }
+            return String(item.categoryId) === String(cat._id);
           })
           .map(item => ({
             name: item.name,
             price: typeof item.price === "number" ? `₹${item.price}` : String(item.price || ""),
             description: item.description || "",
             image: item.image || "",
-            isFeatured: !!item.isFeatured
+            isFeatured: isSpecial || !!(item.isSpecial || item.isFeatured)
           }));
 
         return {

@@ -1828,9 +1828,48 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
+function fitBrandTitleOnSingleLine(brandTitle) {
+  if (!brandTitle) return;
+  const header = brandTitle.closest(".sticky-header");
+  if (!header) return;
+
+  requestAnimationFrame(() => {
+    // Symmetrical left and right margin (24px on each side = 48px total)
+    const maxWidth = (header.clientWidth || window.innerWidth) - 48;
+    if (maxWidth <= 0) return;
+
+    brandTitle.style.fontSize = "";
+
+    const range = document.createRange();
+    range.selectNodeContents(brandTitle);
+    const textWidth = range.getBoundingClientRect().width;
+
+    if (textWidth > maxWidth && textWidth > 0) {
+      const computed = window.getComputedStyle(brandTitle);
+      const currentSize = parseFloat(computed.fontSize) || 36;
+      // Proportional scale to fit within maxWidth with safe margins
+      const targetSize = Math.max(12, Math.floor(currentSize * (maxWidth / textWidth) * 10) / 10);
+      brandTitle.style.fontSize = `${targetSize}px`;
+    }
+  });
+}
+
 function renderBrandTitleText(brandTitle, name) {
   if (!name) return;
   brandTitle.textContent = name.trim();
+  fitBrandTitleOnSingleLine(brandTitle);
+}
+
+window.addEventListener("resize", () => {
+  const brandTitle = document.querySelector(".brand-title") || document.getElementById("brandTitle");
+  if (brandTitle) fitBrandTitleOnSingleLine(brandTitle);
+});
+
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => {
+    const brandTitle = document.querySelector(".brand-title") || document.getElementById("brandTitle");
+    if (brandTitle) fitBrandTitleOnSingleLine(brandTitle);
+  });
 }
 
 function applyBlackOverlay(hex, opacity = 0.35) {
@@ -2062,7 +2101,14 @@ async function loadDynamicMenu() {
 
     if (validCategories.length > 0) {
       MENU_DATA = validCategories;
-      activeCategoryIndex = 0;
+      const urlParams = new URLSearchParams(window.location.search);
+      const catParam = urlParams.get("category") || urlParams.get("cat");
+      let initIdx = 0;
+      if (catParam) {
+        const found = validCategories.findIndex(c => (c.category || c.name || "").toLowerCase() === catParam.toLowerCase() || String(c._id || c.id) === catParam);
+        if (found !== -1) initIdx = found;
+      }
+      activeCategoryIndex = initIdx;
       renderMenuItems(activeCategoryIndex);
       setupCategorySheet();
       renderCategoryPageDots();

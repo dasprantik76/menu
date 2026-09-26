@@ -72,7 +72,7 @@ module.exports = async function handler(req, res) {
     // POST: Add new menu item
     // -------------------------------------------------------------
     if (req.method === "POST") {
-      const { categoryId, name, price, description, isAvailable, isFeatured } = body;
+      const { categoryId, name, price, description, isAvailable, isFeatured, isSpecial } = body;
 
       if (!categoryId) {
         return res.status(400).json({ success: false, error: "A valid categoryId is required." });
@@ -96,18 +96,16 @@ module.exports = async function handler(req, res) {
         businessId: business._id
       }) : null;
 
-      if (!category && (categoryId === "today_special_fixed" || categoryId === "today_special")) {
-        category = await db.collection(COLLECTIONS.CATEGORIES).findOne({
-          businessId: business._id,
-          $or: [{ isFixed: true }, { name: "TODAY'S SPECIAL" }]
-        });
-        if (category) {
-          catObjectId = category._id;
-        }
-      }
-
       if (!category) {
         return res.status(400).json({ success: false, error: "Selected category does not exist in your restaurant." });
+      }
+
+      const isSpecialCat = category.isFixed || (category.name && category.name.toUpperCase() === "TODAY'S SPECIAL");
+      if (isSpecialCat) {
+        return res.status(400).json({
+          success: false,
+          error: "Items cannot be directly added to 'Today\\'s Special'. Please add the item to a regular menu category and use the star toggle to feature it."
+        });
       }
 
       // Next display order
@@ -121,6 +119,7 @@ module.exports = async function handler(req, res) {
         ? lastItem[0].displayOrder + 1
         : 0;
 
+      const isSpec = typeof isSpecial === "boolean" ? isSpecial : !!isFeatured;
       const newItem = {
         businessId: business._id,
         categoryId: catObjectId,
@@ -129,7 +128,8 @@ module.exports = async function handler(req, res) {
         description: description ? String(description).trim() : "",
         image: "",
         isAvailable: isAvailable !== false,
-        isFeatured: !!isFeatured,
+        isFeatured: isSpec,
+        isSpecial: isSpec,
         displayOrder: nextOrder,
         createdAt: new Date()
       };
@@ -148,7 +148,7 @@ module.exports = async function handler(req, res) {
     // PATCH: Update menu item (name, price, availability, featured, etc.)
     // -------------------------------------------------------------
     if (req.method === "PATCH") {
-      const { id, name, price, description, isAvailable, isFeatured, categoryId, displayOrder } = body;
+      const { id, name, price, description, isAvailable, isFeatured, isSpecial, categoryId, displayOrder } = body;
 
       if (!id) {
         return res.status(400).json({ success: false, error: "Item ID ('id') is required." });
@@ -181,8 +181,28 @@ module.exports = async function handler(req, res) {
         updates.isVisible = isVisible;
         updates.isAvailable = isVisible;
       }
-      if (typeof isFeatured === "boolean") {
+      if (typeof isSpecial === "boolean") {
+        updates.isSpecial = isSpecial;
+        updates.isFeatured = isSpecial;
+        // If un-starring an item that previously had categoryId pointing directly to Today's Special:
+        if (!isSpecial && existing.categoryId) {
+          const specialCat = await db.collection(COLLECTIONS.CATEGORIES).findOne({
+            businessId: business._id,
+            $or: [{ isFixed: true }, { name: "TODAY'S SPECIAL" }]
+          });
+          if (specialCat && String(existing.categoryId) === String(specialCat._id)) {
+            const fallbackCat = await db.collection(COLLECTIONS.CATEGORIES).findOne({
+              businessId: business._id,
+              _id: { $ne: specialCat._id }
+            });
+            if (fallbackCat) {
+              updates.categoryId = fallbackCat._id;
+            }
+          }
+        }
+      } else if (typeof isFeatured === "boolean") {
         updates.isFeatured = isFeatured;
+        updates.isSpecial = isFeatured;
       }
       if (typeof displayOrder === "number") {
         updates.displayOrder = displayOrder;
@@ -199,18 +219,11 @@ module.exports = async function handler(req, res) {
           businessId: business._id
         }) : null;
 
-        if (!catExists && (categoryId === "today_special_fixed" || categoryId === "today_special")) {
-          catExists = await db.collection(COLLECTIONS.CATEGORIES).findOne({
-            businessId: business._id,
-            $or: [{ isFixed: true }, { name: "TODAY'S SPECIAL" }]
-          });
-          if (catExists) {
-            catObjectId = catExists._id;
-          }
-        }
-
         if (catExists) {
-          updates.categoryId = catObjectId;
+          const isSpecialCat = catExists.isFixed || (catExists.name && catExists.name.toUpperCase() === "TODAY'S SPECIAL");
+          if (!isSpecialCat) {
+            updates.categoryId = catObjectId;
+          }
         }
       }
 

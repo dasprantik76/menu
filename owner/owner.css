@@ -2739,32 +2739,37 @@ html.pending-mode .owner-header .brand-tag {
 .capsule-switcher {
   position: relative;
   display: inline-flex;
-  background: #f1f5f9;
-  padding: 4px;
+  background: #ffffff;
+  padding: 3px;
   border-radius: 9999px;
-  border: 1.5px solid rgba(100, 116, 139, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.45);
   box-shadow: none;
   width: 248px;
   box-sizing: border-box;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent !important;
-  transition: border-color 0.2s ease;
 }
 
-.capsule-switcher:hover {
-  border-color: rgba(71, 85, 105, 0.75);
+.capsule-switcher:hover,
+.capsule-switcher:active,
+.capsule-switcher:focus,
+.capsule-switcher:focus-within {
+  background: #ffffff !important;
+  border-color: rgba(148, 163, 184, 0.45) !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .capsule-slider-pill {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
-  width: calc(50% - 4px);
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
   border-radius: 9999px;
   background: #991e2e;
-  border: 1px solid rgba(124, 22, 35, 0.5);
+  border: none;
   box-sizing: border-box;
   box-shadow: none;
   transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
@@ -3099,28 +3104,9 @@ html.pending-mode .owner-header .brand-tag {
 
 .dishes-action-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   width: 100%;
-}
-
-#openAddDishBtn {
-  width: auto;
-  height: 52px;
-  min-height: 52px;
-  max-height: 52px;
-  padding: 0 22px;
-  border-radius: 10px;
-  font-family: 'Google Sans', sans-serif;
-  font-size: 0.92rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  white-space: nowrap;
 }
 
 .category-dropdown-wrapper {
@@ -3135,7 +3121,9 @@ html.pending-mode .owner-header .brand-tag {
   border: 1.5px solid rgba(153, 30, 46, 0.22);
   border-radius: 10px;
   transition: all 0.18s ease;
-  min-width: 200px;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .category-dropdown-wrapper:hover {
@@ -3147,6 +3135,58 @@ html.pending-mode .owner-header .brand-tag {
   border-color: #991e2e;
   background: #ffffff;
   box-shadow: 0 0 0 3px rgba(153, 30, 46, 0.12);
+}
+
+/* Sticky Bottom Add Item Button */
+.sticky-add-dish-bar {
+  position: sticky;
+  bottom: 20px;
+  z-index: 50;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: auto;
+  padding: 14px 0 max(8px, env(safe-area-inset-bottom, 8px)) 0;
+  pointer-events: none;
+}
+
+.sticky-add-dish-bar #openAddDishBtn {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 440px;
+  height: 52px;
+  min-height: 52px;
+  max-height: 52px;
+  padding: 0 24px;
+  border-radius: 12px;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  white-space: nowrap;
+  background-color: var(--primary, #991e2e);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(153, 30, 46, 0.28), 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+
+.sticky-add-dish-bar #openAddDishBtn:hover {
+  background-color: var(--primary-hover, #7f1825);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(153, 30, 46, 0.36), 0 3px 8px rgba(0, 0, 0, 0.12);
+}
+
+.sticky-add-dish-bar #openAddDishBtn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 2px 8px rgba(153, 30, 46, 0.2);
 }
 
 .category-dropdown-display {
@@ -3264,6 +3304,64 @@ html.pending-mode .owner-header .brand-tag {
   flex-shrink: 0;
   align-self: center;
   margin-bottom: 0;
+}
+
+/* Star Toggle Button for Today's Special */
+.dish-star-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s ease, color 0.15s ease;
+  color: #94a3b8;
+  outline: none;
+  line-height: 1;
+  margin-right: -2px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dish-star-btn:hover {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.dish-star-btn:active {
+  transform: scale(0.85);
+}
+
+.dish-star-btn .star-icon {
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: fill 0.2s ease, stroke 0.2s ease, transform 0.2s ease;
+}
+
+.dish-star-btn.active {
+  color: #f59e0b;
+}
+
+.dish-star-btn.active:hover {
+  background-color: rgba(245, 158, 11, 0.16);
+}
+
+.dish-star-btn.active .star-icon {
+  fill: #f59e0b;
+  stroke: #d97706;
+  stroke-width: 1;
+  animation: starPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes starPop {
+  0% { transform: scale(0.7); }
+  60% { transform: scale(1.28); }
+  100% { transform: scale(1); }
 }
 
 .dish-card-title {
@@ -3978,20 +4076,20 @@ input:checked + .slider:before {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 8px;
     width: 100%;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   .dishes-action-row .category-dropdown-wrapper {
     flex: 1;
     min-width: 0;
+    width: 100%;
     height: 52px !important;
   }
 
   .category-dropdown-display {
     padding: 0 30px 0 12px;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
   }
 
   .dishes-action-row .category-dropdown-select {
@@ -4001,17 +4099,20 @@ input:checked + .slider:before {
     height: 100% !important;
     padding: 0 30px 0 12px !important;
     box-sizing: border-box !important;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
   }
 
-  #openAddDishBtn {
-    height: 52px !important;
-    min-height: 52px !important;
-    max-height: 52px !important;
-    padding: 0 14px !important;
-    font-size: 0.85rem;
-    white-space: nowrap;
-    flex-shrink: 0;
+  .sticky-add-dish-bar {
+    bottom: 14px;
+    padding: 8px 0 max(10px, env(safe-area-inset-bottom, 10px)) 0;
+  }
+
+  .sticky-add-dish-bar #openAddDishBtn {
+    max-width: 100%;
+    height: 50px !important;
+    min-height: 50px !important;
+    font-size: 0.95rem;
+    border-radius: 10px;
   }
 
   .dishes-container-box {

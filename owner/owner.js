@@ -1565,6 +1565,25 @@ function initViewSwitcher() {
 }
 
 /**
+ * Check if a dish is marked as Today's Special
+ */
+function isDishSpecial(dish) {
+  if (!dish) return false;
+  if (dish.isSpecial === true || dish.isFeatured === true) return true;
+  const specialCat = categories.find(c => c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
+  if (specialCat && String(dish.categoryId) === String(specialCat._id)) return true;
+  return false;
+}
+
+/**
+ * Update category badges and dropdown counts across dashboard
+ */
+function updateCategoryCountsAndBadges() {
+  populateCategorySelectDropdown();
+  renderCategoriesList();
+}
+
+/**
  * Render categories list in CATEGORY view
  */
 function renderCategoriesList() {
@@ -1588,7 +1607,9 @@ function renderCategoriesList() {
   categories.forEach(cat => {
     const isAvail = cat.isAvailable !== false && cat.isVisible !== false;
     const isFixed = cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL");
-    const dishCount = dishes.filter(d => String(d.categoryId) === String(cat._id)).length;
+    const dishCount = isFixed
+      ? dishes.filter(d => isDishSpecial(d)).length
+      : dishes.filter(d => String(d.categoryId) === String(cat._id)).length;
     const card = document.createElement("div");
     card.className = `category-admin-card ${isFixed ? "today-special-card" : ""} ${isAvail ? "" : "unavailable"}`.trim();
     card.dataset.id = cat._id;
@@ -1816,7 +1837,9 @@ function renderCategoryTabs() {
   // Individual category options
   sortedCategories.forEach(cat => {
     const isFixed = cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL");
-    const catDishCount = dishes.filter(d => String(d.categoryId) === String(cat._id)).length;
+    const catDishCount = isFixed
+      ? dishes.filter(d => isDishSpecial(d)).length
+      : dishes.filter(d => String(d.categoryId) === String(cat._id)).length;
     const opt = document.createElement("option");
     opt.value = String(cat._id);
     opt.textContent = `${isFixed ? "★ " : ""}${cat.name} (${catDishCount})`;
@@ -1831,28 +1854,24 @@ function renderCategoryTabs() {
 
 /**
  * Populate Category dropdown in Add/Edit Dish Modal
+ * Excludes Today's Special so starring items is the only way to add dishes to Today's Special.
  */
 function populateCategoryDropdown() {
   dishCategorySelect.innerHTML = "";
-  if (categories.length === 0) {
+  const nonFixedCategories = categories.filter(cat => !(cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL")));
+
+  if (nonFixedCategories.length === 0) {
     const opt = document.createElement("option");
     opt.value = "";
     opt.textContent = "-- No Categories (Create one first) --";
     dishCategorySelect.appendChild(opt);
     return;
   }
-  const sortedCategories = [...categories].sort((a, b) => {
-    const aFixed = a.isFixed || (a.name && a.name.toUpperCase() === "TODAY'S SPECIAL");
-    const bFixed = b.isFixed || (b.name && b.name.toUpperCase() === "TODAY'S SPECIAL");
-    if (aFixed && !bFixed) return -1;
-    if (!aFixed && bFixed) return 1;
-    return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
-  });
+  const sortedCategories = [...nonFixedCategories].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
   sortedCategories.forEach(cat => {
-    const isFixed = cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL");
     const opt = document.createElement("option");
     opt.value = cat._id;
-    opt.textContent = isFixed ? `★ ${cat.name}` : cat.name;
+    opt.textContent = cat.name;
     dishCategorySelect.appendChild(opt);
   });
 }
@@ -1867,8 +1886,13 @@ function renderDishesGrid() {
   let filtered = dishes;
   if (selectedCategoryId) {
     const activeCat = categories.find(c => String(c._id) === selectedCategoryId);
+    const isSpecialCat = activeCat && (activeCat.isFixed || (activeCat.name && activeCat.name.toUpperCase() === "TODAY'S SPECIAL"));
     if (currentCategoryTitle) currentCategoryTitle.textContent = activeCat ? activeCat.name : "Category Dishes";
-    filtered = dishes.filter(d => String(d.categoryId) === selectedCategoryId);
+    if (isSpecialCat) {
+      filtered = dishes.filter(d => isDishSpecial(d));
+    } else {
+      filtered = dishes.filter(d => String(d.categoryId) === selectedCategoryId);
+    }
   } else {
     if (currentCategoryTitle) currentCategoryTitle.textContent = "All Dishes";
   }
@@ -1897,9 +1921,11 @@ function renderDishesGrid() {
   filtered.forEach(dish => {
     const card = document.createElement("div");
     card.className = `dish-admin-card ${dish.isAvailable ? "" : "unavailable"}`;
+    card.dataset.id = dish._id;
 
     const catObj = categories.find(c => String(c._id) === String(dish.categoryId));
     const catName = catObj ? catObj.name : "";
+    const isSpecial = isDishSpecial(dish);
 
     card.innerHTML = `
       <div class="dish-row-info">
@@ -1909,6 +1935,11 @@ function renderDishesGrid() {
             <span class="slider"></span>
           </span>
         </label>
+        <button type="button" class="dish-star-btn ${isSpecial ? 'active' : ''}" data-id="${dish._id}" title="${isSpecial ? 'Remove from Today\'s Special' : 'Add to Today\'s Special'}" aria-label="Toggle Today's Special">
+          <svg class="star-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </button>
         <div class="dish-card-title" title="Click to edit name" tabindex="0" role="button" aria-label="Edit dish name ${escapeHtml(dish.name)}">${formatDishName(dish.name)}</div>
       </div>
       <div class="dish-row-actions">
@@ -1930,6 +1961,60 @@ function renderDishesGrid() {
       const switchLbl = card.querySelector(".switch-label");
       if (switchLbl) switchLbl.title = isAvailable ? 'Available (click to toggle)' : 'Sold Out (click to toggle)';
       await toggleDishAvailability(dish._id, isAvailable, card, availCheck);
+    });
+
+    // Star toggle button (Today's Special)
+    const starBtn = card.querySelector(".dish-star-btn");
+    starBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const wasSpecial = isDishSpecial(dish);
+      const newSpecial = !wasSpecial;
+
+      // Optimistic state
+      dish.isSpecial = newSpecial;
+      dish.isFeatured = newSpecial;
+      starBtn.classList.toggle("active", newSpecial);
+      starBtn.title = newSpecial ? "Remove from Today's Special" : "Add to Today's Special";
+
+      // Update category badges & counts across dashboard
+      updateCategoryCountsAndBadges();
+
+      const activeCat = categories.find(c => String(c._id) === selectedCategoryId);
+      const isViewingTodaySpecial = activeCat && (activeCat.isFixed || (activeCat.name && activeCat.name.toUpperCase() === "TODAY'S SPECIAL"));
+
+      if (isViewingTodaySpecial && !newSpecial) {
+        card.style.transition = "opacity 0.2s ease, transform 0.2s ease";
+        card.style.opacity = "0";
+        card.style.transform = "scale(0.95)";
+        setTimeout(() => {
+          renderDishesGrid();
+        }, 210);
+      }
+
+      try {
+        const res = await fetch("/api/owner/items", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: dish._id,
+            isSpecial: newSpecial,
+            isFeatured: newSpecial
+          })
+        });
+        const data = await res.json();
+        if (!data.success) {
+          throw new Error(data.error || "Failed to update Today's Special");
+        }
+        showNotification(newSpecial ? `Added "${dish.name}" to Today's Special ⭐` : `Removed "${dish.name}" from Today's Special`, "success");
+      } catch (err) {
+        dish.isSpecial = wasSpecial;
+        dish.isFeatured = wasSpecial;
+        starBtn.classList.toggle("active", wasSpecial);
+        starBtn.title = wasSpecial ? "Remove from Today's Special" : "Add to Today's Special";
+        updateCategoryCountsAndBadges();
+        if (isViewingTodaySpecial) renderDishesGrid();
+        showNotification(err.message || "Failed to update Today's Special", "error");
+      }
     });
 
     // Make dish name and price editable on click
@@ -2442,8 +2527,9 @@ cancelCategoryBtn.addEventListener("click", closeCategoryModal);
  * Dish Modal Logic
  */
 function openAddDishModal() {
-  if (categories.length === 0) {
-    showNotification("Please create at least one category before adding dishes.", "error");
+  const nonFixedCats = categories.filter(c => !(c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL")));
+  if (nonFixedCats.length === 0) {
+    showNotification("Please create a category (e.g. Starters, Main Course) before adding dishes.", "error");
     switchDashboardView("category");
     createBlankCategoryRow();
     return;
@@ -2454,10 +2540,10 @@ function openAddDishModal() {
   dishPriceInput.value = "";
   dishAvailableInput.checked = true;
 
-  if (selectedCategoryId) {
+  if (selectedCategoryId && nonFixedCats.some(c => String(c._id) === selectedCategoryId)) {
     dishCategorySelect.value = selectedCategoryId;
-  } else if (categories.length > 0) {
-    dishCategorySelect.value = categories[0]._id;
+  } else if (nonFixedCats.length > 0) {
+    dishCategorySelect.value = nonFixedCats[0]._id;
   }
 
   openModal(dishModal);

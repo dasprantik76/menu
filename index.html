@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="owner/owner.css?v=235">
+  <link rel="stylesheet" href="/owner/owner.css?v=267">
   <script>
     (function() {
       try {
@@ -27,7 +27,7 @@
 
         var isRegister = search.indexOf("view=register") !== -1 || hash === "#register" || saved === "register";
         var isPending = search.indexOf("view=pending") !== -1 || hash === "#pending" || saved === "pending";
-        var isDashboard = search.indexOf("view=dashboard") !== -1 || hash === "#dashboard" || saved === "dashboard" || hash === "#branding" || saved === "branding" || hash === "#themecolors" || saved === "themecolors" || hash === "#qrcode" || saved === "qrcode";
+        var isDashboard = search.indexOf("view=dashboard") !== -1 || hash === "#dashboard" || saved === "dashboard" || hash === "#branding" || saved === "branding" || hash === "#themecolors" || hash === "#colors" || saved === "themecolors" || hash === "#qrcode" || saved === "qrcode";
 
         if (isRegister) {
           document.documentElement.className = "register-mode";
@@ -466,90 +466,116 @@
 
     <!-- 5. Approved Owner Dashboard View (Transition to Phase 4) -->
     <section id="dashboardView" style="display: none;">
-      <!-- Sticky Navigation Bar (Capsule Switcher + Dynamic Count) -->
+      <!-- Sticky Navigation Bar (Capsule Switcher) -->
       <div class="owner-sticky-bar" id="ownerStickyBar">
         <div class="capsule-switcher-wrapper">
           <div class="capsule-switcher" role="tablist" aria-label="Dashboard Section Switcher" data-active="category">
             <div class="capsule-slider-pill" id="capsuleSliderPill"></div>
-            <button type="button" class="capsule-btn active" id="capsuleCategoryBtn" role="tab" aria-selected="true" data-view="category">CATEGORY</button>
+            <button type="button" class="capsule-btn active" id="capsuleCategoryBtn" role="tab" aria-selected="true" data-view="category" disabled>CATEGORY</button>
             <button type="button" class="capsule-btn" id="capsuleMenuBtn" role="tab" aria-selected="false" data-view="menu">MENU</button>
           </div>
         </div>
-
-        <!-- Centered Counts for Category View and Menu View -->
-        <div id="categoriesCountLabel" class="categories-center-count">1 Category</div>
-        <div id="dishCountLabel" class="categories-center-count" style="display: none;">Items</div>
       </div>
 
-      <!-- GROUP 1: CATEGORY View -->
-      <div id="categoryViewGroup" class="editor-layout">
-        <div class="categories-container-box">
-          <!-- Add Category Action Bar -->
-          <div class="categories-action-row">
-            <button type="button" class="btn-primary" id="openAddCategoryHeaderBtn">+ Add New Category</button>
-          </div>
+      <!-- Single Central Loading Circle below switcher (shown on first visit while fetching data) -->
+      <div id="dashboardCentralLoader" class="owner-central-loader dashboard-initial-loader" style="display: none;" aria-label="Loading menu editor">
+        <div class="owner-loading-circle"></div>
+      </div>
 
-          <!-- Categories List -->
-          <div id="categoriesGrid" class="categories-grid">
-            <div class="category-admin-card today-special-card" data-id="today_special_fixed">
-              <div class="category-row-info">
-                <label class="switch-label category-row-switch" title="Available (click to toggle)">
-                  <span class="switch">
-                    <input type="checkbox" class="category-avail-checkbox" data-id="today_special_fixed" checked>
-                    <span class="slider"></span>
-                  </span>
-                </label>
-                <div class="category-card-name is-fixed" title="Today's Special" aria-label="Category name TODAY'S SPECIAL">
-                  <svg class="cat-star-icon" viewBox="0 0 24 24" width="16" height="16" fill="#f59e0b" stroke="#d97706" stroke-width="0.8" aria-hidden="true">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                  TODAY'S SPECIAL
-                </div>
-              </div>
-              <div class="category-row-actions">
-                <span class="category-dish-count-badge">0 items</span>
-              </div>
+      <!-- Dashboard Body Content: Everything below the switcher button -->
+      <div id="dashboardBodyContent" class="dashboard-body-content">
+        <!-- Centered Counts for Category View and Menu View (Scrolls with page) -->
+        <div id="categoriesCountLabel" class="categories-center-count" style="display: none;">1 Category</div>
+        <div id="dishCountLabel" class="categories-center-count dish-count-row" style="display: none;">
+          <span class="dish-count-spacer" aria-hidden="true"></span>
+          <span id="dishCountText">Items</span>
+          <button type="button" id="dishSearchToggleBtn" class="dish-search-toggle-btn" aria-label="Search dishes" title="Search dishes">
+            <svg class="search-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- GROUP 1: CATEGORY View -->
+        <div id="categoryViewGroup" class="editor-layout" style="display: none;">
+          <div class="categories-container-box">
+            <!-- Categories List -->
+            <div id="categoriesGrid" class="categories-grid">
+              <!-- Rendered via JS -->
             </div>
-          </div>
-          <!-- Single Central Loading Circle in Centre of Page (No Text) -->
-          <div id="categoryCenterLoader" class="owner-central-loader" style="display: none;" aria-label="Loading">
-            <div class="owner-loading-circle"></div>
-          </div>
-          <div id="emptyCategoriesState" class="owner-empty-state" style="display: none;">
-            <p class="owner-empty-state-text">No items in this category yet.</p>
+            <!-- Single Central Loading Circle in Centre of Page (No Text) -->
+            <div id="categoryCenterLoader" class="owner-central-loader" style="display: none;" aria-label="Loading">
+              <div class="owner-loading-circle"></div>
+            </div>
+            <div id="emptyCategoriesState" class="owner-empty-state" style="display: none;">
+              <p class="owner-empty-state-text">No items in this category yet.</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- GROUP 2: MENU View -->
-      <div id="menuViewGroup" class="editor-layout" style="display: none;">
-        <div class="dishes-container-box">
-          <!-- Dishes Action Bar: Category Dropdown (Full Width) -->
-          <div class="dishes-action-row">
-            <div class="category-dropdown-wrapper">
-              <div id="categoryDropdownDisplay" class="category-dropdown-display" aria-hidden="true"></div>
-              <select id="categorySelectDropdown" class="category-dropdown-select" aria-label="Filter dishes by category">
-                <!-- Rendered via JS -->
-              </select>
+        <!-- GROUP 2: MENU View -->
+        <div id="menuViewGroup" class="editor-layout" style="display: none;">
+          <div class="dishes-container-box">
+            <!-- Dish Search Bar (Expands smoothly in exact same size as dropdown box) -->
+            <div id="dishSearchBarContainer" class="dish-search-bar-container">
+              <div class="dish-search-bar-inner">
+                <svg class="dish-search-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="dishSearchInput" class="dish-search-input" placeholder="Search menu items..." autocomplete="off" spellcheck="false" aria-label="Search menu items">
+                <button type="button" id="dishSearchClearBtn" class="dish-search-clear-btn" aria-label="Clear search or close" title="Clear / Close">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dishes Action Bar: Category Dropdown (Full Width) -->
+            <div class="dishes-action-row">
+              <div class="category-dropdown-wrapper" id="categoryDropdownWrapper" role="combobox" aria-expanded="false" aria-haspopup="listbox" tabindex="0">
+                <div id="categoryDropdownDisplay" class="category-dropdown-display">All Categories</div>
+                <div id="categoryDropdownMenu" class="category-dropdown-menu" role="listbox"></div>
+                <select id="categorySelectDropdown" class="category-dropdown-select" aria-label="Filter dishes by category" style="display: none;" tabindex="-1">
+                  <!-- Rendered via JS -->
+                </select>
+              </div>
+            </div>
+
+            <!-- Dishes Grid -->
+            <div id="dishesGrid" class="dishes-grid">
+              <!-- Rendered via JS -->
+            </div>
+            <!-- Single Central Loading Circle in Centre of Page (No Text) -->
+            <div id="menuCenterLoader" class="owner-central-loader" style="display: none;" aria-label="Loading">
+              <div class="owner-loading-circle"></div>
+            </div>
+            <div id="emptyDishesState" class="owner-empty-state" style="display: none;">
+              <p class="owner-empty-state-text">No items in this category yet.</p>
             </div>
           </div>
+        </div>
 
-          <!-- Dishes Grid -->
-          <div id="dishesGrid" class="dishes-grid">
-            <!-- Rendered via JS -->
-          </div>
-          <!-- Single Central Loading Circle in Centre of Page (No Text) -->
-          <div id="menuCenterLoader" class="owner-central-loader" style="display: none;" aria-label="Loading">
-            <div class="owner-loading-circle"></div>
-          </div>
-          <div id="emptyDishesState" class="owner-empty-state" style="display: none;">
-            <p class="owner-empty-state-text">No items in this category yet.</p>
-          </div>
+        <!-- Sticky Bottom Bar for Dashboard (Add Category / Add Item) -->
+        <div class="sticky-bottom-action-bar sticky-add-dish-bar" id="stickyDashboardActionBar" style="display: none;">
+          <button type="button" class="btn-primary dashboard-sticky-action-btn" id="openAddCategoryHeaderBtn">
+            <svg class="add-item-plus-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Add New Category</span>
+          </button>
 
-          <!-- Sticky Bottom Bar for Add Item -->
-          <div class="sticky-add-dish-bar">
-            <button type="button" class="btn-primary" id="openAddDishBtn">+ Add Item</button>
-          </div>
+          <button type="button" class="btn-primary dashboard-sticky-action-btn" id="openAddDishBtn" style="display: none;">
+            <svg class="add-item-plus-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Add Item</span>
+          </button>
         </div>
       </div>
     </section>
@@ -1010,7 +1036,7 @@
     </section>
   </main>
 
-  <script src="owner/qrcode.min.js"></script>
-  <script src="owner/owner.js?v=120"></script>
+  <script src="/owner/qrcode.min.js"></script>
+  <script src="/owner/owner.js?v=133"></script>
 </body>
 </html>

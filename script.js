@@ -1886,7 +1886,98 @@ function applyBlackOverlay(hex, opacity = 0.35) {
   return "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
 }
 
+function isColorTooLight(hex) {
+  if (!hex || typeof hex !== "string") return false;
+  let clean = hex.replace("#", "").trim();
+  if (clean.length === 3) {
+    clean = clean.split("").map(c => c + c).join("");
+  }
+  if (!/^[0-9A-Fa-f]{6}$/.test(clean)) return false;
+  const num = parseInt(clean, 16);
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+  return brightness > 215;
+}
+
+function updateSplashBranding(restaurant) {
+  if (!restaurant) return;
+  const overlay = document.getElementById("pageLoaderOverlay");
+  if (!overlay || pageRevealed) return;
+
+  const logoEl = document.getElementById("pageLoaderLogo");
+  const titleEl = document.getElementById("pageLoaderTitle");
+  if (!logoEl && !titleEl) return;
+
+  const name = restaurant.name || "";
+  const branding = restaurant.branding || {};
+  const logoUrl = (branding.logoUrl && typeof branding.logoUrl === "string") ? branding.logoUrl.trim() : "";
+  const nameFont = branding.nameFont || "Lobster";
+  const accentColor = branding.accentColor || "#991E2E";
+  const nameTextColor = branding.nameTextColor || "";
+
+  const fontMap = {
+    "Lobster": "'Lobster', cursive, sans-serif",
+    "Bebas Neue": "'Bebas Neue', sans-serif",
+    "Google Sans": "'Google Sans', sans-serif",
+    "Berkshire Swash": "'Berkshire Swash', cursive, serif",
+    "Kaushan Script": "'Kaushan Script', cursive"
+  };
+  const resolvedFont = fontMap[nameFont] || `'${nameFont}', cursive, sans-serif`;
+
+  let titleColor = accentColor;
+  if (nameTextColor && !isColorTooLight(nameTextColor)) {
+    titleColor = nameTextColor;
+  }
+
+  if (titleEl) {
+    titleEl.textContent = name;
+    titleEl.style.fontFamily = resolvedFont;
+    titleEl.style.color = titleColor;
+  }
+
+  if (logoUrl && logoEl) {
+    logoEl.src = logoUrl;
+    logoEl.alt = name ? `${name} Logo` : "Business Logo";
+    logoEl.style.display = "block";
+    if (titleEl) titleEl.style.display = "none";
+
+    logoEl.onerror = function() {
+      logoEl.style.display = "none";
+      if (titleEl && name) {
+        titleEl.style.display = "block";
+      }
+    };
+  } else {
+    if (logoEl) {
+      logoEl.style.display = "none";
+      logoEl.src = "";
+    }
+    if (titleEl && name) {
+      titleEl.style.display = "block";
+    }
+  }
+
+  // Cache branding in localStorage for instant splash rendering on next page visit
+  try {
+    const slug = getRestaurantSlug();
+    if (slug) {
+      localStorage.setItem("menu_brand_" + slug, JSON.stringify({
+        name: name,
+        logoUrl: logoUrl,
+        nameFont: nameFont,
+        accentColor: accentColor,
+        nameTextColor: nameTextColor
+      }));
+    }
+  } catch (e) {}
+}
+
 function updateRestaurantBranding(restaurant) {
+  // Update splash screen branding if still visible
+  updateSplashBranding(restaurant);
+
   const brandTitle = document.querySelector(".brand-title") || document.getElementById("brandTitle");
   let brandLogo = document.getElementById("brandLogo");
 
@@ -2148,13 +2239,15 @@ function revealPage() {
       overlay.classList.add("dissolve");
       setTimeout(() => {
         overlay.style.display = "none";
-      }, 850);
+      }, 400);
     }
   });
 }
 
 // Initial Load
 document.addEventListener("DOMContentLoaded", async () => {
+  const loadStartTime = Date.now();
+
   const initialBlock = document.getElementById("categoryBlock");
   if (initialBlock) {
     const scrollBox = initialBlock.querySelector(".menu-scroll-box");
@@ -2174,7 +2267,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadDynamicMenu();
   } finally {
     clearTimeout(watchdog);
-    revealPage();
+    const elapsed = Date.now() - loadStartTime;
+    const remaining = Math.max(0, 450 - elapsed);
+    if (remaining > 0) {
+      setTimeout(revealPage, remaining);
+    } else {
+      revealPage();
+    }
   }
 });
 

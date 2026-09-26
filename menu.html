@@ -7,7 +7,7 @@
   <base href="/">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Righteous&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=103">
+  <link rel="stylesheet" href="/style.css?v=104">
   <style>
     #pageLoaderOverlay {
       position: fixed;
@@ -36,31 +36,32 @@
       justify-content: center;
       text-align: center;
       user-select: none;
+      min-height: 80px;
+      padding: 0 20px;
+      box-sizing: border-box;
+      max-width: 90vw;
     }
-    .page-loader-banner {
-      display: inline-block;
-      background: #deb103;
-      clip-path: polygon(0% 8%, 100% 28%, 100% 100%, 0% 100%);
-      padding: 22px 38px 11px 28px;
-      user-select: none;
-      filter: drop-shadow(0 4px 14px rgba(222, 177, 3, 0.32));
-    }
-    .page-loader-menu-text {
+    .page-loader-logo {
+      max-width: min(240px, 72vw);
+      max-height: 100px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
       display: block;
-      color: #710d1d;
-      font-family: 'Pacifico', cursive, sans-serif;
-      font-size: clamp(2.6rem, 7.5vw, 3.4rem);
-      line-height: 1;
-      letter-spacing: -0.5px;
+      margin: 0 auto;
+      filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.08));
     }
-    .page-loader-by-text {
-      font-family: 'Google Sans', sans-serif;
-      font-size: clamp(1.25rem, 3.6vw, 1.45rem);
+    .page-loader-title {
+      font-family: var(--name-font, 'Lobster', cursive, sans-serif);
+      font-size: clamp(2rem, 7vw, 2.75rem);
       font-weight: 600;
-      color: #1e293b;
-      letter-spacing: 0.3px;
-      margin-top: 10px;
-      line-height: 1;
+      letter-spacing: 0.5px;
+      color: var(--brand-color, #1e293b);
+      line-height: 1.25;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      word-break: break-word;
     }
     .page-loader-spinner {
       width: 38px;
@@ -69,21 +70,72 @@
       border-top-color: var(--brand-color, #991e2e);
       border-radius: 50%;
       animation: pageLoaderSpin 0.8s linear infinite;
-      margin-top: 36px;
+      margin-top: 32px;
     }
     @keyframes pageLoaderSpin {
       to { transform: rotate(360deg); }
     }
   </style>
+  <script>
+    (function() {
+      try {
+        var path = window.location.pathname;
+        var slug = "";
+        if (path.indexOf("/r/") === 0) {
+          var parts = path.slice(3).split("/").filter(Boolean);
+          if (parts.length > 0) slug = parts[0];
+        }
+        if (!slug) {
+          var params = new URLSearchParams(window.location.search);
+          slug = params.get("restaurant") || params.get("r") || "royal-food-corner";
+        }
+        var raw = localStorage.getItem("menu_brand_" + slug);
+        if (raw) {
+          var b = JSON.parse(raw);
+          if (b) {
+            if (b.accentColor) {
+              document.documentElement.style.setProperty("--brand-color", b.accentColor);
+            }
+            if (b.nameFont) {
+              var fontMap = {
+                "Lobster": "'Lobster', cursive, sans-serif",
+                "Bebas Neue": "'Bebas Neue', sans-serif",
+                "Google Sans": "'Google Sans', sans-serif",
+                "Berkshire Swash": "'Berkshire Swash', cursive, serif",
+                "Kaushan Script": "'Kaushan Script', cursive"
+              };
+              var rf = fontMap[b.nameFont] || ("'" + b.nameFont + "', cursive, sans-serif");
+              document.documentElement.style.setProperty("--name-font", rf);
+            }
+            document.addEventListener("DOMContentLoaded", function() {
+              var logoEl = document.getElementById("pageLoaderLogo");
+              var titleEl = document.getElementById("pageLoaderTitle");
+              if (b.logoUrl && logoEl) {
+                logoEl.src = b.logoUrl;
+                logoEl.alt = b.name ? (b.name + " Logo") : "Business Logo";
+                logoEl.style.display = "block";
+                if (titleEl) {
+                  titleEl.textContent = b.name || "";
+                  titleEl.style.display = "none";
+                }
+              } else if (b.name && titleEl) {
+                titleEl.textContent = b.name;
+                titleEl.style.display = "block";
+                if (logoEl) logoEl.style.display = "none";
+              }
+            });
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body oncontextmenu="return false;" onselectstart="return false;">
-  <!-- Full-Screen Pre-loader with Large Branding Block & Spinner -->
+  <!-- Full-Screen Pre-loader with Restaurant Logo/Name & Spinner -->
   <div id="pageLoaderOverlay" class="page-loader-overlay" aria-hidden="true">
-    <div class="page-loader-branding">
-      <div class="page-loader-banner">
-        <span class="page-loader-menu-text">Menu</span>
-      </div>
-      <span class="page-loader-by-text">by PixelSetu</span>
+    <div class="page-loader-branding" id="pageLoaderBranding">
+      <img id="pageLoaderLogo" class="page-loader-logo" src="" alt="Business Logo" style="display: none;" onerror="this.style.display='none'; var t=document.getElementById('pageLoaderTitle'); if(t && t.textContent){t.style.display='block';}">
+      <h1 id="pageLoaderTitle" class="page-loader-title" style="display: none;"></h1>
     </div>
     <div class="page-loader-spinner" aria-hidden="true"></div>
   </div>
@@ -163,6 +215,6 @@
     </div>
   </div>
 
-  <script src="/script.js?v=63"></script>
+  <script src="/script.js?v=64"></script>
 </body>
 </html>

@@ -372,6 +372,17 @@ function showView(viewElement) {
     void viewElement.offsetWidth;
     viewElement.classList.add("fade-in-active");
   }
+
+  const stickyActionBar = document.getElementById("stickyDashboardActionBar") || document.getElementById("stickyAddDishBar");
+  if (stickyActionBar) {
+    stickyActionBar.style.display = (viewElement === dashboardView && isInitialMenuDataLoaded) ? "flex" : "none";
+  }
+  const addCategoryBtn = document.getElementById("openAddCategoryHeaderBtn");
+  const addDishBtn = document.getElementById("openAddDishBtn");
+  if (addCategoryBtn) addCategoryBtn.style.display = (currentDashboardView === "category") ? "inline-flex" : "none";
+  if (addDishBtn) addDishBtn.style.display = (currentDashboardView === "menu") ? "inline-flex" : "none";
+  if (typeof updateAddDishBtnState === "function") updateAddDishBtnState();
+
   if (isRegister) startTitleWordRotation();
 
   // Drawer nav item active states
@@ -762,6 +773,14 @@ function renderDashboardView() {
   if (viewBtn) {
     viewBtn.href = menuUrl;
     viewBtn.style.display = "inline-flex";
+  }
+
+  if (!isInitialMenuDataLoaded) {
+    document.body.classList.add("dashboard-initial-loading");
+    const centralLoader = document.getElementById("dashboardCentralLoader");
+    const bodyContent = document.getElementById("dashboardBodyContent");
+    if (centralLoader) centralLoader.style.display = "flex";
+    if (bodyContent) bodyContent.style.display = "none";
   }
 
   initViewSwitcher();
@@ -1358,7 +1377,10 @@ let categories = [{ ...HARDCODED_TODAY_SPECIAL }];
 let dishes = [];
 let selectedCategoryId = null;
 let isFetchingMenuData = false;
+let isInitialMenuDataLoaded = false;
 let activeFetchesCount = 0;
+let dishSearchQuery = "";
+let isDishSearchOpen = false;
 
 function showPortalLoading() {
   document.querySelectorAll(".owner-central-loader").forEach(el => {
@@ -1400,10 +1422,17 @@ const emptyStateAddCategoryBtn = document.getElementById("emptyStateAddCategoryB
 const openAddCategoryHeaderBtn = document.getElementById("openAddCategoryHeaderBtn");
 
 // Menu DOM Elements
+const categoryDropdownWrapper = document.getElementById("categoryDropdownWrapper");
 const categorySelectDropdown = document.getElementById("categorySelectDropdown");
 const categoryDropdownDisplay = document.getElementById("categoryDropdownDisplay");
+const categoryDropdownMenu = document.getElementById("categoryDropdownMenu");
 const currentCategoryTitle = document.getElementById("currentCategoryTitle");
 const dishCountLabel = document.getElementById("dishCountLabel");
+const dishCountText = document.getElementById("dishCountText");
+const dishSearchToggleBtn = document.getElementById("dishSearchToggleBtn");
+const dishSearchBarContainer = document.getElementById("dishSearchBarContainer");
+const dishSearchInput = document.getElementById("dishSearchInput");
+const dishSearchClearBtn = document.getElementById("dishSearchClearBtn");
 const openAddDishBtn = document.getElementById("openAddDishBtn");
 const dishesGrid = document.getElementById("dishesGrid");
 const emptyDishesState = document.getElementById("emptyDishesState");
@@ -1438,6 +1467,14 @@ async function loadMenuData() {
   if (isFetchingMenuData) return;
   isFetchingMenuData = true;
   trackFetchStart();
+
+  if (!isInitialMenuDataLoaded) {
+    document.body.classList.add("dashboard-initial-loading");
+    const centralLoader = document.getElementById("dashboardCentralLoader");
+    const bodyContent = document.getElementById("dashboardBodyContent");
+    if (centralLoader) centralLoader.style.display = "flex";
+    if (bodyContent) bodyContent.style.display = "none";
+  }
 
   try {
     const [catRes, itemRes] = await Promise.all([
@@ -1482,27 +1519,40 @@ async function loadMenuData() {
     showNotification("Failed to load menu items.", "error");
   } finally {
     isFetchingMenuData = false;
+    isInitialMenuDataLoaded = true;
+    document.body.classList.remove("dashboard-initial-loading");
     trackFetchEnd();
     hidePortalLoading();
+
+    const centralLoader = document.getElementById("dashboardCentralLoader");
+    const bodyContent = document.getElementById("dashboardBodyContent");
+    if (centralLoader) centralLoader.style.display = "none";
+    if (bodyContent) bodyContent.style.display = "block";
+
+    // Populate BOTH Category view and Menu view with fresh data
     renderCategoriesList();
     renderCategoryTabs();
     populateCategoryDropdown();
     renderDishesGrid();
+
+    const activeView = currentDashboardView || sessionStorage.getItem("owner_active_view") || "category";
+    switchDashboardView(activeView, true);
   }
 }
 
 /**
  * Switcher Capsule Logic (CATEGORY - MENU)
  */
-let currentDashboardView = "category";
+let currentDashboardView = null;
 
-function switchDashboardView(view) {
+function switchDashboardView(view, force = false) {
+  if (!force && currentDashboardView === view) return;
   currentDashboardView = view;
   try {
     sessionStorage.setItem("owner_active_view", view);
   } catch(e) {}
 
-  if (!capsuleCategoryBtn || !capsuleMenuBtn || !categoryViewGroup || !menuViewGroup) return;
+  if (!capsuleCategoryBtn || !capsuleMenuBtn) return;
 
   const capsuleSwitcher = document.querySelector(".capsule-switcher");
   if (capsuleSwitcher) {
@@ -1512,9 +1562,47 @@ function switchDashboardView(view) {
   if (view === "category") {
     capsuleCategoryBtn.classList.add("active");
     capsuleCategoryBtn.setAttribute("aria-selected", "true");
+    capsuleCategoryBtn.setAttribute("disabled", "true");
+    capsuleCategoryBtn.style.pointerEvents = "none";
+    capsuleCategoryBtn.style.cursor = "default";
+
     capsuleMenuBtn.classList.remove("active");
     capsuleMenuBtn.setAttribute("aria-selected", "false");
+    capsuleMenuBtn.removeAttribute("disabled");
+    capsuleMenuBtn.style.pointerEvents = "auto";
+    capsuleMenuBtn.style.cursor = "pointer";
+  } else {
+    capsuleMenuBtn.classList.add("active");
+    capsuleMenuBtn.setAttribute("aria-selected", "true");
+    capsuleMenuBtn.setAttribute("disabled", "true");
+    capsuleMenuBtn.style.pointerEvents = "none";
+    capsuleMenuBtn.style.cursor = "default";
 
+    capsuleCategoryBtn.classList.remove("active");
+    capsuleCategoryBtn.setAttribute("aria-selected", "false");
+    capsuleCategoryBtn.removeAttribute("disabled");
+    capsuleCategoryBtn.style.pointerEvents = "auto";
+    capsuleCategoryBtn.style.cursor = "pointer";
+  }
+
+  // If still in initial loading state, do not reveal content yet (loader replaces everything below switcher)
+  if (!isInitialMenuDataLoaded) {
+    return;
+  }
+
+  if (!categoryViewGroup || !menuViewGroup) return;
+
+  const stickyActionBar = document.getElementById("stickyDashboardActionBar") || document.getElementById("stickyAddDishBar");
+  if (stickyActionBar) {
+    stickyActionBar.style.display = "flex";
+  }
+  const addCategoryBtn = document.getElementById("openAddCategoryHeaderBtn");
+  const addDishBtn = document.getElementById("openAddDishBtn");
+  if (addCategoryBtn) addCategoryBtn.style.display = (view === "category") ? "inline-flex" : "none";
+  if (addDishBtn) addDishBtn.style.display = (view === "menu") ? "inline-flex" : "none";
+  if (typeof updateAddDishBtnState === "function") updateAddDishBtnState();
+
+  if (view === "category") {
     menuViewGroup.style.display = "none";
     menuViewGroup.classList.remove("view-content-smooth");
 
@@ -1525,6 +1613,7 @@ function switchDashboardView(view) {
 
     if (categoriesCountLabel) categoriesCountLabel.style.display = "flex";
     if (dishCountLabel) dishCountLabel.style.display = "none";
+    closeDishSearchBar(true);
 
     if (isFetchingMenuData) {
       const catLoader = document.getElementById("categoryCenterLoader");
@@ -1534,11 +1623,6 @@ function switchDashboardView(view) {
 
     renderCategoriesList();
   } else {
-    capsuleMenuBtn.classList.add("active");
-    capsuleMenuBtn.setAttribute("aria-selected", "true");
-    capsuleCategoryBtn.classList.remove("active");
-    capsuleCategoryBtn.setAttribute("aria-selected", "false");
-
     categoryViewGroup.style.display = "none";
     categoryViewGroup.classList.remove("view-content-smooth");
 
@@ -1567,20 +1651,45 @@ function initViewSwitcher() {
   isSwitcherInitialized = true;
 
   const savedView = sessionStorage.getItem("owner_active_view") || "category";
-  switchDashboardView(savedView);
+  switchDashboardView(savedView, true);
 
   if (capsuleCategoryBtn) {
     capsuleCategoryBtn.addEventListener("click", () => {
+      if (currentDashboardView === "category") return;
       switchDashboardView("category");
       loadMenuData();
     });
   }
   if (capsuleMenuBtn) {
     capsuleMenuBtn.addEventListener("click", () => {
+      if (currentDashboardView === "menu") return;
       switchDashboardView("menu");
       loadMenuData();
     });
   }
+
+  initStickyBarScroll();
+}
+
+/**
+ * Handle smooth shadow appearance behind switcher bar on scroll
+ */
+function initStickyBarScroll() {
+  const ownerStickyBar = document.getElementById("ownerStickyBar");
+  if (!ownerStickyBar || ownerStickyBar._scrollInit) return;
+  ownerStickyBar._scrollInit = true;
+
+  let isBarScrolled = false;
+  const handleStickyBarScroll = () => {
+    const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    const shouldBeScrolled = scrollY > 10;
+    if (shouldBeScrolled !== isBarScrolled) {
+      isBarScrolled = shouldBeScrolled;
+      ownerStickyBar.classList.toggle("scrolled", isBarScrolled);
+    }
+  };
+  window.addEventListener("scroll", handleStickyBarScroll, { passive: true });
+  handleStickyBarScroll();
 }
 
 /**
@@ -1821,29 +1930,65 @@ async function confirmDeleteCategoryById(catId) {
 }
 
 /**
- * Update the visual display inside the category dropdown to style bracketed count
+ * Update the visual display inside the category dropdown without count
  */
 function updateCategoryDropdownDisplay() {
-  if (!categoryDropdownDisplay || !categorySelectDropdown) return;
-  const selectedOption = categorySelectDropdown.options[categorySelectDropdown.selectedIndex];
-  if (selectedOption) {
-    categoryDropdownDisplay.innerHTML = formatDishName(selectedOption.textContent);
+  if (!categoryDropdownDisplay) return;
+  let displayName = "All Categories";
+  if (selectedCategoryId) {
+    const cat = categories.find(c => String(c._id) === String(selectedCategoryId));
+    if (cat) {
+      const isFixed = cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL");
+      displayName = `${isFixed ? "★ " : ""}${cat.name}`;
+    }
+  }
+  categoryDropdownDisplay.textContent = displayName;
+
+  if (categoryDropdownMenu) {
+    const items = categoryDropdownMenu.querySelectorAll(".category-dropdown-item");
+    items.forEach(btn => {
+      const btnId = btn.dataset.catId || "";
+      const isSelected = selectedCategoryId ? btnId === String(selectedCategoryId) : btnId === "";
+      btn.classList.toggle("is-selected", isSelected);
+    });
   }
 }
 
 /**
- * Render categories dropdown options in MENU view
+ * Render categories dropdown options in MENU view (opens below field, no count)
  */
 function renderCategoryTabs() {
   if (!categorySelectDropdown) return;
   categorySelectDropdown.innerHTML = "";
 
+  if (categoryDropdownMenu) {
+    categoryDropdownMenu.innerHTML = "";
+  }
+
   // "All Categories" option
   const allOpt = document.createElement("option");
   allOpt.value = "";
-  allOpt.textContent = `All Categories (${dishes.length})`;
+  allOpt.textContent = "All Categories";
   allOpt.selected = selectedCategoryId === null;
   categorySelectDropdown.appendChild(allOpt);
+
+  if (categoryDropdownMenu) {
+    const allBtn = document.createElement("button");
+    allBtn.type = "button";
+    allBtn.className = `category-dropdown-item${selectedCategoryId === null ? " is-selected" : ""}`;
+    allBtn.textContent = "All Categories";
+    allBtn.dataset.catId = "";
+    allBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectCategoryFromDropdown(null);
+    });
+    categoryDropdownMenu.appendChild(allBtn);
+
+    const divider = document.createElement("div");
+    divider.className = "category-dropdown-divider";
+    divider.setAttribute("role", "separator");
+    categoryDropdownMenu.appendChild(divider);
+  }
 
   const sortedCategories = [...categories].sort((a, b) => {
     const aFixed = a.isFixed || (a.name && a.name.toUpperCase() === "TODAY'S SPECIAL");
@@ -1856,16 +2001,27 @@ function renderCategoryTabs() {
   // Individual category options
   sortedCategories.forEach(cat => {
     const isFixed = cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL");
-    const catDishCount = isFixed
-      ? dishes.filter(d => isDishSpecial(d)).length
-      : dishes.filter(d => String(d.categoryId) === String(cat._id)).length;
+    const catName = `${isFixed ? "★ " : ""}${cat.name}`;
     const opt = document.createElement("option");
     opt.value = String(cat._id);
-    opt.textContent = `${isFixed ? "★ " : ""}${cat.name} (${catDishCount})`;
+    opt.textContent = catName;
     if (selectedCategoryId === String(cat._id)) {
       opt.selected = true;
     }
     categorySelectDropdown.appendChild(opt);
+
+    if (categoryDropdownMenu) {
+      const itemBtn = document.createElement("button");
+      itemBtn.type = "button";
+      itemBtn.className = `category-dropdown-item${selectedCategoryId === String(cat._id) ? " is-selected" : ""}`;
+      itemBtn.textContent = catName;
+      itemBtn.dataset.catId = String(cat._id);
+      itemBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        selectCategoryFromDropdown(String(cat._id));
+      });
+      categoryDropdownMenu.appendChild(itemBtn);
+    }
   });
 
   updateCategoryDropdownDisplay();
@@ -1896,9 +2052,79 @@ function populateCategoryDropdown() {
 }
 
 /**
+ * Helper to update dish count display without blowing away the search button inside dishCountLabel
+ */
+function updateDishCountDisplay(countOrText) {
+  let countEl = document.getElementById("dishCountText");
+  const fullText = typeof countOrText === "number"
+    ? `${countOrText} Item${countOrText === 1 ? "" : "s"}`
+    : countOrText;
+
+  const dishCountLabel = document.getElementById("dishCountLabel");
+  if (!countEl && dishCountLabel) {
+    dishCountLabel.className = "categories-center-count dish-count-row";
+    dishCountLabel.innerHTML = `
+      <span class="dish-count-spacer" aria-hidden="true"></span>
+      <span id="dishCountText">${fullText}</span>
+      <button type="button" id="dishSearchToggleBtn" class="dish-search-toggle-btn" aria-label="Search dishes" title="Search dishes">
+        <svg class="search-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </button>
+    `;
+    const newToggle = document.getElementById("dishSearchToggleBtn");
+    if (newToggle) {
+      newToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleDishSearchBar();
+      });
+    }
+    return;
+  }
+
+  if (countEl) {
+    countEl.textContent = fullText;
+  }
+}
+
+/**
+ * Check if the currently selected category is Today's Special
+ */
+function isTodaySpecialCategorySelected() {
+  if (!selectedCategoryId) return false;
+  if (selectedCategoryId === "today-special") return true;
+  const activeCat = categories.find(c => String(c._id) === String(selectedCategoryId));
+  return !!(activeCat && (activeCat.isFixed || (activeCat.name && activeCat.name.toUpperCase() === "TODAY'S SPECIAL")));
+}
+
+/**
+ * Update Add Dish button disabled state based on active category.
+ * Disables 'Add Item' when 'Today's Special' is selected because starring dishes
+ * from other categories is the only way to add items to Today's Special.
+ */
+function updateAddDishBtnState() {
+  const addDishBtn = document.getElementById("openAddDishBtn");
+  if (!addDishBtn) return;
+  const isTodaySpecial = isTodaySpecialCategorySelected();
+  if (isTodaySpecial) {
+    addDishBtn.disabled = true;
+    addDishBtn.setAttribute("disabled", "true");
+    addDishBtn.setAttribute("aria-disabled", "true");
+    addDishBtn.title = "Today's Special items are managed using the star toggle on dishes in other categories.";
+  } else {
+    addDishBtn.disabled = false;
+    addDishBtn.removeAttribute("disabled");
+    addDishBtn.removeAttribute("aria-disabled");
+    addDishBtn.title = "Add Item";
+  }
+}
+
+/**
  * Render dishes grid based on active filter
  */
 function renderDishesGrid() {
+  updateAddDishBtnState();
   if (!dishesGrid) return;
   dishesGrid.innerHTML = "";
 
@@ -1916,10 +2142,20 @@ function renderDishesGrid() {
     if (currentCategoryTitle) currentCategoryTitle.textContent = "All Dishes";
   }
 
+  if (dishSearchQuery && dishSearchQuery.trim()) {
+    const q = dishSearchQuery.trim().toLowerCase();
+    filtered = filtered.filter(d => {
+      const name = (d.name || "").toLowerCase();
+      const desc = (d.description || "").toLowerCase();
+      const price = d.price !== undefined ? String(d.price) : "";
+      return name.includes(q) || desc.includes(q) || price.includes(q);
+    });
+  }
+
   const menuLoader = document.getElementById("menuCenterLoader");
 
   if (isFetchingMenuData) {
-    if (dishCountLabel) dishCountLabel.textContent = "Items";
+    updateDishCountDisplay("Items");
     if (emptyDishesState) emptyDishesState.style.display = "none";
     if (menuLoader) menuLoader.style.display = "flex";
     return;
@@ -1927,13 +2163,22 @@ function renderDishesGrid() {
 
   if (menuLoader) menuLoader.style.display = "none";
 
-  if (dishCountLabel) {
-    dishCountLabel.textContent = `${filtered.length} Item${filtered.length === 1 ? "" : "s"}`;
-  }
+  updateDishCountDisplay(filtered.length);
 
+  const emptyStateText = emptyDishesState ? emptyDishesState.querySelector(".owner-empty-state-text") : null;
   if (filtered.length === 0) {
     if (emptyDishesState) emptyDishesState.style.display = "flex";
+    if (emptyStateText) {
+      if (dishSearchQuery && dishSearchQuery.trim()) {
+        emptyStateText.textContent = `No items found matching "${dishSearchQuery.trim()}".`;
+      } else {
+        emptyStateText.textContent = "No items in this category yet.";
+      }
+    }
     return;
+  }
+  if (emptyStateText) {
+    emptyStateText.textContent = "No items in this category yet.";
   }
   if (emptyDishesState) emptyDishesState.style.display = "none";
 
@@ -1986,6 +2231,7 @@ function renderDishesGrid() {
     const starBtn = card.querySelector(".dish-star-btn");
     starBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
+      starBtn.blur();
       const wasSpecial = isDishSpecial(dish);
       const newSpecial = !wasSpecial;
 
@@ -2530,10 +2776,71 @@ categoryForm.addEventListener("submit", async (e) => {
 });
 
 // Category event listeners
+function selectCategoryFromDropdown(catId) {
+  const newCatId = catId ? String(catId) : null;
+  const isSame = selectedCategoryId === newCatId;
+  selectedCategoryId = newCatId;
+  if (categorySelectDropdown) {
+    categorySelectDropdown.value = catId || "";
+  }
+  updateCategoryDropdownDisplay();
+  closeCategoryDropdown();
+  updateAddDishBtnState();
+
+  if (!isSame) {
+    if (dishesGrid) {
+      dishesGrid.classList.remove("view-content-smooth");
+      void dishesGrid.offsetWidth;
+      dishesGrid.classList.add("view-content-smooth");
+    }
+    renderDishesGrid();
+  }
+}
+
+function toggleCategoryDropdown(e) {
+  if (e) e.stopPropagation();
+  if (!categoryDropdownWrapper) return;
+  const isOpen = categoryDropdownWrapper.classList.toggle("is-open");
+  categoryDropdownWrapper.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  if (!isOpen) {
+    categoryDropdownWrapper.blur();
+  }
+}
+
+function closeCategoryDropdown() {
+  if (!categoryDropdownWrapper) return;
+  categoryDropdownWrapper.classList.remove("is-open");
+  categoryDropdownWrapper.setAttribute("aria-expanded", "false");
+  categoryDropdownWrapper.blur();
+}
+
+if (categoryDropdownWrapper) {
+  categoryDropdownWrapper.addEventListener("click", toggleCategoryDropdown);
+  categoryDropdownWrapper.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleCategoryDropdown(e);
+    }
+  });
+}
+
+document.addEventListener("click", (e) => {
+  if (categoryDropdownWrapper && !categoryDropdownWrapper.contains(e.target)) {
+    closeCategoryDropdown();
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeCategoryDropdown();
+  }
+});
+
 if (categorySelectDropdown) {
   categorySelectDropdown.addEventListener("change", (e) => {
     selectedCategoryId = e.target.value ? String(e.target.value) : null;
     updateCategoryDropdownDisplay();
+    updateAddDishBtnState();
     renderDishesGrid();
   });
 }
@@ -2546,6 +2853,10 @@ cancelCategoryBtn.addEventListener("click", closeCategoryModal);
  * Dish Modal Logic
  */
 function openAddDishModal() {
+  if (isTodaySpecialCategorySelected()) {
+    showNotification("Today's Special items are managed using the star toggle on dishes in other categories.", "info");
+    return;
+  }
   const nonFixedCats = categories.filter(c => !(c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL")));
   if (nonFixedCats.length === 0) {
     showNotification("Please create a category (e.g. Starters, Main Course) before adding dishes.", "error");
@@ -2655,6 +2966,142 @@ if (openAddDishBtn) openAddDishBtn.addEventListener("click", openAddDishModal);
 if (emptyStateAddDishBtn) emptyStateAddDishBtn.addEventListener("click", openAddDishModal);
 if (closeDishModalBtn) closeDishModalBtn.addEventListener("click", closeDishModal);
 if (cancelDishBtn) cancelDishBtn.addEventListener("click", closeDishModal);
+
+/**
+ * Dish Search Bar Functions & Event Listeners
+ */
+function ensureDishSearchBarExists() {
+  let container = document.getElementById("dishSearchBarContainer");
+  if (!container) {
+    const dishesBox = document.querySelector(".dishes-container-box");
+    const dishesActionRow = document.querySelector(".dishes-action-row");
+    if (dishesBox && dishesActionRow) {
+      container = document.createElement("div");
+      container.id = "dishSearchBarContainer";
+      container.className = "dish-search-bar-container";
+      container.innerHTML = `
+        <div class="dish-search-bar-inner">
+          <svg class="dish-search-input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="dishSearchInput" class="dish-search-input" placeholder="Search menu items..." autocomplete="off" spellcheck="false" aria-label="Search menu items">
+          <button type="button" id="dishSearchClearBtn" class="dish-search-clear-btn" aria-label="Clear search or close" title="Clear / Close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      `;
+      dishesBox.insertBefore(container, dishesActionRow);
+      setupDishSearchInputListeners();
+    }
+  }
+  return container;
+}
+
+function openDishSearchBar() {
+  const container = ensureDishSearchBarExists();
+  const toggleBtn = document.getElementById("dishSearchToggleBtn");
+  const input = document.getElementById("dishSearchInput");
+  if (!container) return;
+  isDishSearchOpen = true;
+  container.classList.add("is-expanded");
+  if (toggleBtn) {
+    toggleBtn.classList.add("is-active");
+    toggleBtn.setAttribute("aria-expanded", "true");
+  }
+  if (input) {
+    setTimeout(() => {
+      if (isDishSearchOpen) {
+        input.focus({ preventScroll: true });
+      }
+    }, 360);
+  }
+}
+
+function closeDishSearchBar(clearQuery = true) {
+  const container = document.getElementById("dishSearchBarContainer");
+  const toggleBtn = document.getElementById("dishSearchToggleBtn");
+  const input = document.getElementById("dishSearchInput");
+  if (!container) return;
+  isDishSearchOpen = false;
+  if (input) input.blur();
+  container.classList.remove("is-expanded");
+  if (toggleBtn) {
+    toggleBtn.classList.remove("is-active");
+    toggleBtn.setAttribute("aria-expanded", "false");
+  }
+  if (clearQuery) {
+    if (input) input.value = "";
+    dishSearchQuery = "";
+    renderDishesGrid();
+  }
+}
+
+function toggleDishSearchBar() {
+  if (isDishSearchOpen) {
+    const input = document.getElementById("dishSearchInput");
+    if (!input || !input.value.trim()) {
+      closeDishSearchBar(true);
+    } else {
+      input.focus();
+    }
+  } else {
+    openDishSearchBar();
+  }
+}
+
+function handleSearchCrossClick() {
+  const input = document.getElementById("dishSearchInput");
+  if (!input) return;
+  if (input.value.length > 0) {
+    // If has text: clear the text
+    input.value = "";
+    dishSearchQuery = "";
+    renderDishesGrid();
+    input.focus();
+  } else {
+    // If already empty: clicking again minimizes the search bar
+    closeDishSearchBar(true);
+  }
+}
+
+function setupDishSearchInputListeners() {
+  const clearBtn = document.getElementById("dishSearchClearBtn");
+  if (clearBtn && !clearBtn._hasSearchListener) {
+    clearBtn._hasSearchListener = true;
+    clearBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      handleSearchCrossClick();
+    });
+  }
+
+  const input = document.getElementById("dishSearchInput");
+  if (input && !input._hasSearchListener) {
+    input._hasSearchListener = true;
+    input.addEventListener("input", (e) => {
+      dishSearchQuery = e.target.value;
+      renderDishesGrid();
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        handleSearchCrossClick();
+      }
+    });
+  }
+}
+
+if (dishSearchToggleBtn) {
+  dishSearchToggleBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleDishSearchBar();
+  });
+}
+
+setupDishSearchInputListeners();
 
 // Backdrop click and touch prevention for modals
 [categoryModal, dishModal, logoutModal].forEach(modal => {
@@ -4365,5 +4812,6 @@ if (importConfirmBtn) {
 // Start initialization on page load
 document.addEventListener("DOMContentLoaded", () => {
   checkSession();
+  initStickyBarScroll();
 });
 

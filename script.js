@@ -1254,6 +1254,7 @@ function populateCategoryBlock(block, index) {
       `;
 
       row.addEventListener("click", () => {
+        if (wasCategoryDragged) return;
         if (selectedDishes.has(dish.name)) {
           selectedDishes.delete(dish.name);
           row.classList.remove("selected");
@@ -1431,14 +1432,14 @@ function switchCategorySmoothly(newIndex, direction = 'next') {
   const exitY = direction === 'prev' ? '100%' : '-100%';
 
   nextBlock.style.transform = `translateY(${startY})`;
-  nextBlock.style.transition = 'transform 0.75s cubic-bezier(0.16, 1, 0.3, 1)';
+  nextBlock.style.transition = 'transform 0.38s cubic-bezier(0.2, 0.9, 0.3, 1)';
   stage.appendChild(nextBlock);
 
   // Force reflow so initial translation registers before animating
   void nextBlock.offsetWidth;
 
   if (currentBlock) {
-    currentBlock.style.transition = 'transform 0.75s cubic-bezier(0.16, 1, 0.3, 1)';
+    currentBlock.style.transition = 'transform 0.38s cubic-bezier(0.2, 0.9, 0.3, 1)';
     currentBlock.style.transform = `translateY(${exitY})`;
   }
   nextBlock.style.transform = 'translateY(0)';
@@ -1452,12 +1453,8 @@ function switchCategorySmoothly(newIndex, direction = 'next') {
     menuCardContainer = nextBlock.querySelector(".menu-card-container");
     atBottomSince = 0;
     atTopSince = 0;
-    hasBouncedAtBottom = false;
-    hasBouncedAtTop = true;
-    wasAtBottomAtTouchStart = false;
-    wasAtTopAtTouchStart = false;
     isTransitioningCategory = false;
-  }, 780);
+  }, 400);
 }
 
 // Update Platter Count Digit inside the Platter Icon
@@ -2083,185 +2080,325 @@ document.addEventListener("dragstart", (e) => {
 });
 
 // =========================================================================
-// Swipe UP / DOWN to Slide Next / Previous Category Block
+// Reels / Shorts Fluid 1:1 Category Drag & Transition Engine
+// Content moves in real time with the finger, exactly like Shorts/Reels.
 // =========================================================================
-// Swipe UP / DOWN to Slide Next / Previous Category Block
-// Rule: First scroll moves till the last of the menu list with bounce effect;
-// scrolling again switches category
-// =========================================================================
-let touchStartY = 0;
-let touchStartX = 0;
-let touchStartTime = 0;
-let touchStartScrollTop = 0;
-let touchDragBottomY = null;
-let touchDragTopY = null;
-let wasAtBottomAtTouchStart = false;
-let wasAtTopAtTouchStart = false;
+let isDraggingCategory = false;
+let wasCategoryDragged = false;
+let categoryDragStartY = 0;
+let categoryDragStartX = 0;
+let categoryDragStartTime = 0;
+let categoryDragOffset = 0;
+let peekBlock = null;
+let currentBlock = null;
+let dragTargetIndex = -1;
+let canDragNext = false;
+let canDragPrev = false;
+let isMouseDown = false;
 
 const mobileApp = document.querySelector(".mobile-app") || document.body;
 
-mobileApp.addEventListener("touchstart", (e) => {
-  if (!e.touches || e.touches.length !== 1) return;
+function getActiveScrollBox() {
+  const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
+  const block = stage ? stage.querySelector(".category-block") : null;
+  return block ? block.querySelector(".menu-scroll-box") : menuScrollBox;
+}
 
-  // Do not trigger if modal sheets are open
+function handleDragStart(clientY, clientX, target) {
+  if (isTransitioningCategory) return;
+  if (!MENU_DATA || MENU_DATA.length <= 1) return;
+
+  // Do not intercept if modal sheets are open
   if ((categorySheet && categorySheet.classList.contains("active")) || 
       (platterSheet && platterSheet.classList.contains("active"))) {
-    wasAtBottomAtTouchStart = false;
-    wasAtTopAtTouchStart = false;
     return;
   }
 
-  const touch = e.touches[0];
-  touchStartY = touch.clientY;
-  touchStartX = touch.clientX;
-  touchStartTime = Date.now();
-  touchDragBottomY = null;
-  touchDragTopY = null;
+  categoryDragStartY = clientY;
+  categoryDragStartX = clientX;
+  categoryDragStartTime = Date.now();
+  categoryDragOffset = 0;
+  isDraggingCategory = false;
+  wasCategoryDragged = false;
+  dragTargetIndex = -1;
+  peekBlock = null;
 
-  const activeBox = document.querySelector(".category-block .menu-scroll-box") || menuScrollBox;
-  if (activeBox) {
-    touchStartScrollTop = activeBox.scrollTop;
-    const maxScroll = activeBox.scrollHeight - activeBox.clientHeight;
-    // If list does not have overflow, all items already fit on screen
-    if (maxScroll <= 6) {
-      wasAtBottomAtTouchStart = true;
-      wasAtTopAtTouchStart = true;
-    } else {
-      const scrollBottom = maxScroll - activeBox.scrollTop;
-      wasAtBottomAtTouchStart = scrollBottom <= 4;
-      wasAtTopAtTouchStart = activeBox.scrollTop <= 4;
-    }
+  const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
+  currentBlock = stage ? stage.querySelector(".category-block") : null;
+  const activeBox = getActiveScrollBox();
+
+  const isTouchInsidePanel = !!(target && target.closest && (target.closest(".category-panel") || target.closest(".category-page-dots")));
+
+  if (isTouchInsidePanel || !activeBox) {
+    canDragNext = true;
+    canDragPrev = true;
   } else {
-    touchStartScrollTop = 0;
-    wasAtBottomAtTouchStart = true;
-    wasAtTopAtTouchStart = true;
+    const maxScroll = Math.max(0, activeBox.scrollHeight - activeBox.clientHeight);
+    if (maxScroll <= 6) {
+      canDragNext = true;
+      canDragPrev = true;
+    } else {
+      canDragNext = (maxScroll - activeBox.scrollTop) <= 4;
+      canDragPrev = activeBox.scrollTop <= 4;
+    }
   }
-}, { passive: true });
+}
 
-mobileApp.addEventListener("touchend", (e) => {
-  if (!e.changedTouches || e.changedTouches.length !== 1) return;
-  if (isTransitioningCategory) return;
+function handleDragMove(clientY, clientX, preventDefaultFn) {
+  if (isTransitioningCategory || !MENU_DATA || MENU_DATA.length <= 1) return;
   if ((categorySheet && categorySheet.classList.contains("active")) || 
       (platterSheet && platterSheet.classList.contains("active"))) return;
 
-  const activeBox = document.querySelector(".category-block .menu-scroll-box") || menuScrollBox;
+  const deltaY = clientY - categoryDragStartY;
+  const deltaX = clientX - categoryDragStartX;
+  const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
+  if (!stage) return;
+  if (!currentBlock) currentBlock = stage.querySelector(".category-block");
+  if (!currentBlock) return;
 
-  // If activeBox was displaced during direct touch drag, spring it back smoothly along Y-axis
-  if (activeBox && activeBox.style.transform && activeBox.style.transform !== "none" && activeBox.style.transform !== "translateY(0px)") {
-    activeBox.style.transition = "transform 0.48s cubic-bezier(0.22, 1, 0.36, 1)";
-    activeBox.style.transform = "translateY(0px)";
+  const activeBox = getActiveScrollBox();
+  const maxScroll = activeBox ? Math.max(0, activeBox.scrollHeight - activeBox.clientHeight) : 0;
+  const currentScrollTop = activeBox ? activeBox.scrollTop : 0;
+  const isAtBottom = maxScroll <= 6 || (maxScroll - currentScrollTop <= 3);
+  const isAtTop = maxScroll <= 6 || (currentScrollTop <= 3);
+
+  // If already dragging 1:1 like reels:
+  if (isDraggingCategory) {
+    if (preventDefaultFn) preventDefaultFn();
+    wasCategoryDragged = true;
+    categoryDragOffset = deltaY;
+
+    if (dragTargetIndex > activeCategoryIndex && peekBlock) {
+      // Dragging UP towards next category
+      if (categoryDragOffset > 0) {
+        const pull = categoryDragOffset * 0.26;
+        currentBlock.style.transform = `translateY(${pull}px)`;
+        peekBlock.style.transform = `translateY(calc(100% + ${pull}px))`;
+      } else {
+        currentBlock.style.transform = `translateY(${categoryDragOffset}px)`;
+        peekBlock.style.transform = `translateY(calc(100% + ${categoryDragOffset}px))`;
+      }
+    } else if (dragTargetIndex < activeCategoryIndex && dragTargetIndex >= 0 && peekBlock) {
+      // Dragging DOWN towards previous category
+      if (categoryDragOffset < 0) {
+        const pull = categoryDragOffset * 0.26;
+        currentBlock.style.transform = `translateY(${pull}px)`;
+        peekBlock.style.transform = `translateY(calc(-100% + ${pull}px))`;
+      } else {
+        currentBlock.style.transform = `translateY(${categoryDragOffset}px)`;
+        peekBlock.style.transform = `translateY(calc(-100% + ${categoryDragOffset}px))`;
+      }
+    } else {
+      // Boundary rubber-band (first or last category)
+      const resist = categoryDragOffset * 0.22;
+      currentBlock.style.transform = `translateY(${resist}px)`;
+    }
+    return;
+  }
+
+  // Check if we should START 1:1 category drag:
+  const isVertical = Math.abs(deltaY) > Math.abs(deltaX) * 1.05;
+  if (!isVertical) return;
+
+  // Dragging UP (towards next category):
+  if (deltaY < -8 && (canDragNext || isAtBottom)) {
+    isDraggingCategory = true;
+    wasCategoryDragged = true;
+    if (preventDefaultFn) preventDefaultFn();
+
+    categoryDragStartY = clientY;
+    categoryDragStartTime = Date.now();
+    categoryDragOffset = 0;
+
+    currentBlock.style.transition = "none";
+
+    if (activeCategoryIndex < MENU_DATA.length - 1) {
+      dragTargetIndex = activeCategoryIndex + 1;
+      peekBlock = createCategoryBlock(dragTargetIndex);
+      peekBlock.style.transition = "none";
+      peekBlock.style.transform = "translateY(100%)";
+      stage.appendChild(peekBlock);
+    } else {
+      dragTargetIndex = -1; // End boundary
+    }
+    return;
+  }
+
+  // Dragging DOWN (towards previous category):
+  if (deltaY > 8 && (canDragPrev || isAtTop)) {
+    isDraggingCategory = true;
+    wasCategoryDragged = true;
+    if (preventDefaultFn) preventDefaultFn();
+
+    categoryDragStartY = clientY;
+    categoryDragStartTime = Date.now();
+    categoryDragOffset = 0;
+
+    currentBlock.style.transition = "none";
+
+    if (activeCategoryIndex > 0) {
+      dragTargetIndex = activeCategoryIndex - 1;
+      peekBlock = createCategoryBlock(dragTargetIndex);
+      peekBlock.style.transition = "none";
+      peekBlock.style.transform = "translateY(-100%)";
+      stage.appendChild(peekBlock);
+    } else {
+      dragTargetIndex = -1; // Start boundary
+    }
+    return;
+  }
+}
+
+function handleDragEnd() {
+  if (!isDraggingCategory) return;
+
+  const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
+  const stageH = stage ? stage.clientHeight : (window.innerHeight || 600);
+  const elapsed = Math.max(1, Date.now() - categoryDragStartTime);
+  const velocity = categoryDragOffset / elapsed; // px/ms
+  const distance = Math.abs(categoryDragOffset);
+
+  const isFlick = Math.abs(velocity) > 0.38 && distance > 20;
+  const isPassedThreshold = distance > stageH * 0.15;
+  const shouldCommit = (isFlick || isPassedThreshold);
+
+  // 1. Commit NEXT Category
+  if (shouldCommit && dragTargetIndex > activeCategoryIndex && peekBlock && categoryDragOffset < -18) {
+    isTransitioningCategory = true;
+    const targetIdx = dragTargetIndex;
+    activeCategoryIndex = targetIdx;
+    updateActiveSheetItem();
+    updateActiveCategoryDot();
+
+    currentBlock.style.transition = "transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    currentBlock.style.transform = "translateY(-100%)";
+
+    peekBlock.style.transition = "transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    peekBlock.style.transform = "translateY(0)";
+
+    const finishedBlock = peekBlock;
+    const oldBlock = currentBlock;
+
     setTimeout(() => {
-      activeBox.style.transition = "";
-      activeBox.style.transform = "";
-      activeBox.style.transformOrigin = "";
-    }, 500);
+      if (oldBlock && oldBlock.parentNode) oldBlock.remove();
+      categoryHeading = finishedBlock.querySelector(".category-heading");
+      menuScrollBox = finishedBlock.querySelector(".menu-scroll-box");
+      menuCardContainer = finishedBlock.querySelector(".menu-card-container");
+      isTransitioningCategory = false;
+      isDraggingCategory = false;
+      peekBlock = null;
+      currentBlock = null;
+      setTimeout(() => { wasCategoryDragged = false; }, 100);
+    }, 350);
+    return;
   }
 
-  const touch = e.changedTouches[0];
-  const deltaY = touch.clientY - touchStartY;
-  const deltaX = touch.clientX - touchStartX;
+  // 2. Commit PREVIOUS Category
+  if (shouldCommit && dragTargetIndex < activeCategoryIndex && dragTargetIndex >= 0 && peekBlock && categoryDragOffset > 18) {
+    isTransitioningCategory = true;
+    const targetIdx = dragTargetIndex;
+    activeCategoryIndex = targetIdx;
+    updateActiveSheetItem();
+    updateActiveCategoryDot();
 
-  // Vertical swipe dominance
-  const isVertical = Math.abs(deltaY) > Math.abs(deltaX) * 1.2;
-  const isSwipeUp = deltaY < -35;
-  const isSwipeDown = deltaY > 35;
+    currentBlock.style.transition = "transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    currentBlock.style.transform = "translateY(100%)";
 
-  if (isVertical) {
-    const maxScroll = activeBox ? (activeBox.scrollHeight - activeBox.clientHeight) : 0;
-    const scrollBottom = activeBox ? (maxScroll - activeBox.scrollTop) : 0;
-    const scrollTop = activeBox ? activeBox.scrollTop : 0;
+    peekBlock.style.transition = "transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    peekBlock.style.transform = "translateY(0)";
 
-    // NEXT CATEGORY: User MUST have started the touch already at the bottom (wasAtBottomAtTouchStart).
-    // If they started higher up, the first scroll displayed the bounce at the end and stopped at the last item.
-    if (isSwipeUp && wasAtBottomAtTouchStart && (maxScroll <= 6 || scrollBottom <= 6)) {
-      goToNextCategory();
-    }
-    // PREVIOUS CATEGORY: User MUST have started the touch already at the top (wasAtTopAtTouchStart).
-    else if (isSwipeDown && wasAtTopAtTouchStart && (maxScroll <= 6 || scrollTop <= 6)) {
-      goToPrevCategory();
-    }
+    const finishedBlock = peekBlock;
+    const oldBlock = currentBlock;
+
+    setTimeout(() => {
+      if (oldBlock && oldBlock.parentNode) oldBlock.remove();
+      categoryHeading = finishedBlock.querySelector(".category-heading");
+      menuScrollBox = finishedBlock.querySelector(".menu-scroll-box");
+      menuCardContainer = finishedBlock.querySelector(".menu-card-container");
+      isTransitioningCategory = false;
+      isDraggingCategory = false;
+      peekBlock = null;
+      currentBlock = null;
+      setTimeout(() => { wasCategoryDragged = false; }, 100);
+    }, 350);
+    return;
   }
+
+  // 3. CANCEL / REBOUND (Spring back to 0)
+  isTransitioningCategory = true;
+  currentBlock.style.transition = "transform 0.26s cubic-bezier(0.22, 1, 0.36, 1)";
+  currentBlock.style.transform = "translateY(0)";
+
+  if (peekBlock) {
+    peekBlock.style.transition = "transform 0.26s cubic-bezier(0.22, 1, 0.36, 1)";
+    peekBlock.style.transform = dragTargetIndex > activeCategoryIndex ? "translateY(100%)" : "translateY(-100%)";
+  }
+
+  const unneededPeek = peekBlock;
+  setTimeout(() => {
+    if (unneededPeek && unneededPeek.parentNode) unneededPeek.remove();
+    isTransitioningCategory = false;
+    isDraggingCategory = false;
+    peekBlock = null;
+    currentBlock = null;
+    setTimeout(() => { wasCategoryDragged = false; }, 100);
+  }, 270);
+}
+
+// Mobile Touch Listeners
+mobileApp.addEventListener("touchstart", (e) => {
+  if (!e.touches || e.touches.length !== 1) return;
+  handleDragStart(e.touches[0].clientY, e.touches[0].clientX, e.target);
 }, { passive: true });
 
-// Scroll bounce & rubber-banding handler
 window.addEventListener("touchmove", (e) => {
   if (!e.touches || e.touches.length !== 1) return;
-
-  // Check if inside an active bottom sheet list or menu scroll box
-  const activeModalScroll = document.querySelector(".bottom-sheet.active .sheet-list, .bottom-sheet.active .platter-list");
-  const activeBox = document.querySelector(".category-block .menu-scroll-box") || menuScrollBox;
-  const scrollTarget = activeModalScroll || (e.target && e.target.closest ? e.target.closest(".menu-scroll-box") : null) || activeBox;
-
-  // If touched on non-scrollable UI (e.g. sticky header, bottom bar, modal backdrop), prevent page pull
-  if (!scrollTarget) {
+  handleDragMove(e.touches[0].clientY, e.touches[0].clientX, () => {
     if (e.cancelable) e.preventDefault();
-    return;
-  }
-
-  const currentY = e.touches[0].clientY;
-  const deltaY = currentY - touchStartY;
-  const scrollTop = scrollTarget.scrollTop;
-  const maxScroll = Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight);
-  const isMenuScrollBox = scrollTarget.classList.contains("menu-scroll-box");
-
-  // On a longer list of menu items, the FIRST scroll allows direct tactile drag bounce:
-  if (isMenuScrollBox && maxScroll > 6) {
-    // 1. First scroll downwards towards the bottom: allow pure Y-axis transform bounce (no stretch!)
-    if (!wasAtBottomAtTouchStart && deltaY < 0) {
-      if (scrollTop >= maxScroll - 1) {
-        if (touchDragBottomY === null) touchDragBottomY = currentY;
-        const overDrag = touchDragBottomY - currentY;
-        if (overDrag > 0) {
-          const pull = Math.min(22, Math.pow(overDrag, 0.7) * 1.3);
-          scrollTarget.style.transform = `translateY(-${pull}px)`;
-        }
-      } else {
-        touchDragBottomY = null;
-      }
-      return; // Allow native/momentum scroll to run freely!
-    }
-
-    // 2. First scroll upwards towards the top: allow pure Y-axis transform bounce (no stretch!)
-    if (!wasAtTopAtTouchStart && deltaY > 0) {
-      if (scrollTop <= 1) {
-        if (touchDragTopY === null) touchDragTopY = currentY;
-        const overDragDown = currentY - touchDragTopY;
-        if (overDragDown > 0) {
-          const pullDown = Math.min(22, Math.pow(overDragDown, 0.7) * 1.3);
-          scrollTarget.style.transform = `translateY(${pullDown}px)`;
-        }
-      } else {
-        touchDragTopY = null;
-      }
-      return; // Allow native/momentum scroll to run freely!
-    }
-  }
-
-  // When already at the boundary at touch start, prevent default window scrolling so swipe cleanly switches category
-  if (wasAtBottomAtTouchStart && deltaY < 0 && (scrollTop >= maxScroll - 1)) {
-    if (e.cancelable) e.preventDefault();
-    return;
-  }
-
-  if (wasAtTopAtTouchStart && deltaY > 0 && scrollTop <= 1) {
-    if (e.cancelable) e.preventDefault();
-    return;
-  }
+  });
 }, { passive: false });
 
-// Desktop Wheel / Trackpad: Scroll till end with bounce, then scroll again to switch
+window.addEventListener("touchend", () => {
+  handleDragEnd();
+}, { passive: true });
+
+window.addEventListener("touchcancel", () => {
+  handleDragEnd();
+}, { passive: true });
+
+// Desktop Mouse Drag Listeners (allows click-and-drag testing on desktop)
+mobileApp.addEventListener("mousedown", (e) => {
+  if (e.button !== 0) return;
+  isMouseDown = true;
+  handleDragStart(e.clientY, e.clientX, e.target);
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (!isMouseDown) return;
+  handleDragMove(e.clientY, e.clientX, () => {
+    e.preventDefault();
+  });
+});
+
+window.addEventListener("mouseup", (e) => {
+  if (!isMouseDown) return;
+  isMouseDown = false;
+  handleDragEnd();
+});
+
+// Desktop Wheel / Trackpad Support
 let wheelCooldown = false;
 let atBottomSince = 0;
 let atTopSince = 0;
 
 window.addEventListener("wheel", (e) => {
-  const activeBox = document.querySelector(".category-block .menu-scroll-box") || menuScrollBox;
+  const activeBox = getActiveScrollBox();
   if (!activeBox) return;
 
   const isInsideMenu = !!(e.target && e.target.closest && (e.target.closest(".menu-scroll-box") || e.target.closest(".category-block, .main-content")));
   if (!isInsideMenu) return;
 
-  const maxScroll = activeBox.scrollHeight - activeBox.clientHeight;
+  const maxScroll = Math.max(0, activeBox.scrollHeight - activeBox.clientHeight);
   const scrollBottom = maxScroll - activeBox.scrollTop;
   const scrollTop = activeBox.scrollTop;
 
@@ -2271,24 +2408,23 @@ window.addEventListener("wheel", (e) => {
 
   const now = Date.now();
 
-  // Scroll DOWN: First scroll reaches bottom with bounce; scrolling again switches category
-  if (e.deltaY > 25) {
+  // Scroll DOWN: switches to next category at bottom
+  if (e.deltaY > 24) {
     if (maxScroll <= 6) {
       wheelCooldown = true;
       goToNextCategory();
-      setTimeout(() => { wheelCooldown = false; }, 880);
+      setTimeout(() => { wheelCooldown = false; }, 550);
       return;
     }
 
     if (scrollBottom <= 3) {
       if (atBottomSince === 0) {
         atBottomSince = now;
-        triggerScrollBounce(activeBox, "bottom");
-      } else if (now - atBottomSince > 220) {
+      } else if (now - atBottomSince > 180) {
         atBottomSince = 0;
         wheelCooldown = true;
         goToNextCategory();
-        setTimeout(() => { wheelCooldown = false; }, 880);
+        setTimeout(() => { wheelCooldown = false; }, 550);
       }
     } else {
       atBottomSince = 0;
@@ -2297,24 +2433,23 @@ window.addEventListener("wheel", (e) => {
     atBottomSince = 0;
   }
 
-  // Scroll UP: First scroll reaches top with bounce; scrolling again switches category
-  if (e.deltaY < -25) {
+  // Scroll UP: switches to prev category at top
+  if (e.deltaY < -24) {
     if (maxScroll <= 6) {
       wheelCooldown = true;
       goToPrevCategory();
-      setTimeout(() => { wheelCooldown = false; }, 880);
+      setTimeout(() => { wheelCooldown = false; }, 550);
       return;
     }
 
     if (scrollTop <= 3) {
       if (atTopSince === 0) {
         atTopSince = now;
-        triggerScrollBounce(activeBox, "top");
-      } else if (now - atTopSince > 220) {
+      } else if (now - atTopSince > 180) {
         atTopSince = 0;
         wheelCooldown = true;
         goToPrevCategory();
-        setTimeout(() => { wheelCooldown = false; }, 880);
+        setTimeout(() => { wheelCooldown = false; }, 550);
       }
     } else {
       atTopSince = 0;

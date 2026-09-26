@@ -145,7 +145,12 @@ async function checkAdminSession() {
       } catch (e) {}
     }
 
-    const res = await fetch("/api/auth/me");
+    if (!res.ok) {
+      currentAdmin = null;
+      window.location.replace("/");
+      return;
+    }
+
     const data = await res.json();
 
     if (data.success && data.authenticated && data.user) {
@@ -158,22 +163,15 @@ async function checkAdminSession() {
         revealPage();
       } else {
         currentAdmin = null;
-        showView(authView);
-        showNotification("Access denied: You are signed in as a Restaurant Owner, not a Super Admin.", "error");
-        revealPage();
+        window.location.replace("/?auth_error=" + encodeURIComponent("Access denied: You are signed in as a Restaurant Owner, not a Super Admin."));
       }
     } else {
       currentAdmin = null;
-      adminProfileArea.style.display = "none";
-      showView(authView);
-      setupGoogleButton();
-      revealPage();
+      window.location.replace("/");
     }
   } catch (err) {
     console.error("Admin session error:", err);
-    showView(authView);
-    showNotification("Failed to connect to authentication server.", "error");
-    revealPage();
+    window.location.replace("/");
   }
 }
 
@@ -1086,10 +1084,11 @@ if (auditSearchInput) {
 /**
  * Admin Fast Dev Login
  */
-adminDevAuthForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const devEmail = adminDevEmail.value.trim();
-  if (!devEmail) return;
+if (adminDevAuthForm) {
+  adminDevAuthForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const devEmail = adminDevEmail ? adminDevEmail.value.trim() : "";
+    if (!devEmail) return;
 
   try {
     const res = await fetch("/api/auth/google", {
@@ -1107,6 +1106,7 @@ adminDevAuthForm.addEventListener("submit", async (e) => {
     showNotification("Network error during admin sign in.", "error");
   }
 });
+}
 
 /**
  * Setup Google Sign-In button
@@ -1163,11 +1163,20 @@ async function setupGoogleButton() {
 /**
  * Logout
  */
-logoutBtn.addEventListener("click", async () => {
-  await fetch("/api/auth/logout", { method: "POST" });
-  currentAdmin = null;
-  checkAdminSession();
-});
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", async () => {
+    try {
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        window.google.accounts.id.disableAutoSelect();
+      }
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error("Logout error:", e);
+    }
+    currentAdmin = null;
+    window.location.replace("/");
+  });
+}
 
 /**
  * Safe HTML escape helper

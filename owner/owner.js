@@ -3269,6 +3269,7 @@ const themeNameStrokeCheckbox = document.getElementById("themeNameStrokeCheckbox
 const themeSaveBtn = document.getElementById("themeSaveBtn");
 const themeSaveBtnLabel = document.getElementById("themeSaveBtnLabel");
 const themeSaveSpinner = document.getElementById("themeSaveSpinner");
+const themeResetBtn = document.getElementById("themeResetBtn");
 
 const THEME_PALETTES = [
   { top: "#C4122F", bg: "#FFF8F0", name: "#111111" }, // KFC (Deep Crimson, Biscuit Cream, Bold Black)
@@ -3453,6 +3454,18 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
   if (themeSaveBtn) {
     themeSaveBtn.disabled = !isChanged;
   }
+
+  // Check if current theme is already the default theme
+  const isDefaultTheme = (
+    currentTopColor.toUpperCase() === "#991E2E" &&
+    currentBgColor.toUpperCase() === "#FBEFE1" &&
+    currentNameColor.toUpperCase() === "#63141E" &&
+    currentHasNameStroke === true &&
+    currentNameFont === "Lobster"
+  );
+  if (themeResetBtn) {
+    themeResetBtn.disabled = isDefaultTheme;
+  }
 }
 
 function renderThemeSwatches() {
@@ -3596,6 +3609,7 @@ async function saveThemeColors() {
   if (!topToSave || !bgToSave || !nameToSave) return;
 
   themeSaveBtn.disabled = true;
+  if (themeResetBtn) themeResetBtn.disabled = true;
   if (themeSaveSpinner) themeSaveSpinner.style.display = "inline-block";
   if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Applying";
 
@@ -3636,7 +3650,7 @@ async function saveThemeColors() {
     savedNameFont = currentNameFont;
     if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Applied";
     setTimeout(() => {
-      if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Apply";
+      if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Apply Theme";
       const stillChanged = (
         currentTopColor.toUpperCase() !== savedTopColor.toUpperCase() ||
         currentBgColor.toUpperCase() !== savedBgColor.toUpperCase() ||
@@ -3652,6 +3666,14 @@ async function saveThemeColors() {
     if (themeSaveBtn) themeSaveBtn.disabled = false;
   } finally {
     if (themeSaveSpinner) themeSaveSpinner.style.display = "none";
+    const isDef = (
+      currentTopColor.toUpperCase() === "#991E2E" &&
+      currentBgColor.toUpperCase() === "#FBEFE1" &&
+      currentNameColor.toUpperCase() === "#63141E" &&
+      currentHasNameStroke === true &&
+      currentNameFont === "Lobster"
+    );
+    if (themeResetBtn) themeResetBtn.disabled = isDef;
   }
 }
 
@@ -3734,6 +3756,23 @@ if (themeNameStrokeCheckbox) {
 
 if (themeSaveBtn) {
   themeSaveBtn.addEventListener("click", saveThemeColors);
+}
+
+function resetThemeColors() {
+  currentTopColor = "#991E2E";
+  currentBgColor = "#FBEFE1";
+  currentNameColor = "#63141E";
+  isCustomNameColor = false;
+  currentHasNameStroke = true;
+  currentNameFont = "Lobster";
+
+  renderThemeFonts();
+  renderThemeSwatches();
+  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "all");
+}
+
+if (themeResetBtn) {
+  themeResetBtn.addEventListener("click", resetThemeColors);
 }
 
 window.addEventListener("hashchange", () => {

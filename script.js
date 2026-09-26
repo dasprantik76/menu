@@ -1210,6 +1210,66 @@ function updateCategoryTitle(title, isSpecial = false, targetHeading = null) {
 // Category Block Architecture & Sliding Transition
 // =========================================================================
 let isTransitioningCategory = false;
+let activeTransitionTimer = null;
+let activeTargetBlock = null;
+
+function updateCategoryDOMReferences(block) {
+  if (!block) return;
+  categoryHeading = block.querySelector(".category-heading");
+  menuScrollBox = block.querySelector(".menu-scroll-box");
+  menuCardContainer = block.querySelector(".menu-card-container");
+}
+
+function ensureActiveCategoryBlock() {
+  const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
+  if (!stage || !MENU_DATA || MENU_DATA.length === 0) return null;
+
+  let blocks = stage.querySelectorAll(".category-block");
+  if (blocks.length === 0) {
+    const block = createCategoryBlock(activeCategoryIndex);
+    block.style.transform = "translateY(0)";
+    block.style.transition = "none";
+    stage.appendChild(block);
+    updateCategoryDOMReferences(block);
+    return block;
+  }
+  return blocks[blocks.length - 1];
+}
+
+function resolveActiveTransition() {
+  if (activeTransitionTimer) {
+    clearTimeout(activeTransitionTimer);
+    activeTransitionTimer = null;
+  }
+
+  const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
+  if (stage) {
+    const blocks = Array.from(stage.querySelectorAll(".category-block"));
+    if (blocks.length > 0) {
+      let winner = (activeTargetBlock && activeTargetBlock.parentNode === stage) 
+        ? activeTargetBlock 
+        : blocks[blocks.length - 1];
+
+      winner.style.transition = "none";
+      winner.style.transform = "translateY(0)";
+      updateCategoryDOMReferences(winner);
+
+      blocks.forEach(b => {
+        if (b !== winner && b.parentNode) {
+          b.remove();
+        }
+      });
+    } else {
+      ensureActiveCategoryBlock();
+    }
+  }
+
+  activeTargetBlock = null;
+  peekBlock = null;
+  currentBlock = null;
+  isTransitioningCategory = false;
+  isDraggingCategory = false;
+}
 
 function populateCategoryBlock(block, index) {
   const currentCategory = MENU_DATA[index];
@@ -1366,23 +1426,26 @@ function createCategoryBlock(index) {
 
 function renderMenuItems(index) {
   const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
-  let block = stage ? stage.querySelector(".category-block") : null;
-  if (!block && stage) {
+  if (!stage) return;
+
+  resolveActiveTransition();
+
+  let block = stage.querySelector(".category-block");
+  if (!block) {
     block = createCategoryBlock(index);
+    block.style.transform = "translateY(0)";
     stage.appendChild(block);
-  } else if (block) {
+  } else {
+    block.style.transform = "translateY(0)";
+    block.style.transition = "none";
     populateCategoryBlock(block, index);
   }
 
-  if (block) {
-    categoryHeading = block.querySelector(".category-heading");
-    menuScrollBox = block.querySelector(".menu-scroll-box");
-    menuCardContainer = block.querySelector(".menu-card-container");
-  }
+  updateCategoryDOMReferences(block);
 }
 
 function goToNextCategory() {
-  if (isTransitioningCategory || !MENU_DATA || MENU_DATA.length === 0) return;
+  if (!MENU_DATA || MENU_DATA.length === 0) return;
   // Non-looping: stop at the last category (cannot loop to Today's Special)
   if (activeCategoryIndex >= MENU_DATA.length - 1) {
     const activeBox = document.querySelector(".category-block .menu-scroll-box") || menuScrollBox;
@@ -1394,7 +1457,7 @@ function goToNextCategory() {
 }
 
 function goToPrevCategory() {
-  if (isTransitioningCategory || !MENU_DATA || MENU_DATA.length === 0) return;
+  if (!MENU_DATA || MENU_DATA.length === 0) return;
   // Non-looping: stop at the first category (cannot loop to Desserts)
   if (activeCategoryIndex <= 0) {
     const activeBox = document.querySelector(".category-block .menu-scroll-box") || menuScrollBox;
@@ -1406,55 +1469,69 @@ function goToPrevCategory() {
 }
 
 function switchCategorySmoothly(newIndex, direction = 'next') {
-  if (isTransitioningCategory) return;
   if (!MENU_DATA || MENU_DATA.length === 0) return;
   if (newIndex < 0 || newIndex >= MENU_DATA.length) return;
-  if (newIndex === activeCategoryIndex) return;
+  if (newIndex === activeCategoryIndex && !isTransitioningCategory) return;
+
+  const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
+  if (!stage) return;
+
+  // Settle any active transition cleanly before initiating new one
+  if (isTransitioningCategory || activeTransitionTimer) {
+    resolveActiveTransition();
+    if (newIndex === activeCategoryIndex) return;
+  }
 
   isTransitioningCategory = true;
   activeCategoryIndex = newIndex;
   updateActiveSheetItem();
   updateActiveCategoryDot();
 
-  const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
-  if (!stage) {
-    isTransitioningCategory = false;
-    return;
-  }
-
-  const currentBlock = stage.querySelector(".category-block");
+  const currentBlock = stage.querySelector(".category-block") || ensureActiveCategoryBlock();
   const nextBlock = createCategoryBlock(newIndex);
+  activeTargetBlock = nextBlock;
 
   // Physical Slide Transitions:
-  // 'next': Next block is hidden below (translateY 100%) and slides UP into view; current block slides UP to -100%
-  // 'prev': Next block is hidden above (translateY -100%) and slides DOWN into view; current block slides DOWN to +100%
+  // 'next': Next block starts below (100%) and slides UP to 0; current block slides UP to -100%
+  // 'prev': Next block starts above (-100%) and slides DOWN to 0; current block slides DOWN to 100%
   const startY = direction === 'prev' ? '-100%' : '100%';
   const exitY = direction === 'prev' ? '100%' : '-100%';
 
   nextBlock.style.transform = `translateY(${startY})`;
-  nextBlock.style.transition = 'transform 0.38s cubic-bezier(0.2, 0.9, 0.3, 1)';
+  nextBlock.style.transition = 'transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1)';
   stage.appendChild(nextBlock);
 
   // Force reflow so initial translation registers before animating
   void nextBlock.offsetWidth;
 
-  if (currentBlock) {
-    currentBlock.style.transition = 'transform 0.38s cubic-bezier(0.2, 0.9, 0.3, 1)';
+  if (currentBlock && currentBlock !== nextBlock) {
+    currentBlock.style.transition = 'transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1)';
     currentBlock.style.transform = `translateY(${exitY})`;
   }
   nextBlock.style.transform = 'translateY(0)';
 
-  setTimeout(() => {
-    if (currentBlock && currentBlock.parentNode) {
-      currentBlock.remove();
+  const oldBlock = currentBlock;
+  const finishedBlock = nextBlock;
+
+  activeTransitionTimer = setTimeout(() => {
+    activeTransitionTimer = null;
+    activeTargetBlock = null;
+
+    if (oldBlock && oldBlock.parentNode && oldBlock !== finishedBlock) {
+      oldBlock.remove();
     }
-    categoryHeading = nextBlock.querySelector(".category-heading");
-    menuScrollBox = nextBlock.querySelector(".menu-scroll-box");
-    menuCardContainer = nextBlock.querySelector(".menu-card-container");
+    // Clean any orphan blocks
+    const allBlocks = stage.querySelectorAll(".category-block");
+    allBlocks.forEach(b => {
+      if (b !== finishedBlock && b.parentNode) b.remove();
+    });
+
+    updateCategoryDOMReferences(finishedBlock);
+    ensureActiveCategoryBlock();
     atBottomSince = 0;
     atTopSince = 0;
     isTransitioningCategory = false;
-  }, 400);
+  }, 340);
 }
 
 // Update Platter Count Digit inside the Platter Icon
@@ -2105,13 +2182,16 @@ function getActiveScrollBox() {
 }
 
 function handleDragStart(clientY, clientX, target) {
-  if (isTransitioningCategory) return;
-  if (!MENU_DATA || MENU_DATA.length <= 1) return;
-
   // Do not intercept if modal sheets are open
   if ((categorySheet && categorySheet.classList.contains("active")) || 
       (platterSheet && platterSheet.classList.contains("active"))) {
     return;
+  }
+  if (!MENU_DATA || MENU_DATA.length <= 1) return;
+
+  // Immediately resolve any in-flight transition so rapid interactions never stall or conflict
+  if (isTransitioningCategory || activeTransitionTimer) {
+    resolveActiveTransition();
   }
 
   categoryDragStartY = clientY;
@@ -2124,9 +2204,13 @@ function handleDragStart(clientY, clientX, target) {
   peekBlock = null;
 
   const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
-  currentBlock = stage ? stage.querySelector(".category-block") : null;
-  const activeBox = getActiveScrollBox();
+  currentBlock = ensureActiveCategoryBlock();
+  if (currentBlock) {
+    currentBlock.style.transition = "none";
+    currentBlock.style.transform = "translateY(0)";
+  }
 
+  const activeBox = getActiveScrollBox();
   const isTouchInsidePanel = !!(target && target.closest && (target.closest(".category-panel") || target.closest(".category-page-dots")));
 
   if (isTouchInsidePanel || !activeBox) {
@@ -2145,15 +2229,19 @@ function handleDragStart(clientY, clientX, target) {
 }
 
 function handleDragMove(clientY, clientX, preventDefaultFn) {
-  if (isTransitioningCategory || !MENU_DATA || MENU_DATA.length <= 1) return;
+  if (!MENU_DATA || MENU_DATA.length <= 1) return;
   if ((categorySheet && categorySheet.classList.contains("active")) || 
       (platterSheet && platterSheet.classList.contains("active"))) return;
+
+  if (isTransitioningCategory || activeTransitionTimer) {
+    resolveActiveTransition();
+  }
 
   const deltaY = clientY - categoryDragStartY;
   const deltaX = clientX - categoryDragStartX;
   const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
   if (!stage) return;
-  if (!currentBlock) currentBlock = stage.querySelector(".category-block");
+  if (!currentBlock || !currentBlock.parentNode) currentBlock = ensureActiveCategoryBlock();
   if (!currentBlock) return;
 
   const activeBox = getActiveScrollBox();
@@ -2212,6 +2300,12 @@ function handleDragMove(clientY, clientX, preventDefaultFn) {
 
     currentBlock.style.transition = "none";
 
+    // Purge any orphan category blocks
+    const existingBlocks = stage.querySelectorAll(".category-block");
+    existingBlocks.forEach(b => {
+      if (b !== currentBlock && b.parentNode) b.remove();
+    });
+
     if (activeCategoryIndex < MENU_DATA.length - 1) {
       dragTargetIndex = activeCategoryIndex + 1;
       peekBlock = createCategoryBlock(dragTargetIndex);
@@ -2236,6 +2330,12 @@ function handleDragMove(clientY, clientX, preventDefaultFn) {
 
     currentBlock.style.transition = "none";
 
+    // Purge any orphan category blocks
+    const existingBlocks = stage.querySelectorAll(".category-block");
+    existingBlocks.forEach(b => {
+      if (b !== currentBlock && b.parentNode) b.remove();
+    });
+
     if (activeCategoryIndex > 0) {
       dragTargetIndex = activeCategoryIndex - 1;
       peekBlock = createCategoryBlock(dragTargetIndex);
@@ -2251,98 +2351,136 @@ function handleDragMove(clientY, clientX, preventDefaultFn) {
 
 function handleDragEnd() {
   if (!isDraggingCategory) return;
+  // IMMEDIATELY unset dragging to prevent re-entrant duplicate calls from touchend / mouseup
+  isDraggingCategory = false;
 
   const stage = document.getElementById("mainContent") || document.querySelector(".main-content");
-  const stageH = stage ? stage.clientHeight : (window.innerHeight || 600);
+  if (!stage) return;
+  if (!currentBlock || !currentBlock.parentNode) currentBlock = ensureActiveCategoryBlock();
+  if (!currentBlock) return;
+
+  const stageH = stage.clientHeight || (window.innerHeight || 600);
   const elapsed = Math.max(1, Date.now() - categoryDragStartTime);
   const velocity = categoryDragOffset / elapsed; // px/ms
   const distance = Math.abs(categoryDragOffset);
 
-  const isFlick = Math.abs(velocity) > 0.38 && distance > 20;
-  const isPassedThreshold = distance > stageH * 0.15;
+  const isFlick = Math.abs(velocity) > 0.35 && distance > 18;
+  const isPassedThreshold = distance > stageH * 0.14;
   const shouldCommit = (isFlick || isPassedThreshold);
 
   // 1. Commit NEXT Category
-  if (shouldCommit && dragTargetIndex > activeCategoryIndex && peekBlock && categoryDragOffset < -18) {
+  if (shouldCommit && dragTargetIndex > activeCategoryIndex && peekBlock && categoryDragOffset < -15) {
     isTransitioningCategory = true;
     const targetIdx = dragTargetIndex;
     activeCategoryIndex = targetIdx;
     updateActiveSheetItem();
     updateActiveCategoryDot();
 
-    currentBlock.style.transition = "transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1)";
-    currentBlock.style.transform = "translateY(-100%)";
-
-    peekBlock.style.transition = "transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1)";
-    peekBlock.style.transform = "translateY(0)";
-
     const finishedBlock = peekBlock;
     const oldBlock = currentBlock;
+    activeTargetBlock = finishedBlock;
 
-    setTimeout(() => {
-      if (oldBlock && oldBlock.parentNode) oldBlock.remove();
-      categoryHeading = finishedBlock.querySelector(".category-heading");
-      menuScrollBox = finishedBlock.querySelector(".menu-scroll-box");
-      menuCardContainer = finishedBlock.querySelector(".menu-card-container");
+    oldBlock.style.transition = "transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    oldBlock.style.transform = "translateY(-100%)";
+
+    finishedBlock.style.transition = "transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    finishedBlock.style.transform = "translateY(0)";
+
+    activeTransitionTimer = setTimeout(() => {
+      activeTransitionTimer = null;
+      activeTargetBlock = null;
+      if (oldBlock && oldBlock.parentNode && oldBlock !== finishedBlock) {
+        oldBlock.remove();
+      }
+      // Ensure only finishedBlock remains
+      const allBlocks = stage.querySelectorAll(".category-block");
+      allBlocks.forEach(b => {
+        if (b !== finishedBlock && b.parentNode) b.remove();
+      });
+
+      updateCategoryDOMReferences(finishedBlock);
+      ensureActiveCategoryBlock();
       isTransitioningCategory = false;
-      isDraggingCategory = false;
       peekBlock = null;
       currentBlock = null;
-      setTimeout(() => { wasCategoryDragged = false; }, 100);
-    }, 350);
+      setTimeout(() => { wasCategoryDragged = false; }, 80);
+    }, 300);
     return;
   }
 
   // 2. Commit PREVIOUS Category
-  if (shouldCommit && dragTargetIndex < activeCategoryIndex && dragTargetIndex >= 0 && peekBlock && categoryDragOffset > 18) {
+  if (shouldCommit && dragTargetIndex < activeCategoryIndex && dragTargetIndex >= 0 && peekBlock && categoryDragOffset > 15) {
     isTransitioningCategory = true;
     const targetIdx = dragTargetIndex;
     activeCategoryIndex = targetIdx;
     updateActiveSheetItem();
     updateActiveCategoryDot();
 
-    currentBlock.style.transition = "transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1)";
-    currentBlock.style.transform = "translateY(100%)";
-
-    peekBlock.style.transition = "transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1)";
-    peekBlock.style.transform = "translateY(0)";
-
     const finishedBlock = peekBlock;
     const oldBlock = currentBlock;
+    activeTargetBlock = finishedBlock;
 
-    setTimeout(() => {
-      if (oldBlock && oldBlock.parentNode) oldBlock.remove();
-      categoryHeading = finishedBlock.querySelector(".category-heading");
-      menuScrollBox = finishedBlock.querySelector(".menu-scroll-box");
-      menuCardContainer = finishedBlock.querySelector(".menu-card-container");
+    oldBlock.style.transition = "transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    oldBlock.style.transform = "translateY(100%)";
+
+    finishedBlock.style.transition = "transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    finishedBlock.style.transform = "translateY(0)";
+
+    activeTransitionTimer = setTimeout(() => {
+      activeTransitionTimer = null;
+      activeTargetBlock = null;
+      if (oldBlock && oldBlock.parentNode && oldBlock !== finishedBlock) {
+        oldBlock.remove();
+      }
+      // Ensure only finishedBlock remains
+      const allBlocks = stage.querySelectorAll(".category-block");
+      allBlocks.forEach(b => {
+        if (b !== finishedBlock && b.parentNode) b.remove();
+      });
+
+      updateCategoryDOMReferences(finishedBlock);
+      ensureActiveCategoryBlock();
       isTransitioningCategory = false;
-      isDraggingCategory = false;
       peekBlock = null;
       currentBlock = null;
-      setTimeout(() => { wasCategoryDragged = false; }, 100);
-    }, 350);
+      setTimeout(() => { wasCategoryDragged = false; }, 80);
+    }, 300);
     return;
   }
 
   // 3. CANCEL / REBOUND (Spring back to 0)
   isTransitioningCategory = true;
-  currentBlock.style.transition = "transform 0.26s cubic-bezier(0.22, 1, 0.36, 1)";
-  currentBlock.style.transform = "translateY(0)";
+  const returningBlock = currentBlock;
+  const unneededPeek = peekBlock;
+  activeTargetBlock = returningBlock;
 
-  if (peekBlock) {
-    peekBlock.style.transition = "transform 0.26s cubic-bezier(0.22, 1, 0.36, 1)";
-    peekBlock.style.transform = dragTargetIndex > activeCategoryIndex ? "translateY(100%)" : "translateY(-100%)";
+  returningBlock.style.transition = "transform 0.24s cubic-bezier(0.22, 1, 0.36, 1)";
+  returningBlock.style.transform = "translateY(0)";
+
+  if (unneededPeek) {
+    unneededPeek.style.transition = "transform 0.24s cubic-bezier(0.22, 1, 0.36, 1)";
+    unneededPeek.style.transform = dragTargetIndex > activeCategoryIndex ? "translateY(100%)" : "translateY(-100%)";
   }
 
-  const unneededPeek = peekBlock;
-  setTimeout(() => {
-    if (unneededPeek && unneededPeek.parentNode) unneededPeek.remove();
+  activeTransitionTimer = setTimeout(() => {
+    activeTransitionTimer = null;
+    activeTargetBlock = null;
+    if (unneededPeek && unneededPeek.parentNode && unneededPeek !== returningBlock) {
+      unneededPeek.remove();
+    }
+    // Clean any stray blocks
+    const allBlocks = stage.querySelectorAll(".category-block");
+    allBlocks.forEach(b => {
+      if (b !== returningBlock && b.parentNode) b.remove();
+    });
+
+    updateCategoryDOMReferences(returningBlock);
+    ensureActiveCategoryBlock();
     isTransitioningCategory = false;
-    isDraggingCategory = false;
     peekBlock = null;
     currentBlock = null;
-    setTimeout(() => { wasCategoryDragged = false; }, 100);
-  }, 270);
+    setTimeout(() => { wasCategoryDragged = false; }, 80);
+  }, 260);
 }
 
 // Mobile Touch Listeners
@@ -2402,7 +2540,7 @@ window.addEventListener("wheel", (e) => {
   const scrollBottom = maxScroll - activeBox.scrollTop;
   const scrollTop = activeBox.scrollTop;
 
-  if (wheelCooldown || isTransitioningCategory) return;
+  if (wheelCooldown) return;
   if ((categorySheet && categorySheet.classList.contains("active")) || 
       (platterSheet && platterSheet.classList.contains("active"))) return;
 
@@ -2413,18 +2551,18 @@ window.addEventListener("wheel", (e) => {
     if (maxScroll <= 6) {
       wheelCooldown = true;
       goToNextCategory();
-      setTimeout(() => { wheelCooldown = false; }, 550);
+      setTimeout(() => { wheelCooldown = false; }, 380);
       return;
     }
 
     if (scrollBottom <= 3) {
       if (atBottomSince === 0) {
         atBottomSince = now;
-      } else if (now - atBottomSince > 180) {
+      } else if (now - atBottomSince > 130) {
         atBottomSince = 0;
         wheelCooldown = true;
         goToNextCategory();
-        setTimeout(() => { wheelCooldown = false; }, 550);
+        setTimeout(() => { wheelCooldown = false; }, 380);
       }
     } else {
       atBottomSince = 0;
@@ -2438,18 +2576,18 @@ window.addEventListener("wheel", (e) => {
     if (maxScroll <= 6) {
       wheelCooldown = true;
       goToPrevCategory();
-      setTimeout(() => { wheelCooldown = false; }, 550);
+      setTimeout(() => { wheelCooldown = false; }, 380);
       return;
     }
 
     if (scrollTop <= 3) {
       if (atTopSince === 0) {
         atTopSince = now;
-      } else if (now - atTopSince > 180) {
+      } else if (now - atTopSince > 130) {
         atTopSince = 0;
         wheelCooldown = true;
         goToPrevCategory();
-        setTimeout(() => { wheelCooldown = false; }, 550);
+        setTimeout(() => { wheelCooldown = false; }, 380);
       }
     } else {
       atTopSince = 0;

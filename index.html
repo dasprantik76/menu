@@ -17,6 +17,14 @@
         var saved = "";
         try { saved = sessionStorage.getItem("menucard_view") || localStorage.getItem("menucard_view") || ""; } catch(e){}
 
+        if (search.indexOf("logged_out") !== -1) {
+          try {
+            sessionStorage.removeItem("menucard_view");
+            localStorage.removeItem("menucard_view");
+          } catch(e){}
+          saved = "";
+        }
+
         var isRegister = search.indexOf("view=register") !== -1 || hash === "#register" || saved === "register";
         var isPending = search.indexOf("view=pending") !== -1 || hash === "#pending" || saved === "pending";
         var isDashboard = search.indexOf("view=dashboard") !== -1 || hash === "#dashboard" || saved === "dashboard" || hash === "#branding" || saved === "branding" || hash === "#themecolors" || saved === "themecolors" || hash === "#qrcode" || saved === "qrcode";
@@ -1003,6 +1011,6 @@
   </main>
 
   <script src="owner/qrcode.min.js"></script>
-  <script src="owner/owner.js?v=119"></script>
+  <script src="owner/owner.js?v=120"></script>
 </body>
 </html>

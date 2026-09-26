@@ -468,6 +468,24 @@ async function checkSession() {
       window.history.replaceState({}, document.title, cleanUrl);
     }
 
+    const isLoggedOut = urlParams.get("logged_out");
+    if (isLoggedOut) {
+      currentUser = null;
+      currentBusiness = null;
+      try {
+        sessionStorage.clear();
+        localStorage.removeItem("menucard_view");
+      } catch (e) {}
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch (e) {}
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+      showView(authView);
+      setupGoogleButton();
+      return;
+    }
+
     const autoDevEmail = urlParams.get("dev_login");
     if (autoDevEmail && !currentUser) {
       try {
@@ -480,7 +498,8 @@ async function checkSession() {
     }
 
     const res = await fetch("/api/auth/me", {
-      headers: { "Bypass-Tunnel-Reminder": "true" }
+      headers: { "Bypass-Tunnel-Reminder": "true" },
+      cache: "no-store"
     });
 
     if (!res.ok) {

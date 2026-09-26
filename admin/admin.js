@@ -145,6 +145,11 @@ async function checkAdminSession() {
       } catch (e) {}
     }
 
+    const res = await fetch("/api/auth/me", {
+      headers: { "Bypass-Tunnel-Reminder": "true" },
+      cache: "no-store"
+    });
+
     if (!res.ok) {
       currentAdmin = null;
       window.location.replace("/");
@@ -1166,15 +1171,22 @@ async function setupGoogleButton() {
 if (logoutBtn) {
   logoutBtn.addEventListener("click", async () => {
     try {
+      try {
+        sessionStorage.clear();
+        localStorage.removeItem("menucard_view");
+      } catch (e) {}
+
       if (window.google && window.google.accounts && window.google.accounts.id) {
         window.google.accounts.id.disableAutoSelect();
       }
+
+      document.cookie = "menucard_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
       await fetch("/api/auth/logout", { method: "POST" });
     } catch (e) {
       console.error("Logout error:", e);
     }
     currentAdmin = null;
-    window.location.replace("/");
+    window.location.replace("/?logged_out=1");
   });
 }
 

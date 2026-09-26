@@ -56,15 +56,24 @@ function setSessionCookie(res, token) {
  */
 function clearSessionCookie(res) {
   const isProd = process.env.NODE_ENV === "production";
-  const cookieStr = cookie.serialize(SESSION_COOKIE_NAME, "", {
+  const cookieOptions = {
     httpOnly: true,
-    secure: isProd,
-    sameSite: "lax",
     path: "/",
-    maxAge: 0
+    expires: new Date(0),
+    maxAge: 0,
+    sameSite: "lax"
+  };
+
+  const cookieStrProd = cookie.serialize(SESSION_COOKIE_NAME, "", {
+    ...cookieOptions,
+    secure: isProd
+  });
+  const cookieStrDev = cookie.serialize(SESSION_COOKIE_NAME, "", {
+    ...cookieOptions,
+    secure: false
   });
 
-  res.setHeader("Set-Cookie", cookieStr);
+  res.setHeader("Set-Cookie", [cookieStrProd, cookieStrDev]);
 }
 
 /**

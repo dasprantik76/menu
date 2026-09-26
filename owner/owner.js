@@ -1657,14 +1657,18 @@ function initViewSwitcher() {
     capsuleCategoryBtn.addEventListener("click", () => {
       if (currentDashboardView === "category") return;
       switchDashboardView("category");
-      loadMenuData();
+      if (!isInitialMenuDataLoaded) {
+        loadMenuData();
+      }
     });
   }
   if (capsuleMenuBtn) {
     capsuleMenuBtn.addEventListener("click", () => {
       if (currentDashboardView === "menu") return;
       switchDashboardView("menu");
-      loadMenuData();
+      if (!isInitialMenuDataLoaded) {
+        loadMenuData();
+      }
     });
   }
 
@@ -2985,7 +2989,7 @@ function ensureDishSearchBarExists() {
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" id="dishSearchInput" class="dish-search-input" placeholder="Search menu items..." autocomplete="off" spellcheck="false" aria-label="Search menu items">
+          <input type="text" id="dishSearchInput" class="dish-search-input" placeholder="Search menu items..." autocomplete="off" spellcheck="false" aria-label="Search menu items" enterkeyhint="search">
           <button type="button" id="dishSearchClearBtn" class="dish-search-clear-btn" aria-label="Clear search or close" title="Clear / Close">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -3086,9 +3090,18 @@ function setupDishSearchInputListeners() {
       renderDishesGrid();
     });
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
+      if (e.key === "Enter" || e.keyCode === 13) {
+        e.preventDefault();
+        input.blur();
+      } else if (e.key === "Escape") {
         e.preventDefault();
         handleSearchCrossClick();
+      }
+    });
+    input.addEventListener("keyup", (e) => {
+      if (e.key === "Enter" || e.keyCode === 13) {
+        e.preventDefault();
+        input.blur();
       }
     });
   }

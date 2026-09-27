@@ -1940,16 +1940,20 @@ function attachCategoryDragListeners(card) {
     startY = currentY = touch.clientY;
     isPressing = true;
 
-    // Immediately start smooth scale-up on touch and hold
-    card.classList.add("is-drag-pressing");
+    // Small delay before visual feedback so normal scrolling/swiping never flickers the card
+    pressFeedbackTimer = setTimeout(() => {
+      if (!isPressing) return;
+      card.classList.add("is-drag-pressing");
+    }, 120);
 
-    // Long press fires at 260ms
+    // Intentional touch & hold activation delay (450ms) to prevent accidental drags while scrolling
     pressTimer = setTimeout(() => {
       if (!isPressing) return;
       isPressing = false;
       removeCheckListeners();
+      card.classList.add("is-drag-pressing");
       startCategoryDrag(card, "touch", activeTouchId, currentX, currentY);
-    }, 260);
+    }, 450);
 
     window.addEventListener("touchmove", onTouchMoveCheck, { passive: true });
     window.addEventListener("touchend", onTouchEndCheck);
@@ -1966,7 +1970,8 @@ function attachCategoryDragListeners(card) {
     currentX = touch.clientX;
     currentY = touch.clientY;
     const dist = Math.hypot(currentX - startX, currentY - startY);
-    if (dist > 14) {
+    // If finger moves more than 8px before activation, user is scrolling the list -> cancel immediately
+    if (dist > 8) {
       cancelPress();
     }
   }
@@ -1987,15 +1992,18 @@ function attachCategoryDragListeners(card) {
     startY = currentY = e.clientY;
     isPressing = true;
 
-    // Immediately start smooth scale-up on click and hold
-    card.classList.add("is-drag-pressing");
+    pressFeedbackTimer = setTimeout(() => {
+      if (!isPressing) return;
+      card.classList.add("is-drag-pressing");
+    }, 100);
 
     pressTimer = setTimeout(() => {
       if (!isPressing) return;
       isPressing = false;
       removeCheckListeners();
+      card.classList.add("is-drag-pressing");
       startCategoryDrag(card, "mouse", null, currentX, currentY);
-    }, 260);
+    }, 400);
 
     window.addEventListener("mousemove", onMouseMoveCheck);
     window.addEventListener("mouseup", onMouseUpCheck);
@@ -2006,7 +2014,7 @@ function attachCategoryDragListeners(card) {
     currentX = e.clientX;
     currentY = e.clientY;
     const dist = Math.hypot(currentX - startX, currentY - startY);
-    if (dist > 14) {
+    if (dist > 8) {
       cancelPress();
     }
   }

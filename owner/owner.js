@@ -1754,6 +1754,9 @@ function refreshMenuUI() {
   renderDishesGrid();
 }
 
+// Track in-flight category creations to prevent race conditions during instant deletion
+const inFlightCategoryCreations = new Map(); // tempCatId -> { cancelled: false, realId: null }
+
 /**
  * Render categories list in CATEGORY view
  */
@@ -1851,11 +1854,14 @@ function renderCategoriesList() {
       const nameEl = card.querySelector(".category-card-name");
       if (nameEl) attachInlineCategoryEditor(nameEl, cat);
 
-      // Delete button
+      // Delete button - dynamically resolve ID in case category was just created
       const delBtn = card.querySelector(".delete-cat-btn");
       if (delBtn) {
-        delBtn.addEventListener("click", () => {
-          confirmDeleteCategoryById(cat._id);
+        delBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const targetId = card.dataset.id || delBtn.dataset.id || cat._id;
+          confirmDeleteCategoryById(targetId);
         });
       }
 
@@ -1869,10 +1875,19 @@ function renderCategoriesList() {
   newlyCreatedCategoryId = null;
 }
 
+let suppressNextClick = false;
 let activeDragSession = null;
 
+// Global click suppressor to prevent synthesized clicks after dragging on mobile
+window.addEventListener("click", (e) => {
+  if (suppressNextClick) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+}, true);
+
 /**
- * Enable Long-Press Drag-and-Drop Reordering on Category Row
+ * Enable Touch & Hold Drag-and-Drop Reordering on Category Row
  */
 function attachCategoryDragListeners(card) {
   if (card.classList.contains("today-special-card") || card.classList.contains("is-new-blank-row")) {
@@ -1880,105 +1895,214 @@ function attachCategoryDragListeners(card) {
   }
 
   let pressTimer = null;
+  let pressFeedbackTimer = null;
   let startX = 0;
   let startY = 0;
+  let currentX = 0;
+  let currentY = 0;
+  let activeTouchId = null;
   let isPressing = false;
 
-  function onPointerDown(e) {
+  function cancelPress() {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+    if (pressFeedbackTimer) {
+      clearTimeout(pressFeedbackTimer);
+      pressFeedbackTimer = null;
+    }
+    card.classList.remove("is-drag-pressing");
+    isPressing = false;
+    activeTouchId = null;
+    removeCheckListeners();
+  }
+
+  function removeCheckListeners() {
+    window.removeEventListener("touchmove", onTouchMoveCheck);
+    window.removeEventListener("touchend", onTouchEndCheck);
+    window.removeEventListener("touchcancel", onTouchEndCheck);
+    window.removeEventListener("mousemove", onMouseMoveCheck);
+    window.removeEventListener("mouseup", onMouseUpCheck);
+  }
+
+  // --- TOUCH HANDLERS (Mobile Phone & Tablet) ---
+  function onTouchStart(e) {
     if (activeDragSession) return;
-    // Don't drag if user interacted with switches, buttons, or editable elements
     if (e.target.closest(".switch, .category-avail-checkbox, .delete-cat-btn, [contenteditable='true'], [contenteditable='plaintext-only'], .is-editing, input, button")) {
       return;
     }
-    if (e.button !== undefined && e.button !== 0) return;
+    if (!e.touches || e.touches.length !== 1) return;
 
-    startX = e.clientX;
-    startY = e.clientY;
+    const touch = e.touches[0];
+    activeTouchId = touch.identifier;
+    startX = currentX = touch.clientX;
+    startY = currentY = touch.clientY;
     isPressing = true;
+
+    // Immediately start smooth scale-up on touch and hold
+    card.classList.add("is-drag-pressing");
+
+    // Long press fires at 260ms
+    pressTimer = setTimeout(() => {
+      if (!isPressing) return;
+      isPressing = false;
+      removeCheckListeners();
+      startCategoryDrag(card, "touch", activeTouchId, currentX, currentY);
+    }, 260);
+
+    window.addEventListener("touchmove", onTouchMoveCheck, { passive: true });
+    window.addEventListener("touchend", onTouchEndCheck);
+    window.addEventListener("touchcancel", onTouchEndCheck);
+  }
+
+  function onTouchMoveCheck(e) {
+    if (!isPressing) return;
+    const touch = Array.from(e.touches || []).find(t => t.identifier === activeTouchId);
+    if (!touch) {
+      cancelPress();
+      return;
+    }
+    currentX = touch.clientX;
+    currentY = touch.clientY;
+    const dist = Math.hypot(currentX - startX, currentY - startY);
+    if (dist > 14) {
+      cancelPress();
+    }
+  }
+
+  function onTouchEndCheck() {
+    cancelPress();
+  }
+
+  // --- MOUSE HANDLERS (Desktop) ---
+  function onMouseDown(e) {
+    if (activeDragSession) return;
+    if (e.button !== 0) return;
+    if (e.target.closest(".switch, .category-avail-checkbox, .delete-cat-btn, [contenteditable='true'], [contenteditable='plaintext-only'], .is-editing, input, button")) {
+      return;
+    }
+
+    startX = currentX = e.clientX;
+    startY = currentY = e.clientY;
+    isPressing = true;
+
+    // Immediately start smooth scale-up on click and hold
+    card.classList.add("is-drag-pressing");
 
     pressTimer = setTimeout(() => {
       if (!isPressing) return;
       isPressing = false;
-      cleanupPressCheck();
-      startCategoryDrag(card, startX, startY);
-    }, 320);
+      removeCheckListeners();
+      startCategoryDrag(card, "mouse", null, currentX, currentY);
+    }, 260);
 
-    window.addEventListener("pointermove", onPointerMoveCheck, { passive: true });
-    window.addEventListener("pointerup", onPointerUpCheck);
-    window.addEventListener("pointercancel", onPointerUpCheck);
+    window.addEventListener("mousemove", onMouseMoveCheck);
+    window.addEventListener("mouseup", onMouseUpCheck);
   }
 
-  function onPointerMoveCheck(e) {
+  function onMouseMoveCheck(e) {
     if (!isPressing) return;
-    const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
-    if (dist > 8) {
-      clearTimeout(pressTimer);
-      pressTimer = null;
-      isPressing = false;
-      cleanupPressCheck();
+    currentX = e.clientX;
+    currentY = e.clientY;
+    const dist = Math.hypot(currentX - startX, currentY - startY);
+    if (dist > 14) {
+      cancelPress();
     }
   }
 
-  function onPointerUpCheck() {
-    clearTimeout(pressTimer);
-    pressTimer = null;
-    isPressing = false;
-    cleanupPressCheck();
+  function onMouseUpCheck() {
+    cancelPress();
   }
 
-  function cleanupPressCheck() {
-    window.removeEventListener("pointermove", onPointerMoveCheck);
-    window.removeEventListener("pointerup", onPointerUpCheck);
-    window.removeEventListener("pointercancel", onPointerUpCheck);
-  }
-
-  card.addEventListener("pointerdown", onPointerDown);
+  card.addEventListener("touchstart", onTouchStart, { passive: true });
+  card.addEventListener("mousedown", onMouseDown);
 }
 
-function startCategoryDrag(card, startX, startY) {
+function startCategoryDrag(card, inputType, touchId, startX, startY) {
   if (activeDragSession || !categoriesGrid) return;
 
+  // Haptic feedback
   if (navigator.vibrate) {
     try { navigator.vibrate(40); } catch (_) {}
   }
 
-  const rect = card.getBoundingClientRect();
-  const cardHeight = rect.height;
-  const cardWidth = rect.width;
+  suppressNextClick = true;
 
+  // Use unscaled dimensions to prevent double-scaling and jumping
+  const unscaledWidth = card.offsetWidth;
+  const unscaledHeight = card.offsetHeight;
+  const rect = card.getBoundingClientRect();
+  const centerX = rect.left + (rect.width / 2);
+  const centerY = rect.top + (rect.height / 2);
+  const unscaledLeft = centerX - (unscaledWidth / 2);
+  const unscaledTop = centerY - (unscaledHeight / 2);
+
+  const grabOffsetY = startY - unscaledTop;
+  const grabOffsetX = startX - unscaledLeft;
+
+  // Create placeholder to reserve exact slot in grid with unscaled size
   const placeholder = document.createElement("div");
   placeholder.className = "category-drag-placeholder";
-  placeholder.style.width = cardWidth + "px";
-  placeholder.style.height = cardHeight + "px";
+  placeholder.style.width = unscaledWidth + "px";
+  placeholder.style.height = unscaledHeight + "px";
   placeholder.style.margin = "0";
 
   categoriesGrid.insertBefore(placeholder, card);
 
+  // Append to document.body so position: fixed is 100% relative to viewport coordinates
+  document.body.appendChild(card);
+
+  card.classList.remove("is-drag-pressing");
   card.classList.add("is-drag-lifted");
   card.style.position = "fixed";
-  card.style.top = rect.top + "px";
-  card.style.left = rect.left + "px";
-  card.style.width = cardWidth + "px";
-  card.style.height = cardHeight + "px";
+  card.style.top = unscaledTop + "px";
+  card.style.left = unscaledLeft + "px";
+  card.style.width = unscaledWidth + "px";
+  card.style.height = unscaledHeight + "px";
   card.style.margin = "0";
-  card.style.transform = "scale(1.025)";
+  card.style.transform = "scale(1.035)";
+  card.style.zIndex = "999999";
+  card.style.boxShadow = "0 12px 28px 0 rgba(15, 23, 42, 0.25), 0 4px 10px 0 rgba(15, 23, 42, 0.12)";
 
-  const prevBodyOverflow = document.body.style.overflow;
-  document.body.style.overflow = "hidden";
+  let lastClientY = startY;
+  let autoScrollRaf = null;
 
-  function onPointerMove(e) {
-    const currentY = e.clientY;
-    const dy = currentY - startY;
-    card.style.transform = `translate3d(0, ${dy}px, 0) scale(1.025)`;
+  function doAutoScroll() {
+    const edgeThreshold = 65;
+    const maxScrollStep = 10;
+    let scrollStep = 0;
 
-    const currentCardCenterY = rect.top + dy + (cardHeight / 2);
+    if (lastClientY < edgeThreshold) {
+      scrollStep = -Math.round((edgeThreshold - lastClientY) / 4);
+    } else if (lastClientY > window.innerHeight - edgeThreshold) {
+      scrollStep = Math.round((lastClientY - (window.innerHeight - edgeThreshold)) / 4);
+    }
+
+    if (scrollStep !== 0) {
+      window.scrollBy(0, Math.max(-maxScrollStep, Math.min(maxScrollStep, scrollStep)));
+      updateSlotAndPositions(lastClientY);
+      autoScrollRaf = requestAnimationFrame(doAutoScroll);
+    } else {
+      autoScrollRaf = null;
+    }
+  }
+
+  function updateSlotAndPositions(clientY) {
+    // Keep row directly stuck to the touch point
+    const currentTop = clientY - grabOffsetY;
+    card.style.top = currentTop + "px";
+    card.style.transform = "scale(1.035)";
+
+    const currentCardCenterY = currentTop + (unscaledHeight / 2);
 
     const otherCards = Array.from(
-      categoriesGrid.querySelectorAll(".category-admin-card:not(.today-special-card):not(.is-new-blank-row):not(.is-drag-lifted)")
-    );
+      categoriesGrid.querySelectorAll(".category-admin-card:not(.today-special-card):not(.is-new-blank-row)")
+    ).filter(c => c !== card);
 
     let targetBefore = null;
     for (const c of otherCards) {
+      if (c === placeholder) continue;
       const cRect = c.getBoundingClientRect();
       const cMidY = cRect.top + (cRect.height / 2);
       if (currentCardCenterY < cMidY) {
@@ -1987,8 +2111,14 @@ function startCategoryDrag(card, startX, startY) {
       }
     }
 
+    // Never place above Today's Special
+    const todaySpecialCard = categoriesGrid.querySelector(".today-special-card");
+    if (todaySpecialCard && targetBefore === todaySpecialCard) {
+      targetBefore = todaySpecialCard.nextSibling === placeholder ? placeholder.nextSibling : todaySpecialCard.nextSibling;
+    }
+
     if (placeholder.nextSibling !== targetBefore && placeholder !== targetBefore) {
-      const allSiblings = Array.from(categoriesGrid.children).filter(el => !el.classList.contains("is-drag-lifted"));
+      const allSiblings = Array.from(categoriesGrid.children).filter(el => el !== placeholder && el !== card);
       const firstTops = new Map();
       allSiblings.forEach(el => firstTops.set(el, el.getBoundingClientRect().top));
 
@@ -2011,31 +2141,63 @@ function startCategoryDrag(card, startX, startY) {
       void categoriesGrid.offsetHeight;
       requestAnimationFrame(() => {
         allSiblings.forEach(el => {
-          el.style.transition = "transform 250ms cubic-bezier(0.2, 0, 0, 1)";
+          el.style.transition = "transform 240ms cubic-bezier(0.2, 0, 0, 1)";
           el.style.transform = "";
         });
       });
     }
   }
 
-  function onPointerEnd() {
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", onPointerEnd);
-    window.removeEventListener("pointercancel", onPointerEnd);
-    document.body.style.overflow = prevBodyOverflow;
+  function onTouchMove(e) {
+    const touch = Array.from(e.touches || []).find(t => t.identifier === touchId);
+    if (!touch) return;
+    if (e.cancelable) e.preventDefault();
+    lastClientY = touch.clientY;
+    updateSlotAndPositions(lastClientY);
+
+    if (!autoScrollRaf) {
+      autoScrollRaf = requestAnimationFrame(doAutoScroll);
+    }
+  }
+
+  function onMouseMove(e) {
+    e.preventDefault();
+    lastClientY = e.clientY;
+    updateSlotAndPositions(lastClientY);
+
+    if (!autoScrollRaf) {
+      autoScrollRaf = requestAnimationFrame(doAutoScroll);
+    }
+  }
+
+  function onDragEnd() {
+    if (autoScrollRaf) {
+      cancelAnimationFrame(autoScrollRaf);
+      autoScrollRaf = null;
+    }
+
+    window.removeEventListener("touchmove", onTouchMove, { passive: false });
+    window.removeEventListener("touchend", onDragEnd);
+    window.removeEventListener("touchcancel", onDragEnd);
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onDragEnd);
 
     const pRect = placeholder.getBoundingClientRect();
-    const finalDx = pRect.left - rect.left;
-    const finalDy = pRect.top - rect.top;
 
-    card.style.transition = "transform 200ms cubic-bezier(0.2, 0, 0, 1)";
-    card.style.transform = `translate3d(${finalDx}px, ${finalDy}px, 0) scale(1)`;
+    // Smooth landing transition with dissolving shadow and scaling down
+    card.classList.add("is-landing");
+    card.style.transition = "top 240ms cubic-bezier(0.2, 0, 0, 1), left 240ms cubic-bezier(0.2, 0, 0, 1), transform 240ms cubic-bezier(0.2, 0, 0, 1), box-shadow 260ms cubic-bezier(0.2, 0, 0, 1)";
+    card.style.top = pRect.top + "px";
+    card.style.left = pRect.left + "px";
+    card.style.transform = "scale(1)";
+    card.style.boxShadow = "0 0 0 0 rgba(15, 23, 42, 0), 0 0 0 0 rgba(15, 23, 42, 0)";
 
     setTimeout(() => {
       categoriesGrid.insertBefore(card, placeholder);
       placeholder.remove();
 
       card.classList.remove("is-drag-lifted");
+      card.classList.remove("is-landing");
       card.style.position = "";
       card.style.top = "";
       card.style.left = "";
@@ -2044,6 +2206,8 @@ function startCategoryDrag(card, startX, startY) {
       card.style.margin = "";
       card.style.transform = "";
       card.style.transition = "";
+      card.style.zIndex = "";
+      card.style.boxShadow = "";
 
       Array.from(categoriesGrid.children).forEach(el => {
         el.style.transform = "";
@@ -2051,6 +2215,10 @@ function startCategoryDrag(card, startX, startY) {
       });
 
       activeDragSession = null;
+
+      setTimeout(() => {
+        suppressNextClick = false;
+      }, 120);
 
       const newOrderedIds = Array.from(
         categoriesGrid.querySelectorAll(".category-admin-card:not(.today-special-card):not(.is-new-blank-row)")
@@ -2082,12 +2250,17 @@ function startCategoryDrag(card, startX, startY) {
       .catch(err => {
         showNotification("Network error saving category order", "error");
       });
-    }, 210);
+    }, 190);
   }
 
-  window.addEventListener("pointermove", onPointerMove, { passive: false });
-  window.addEventListener("pointerup", onPointerEnd);
-  window.addEventListener("pointercancel", onPointerEnd);
+  if (inputType === "touch") {
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onDragEnd);
+    window.addEventListener("touchcancel", onDragEnd);
+  } else {
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onDragEnd);
+  }
 
   activeDragSession = { card, placeholder };
 }
@@ -2207,7 +2380,14 @@ function attachInlineCategoryEditor(nameEl, cat) {
     nameEl.addEventListener("paste", onPaste);
   }
 
-  nameEl.addEventListener("click", startEdit);
+  nameEl.addEventListener("click", (e) => {
+    if (suppressNextClick) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    startEdit();
+  });
   nameEl.addEventListener("keydown", (e) => {
     if (!nameEl.classList.contains("is-editing") && (e.key === "Enter" || e.key === " ")) {
       e.preventDefault();
@@ -2227,7 +2407,33 @@ function openEditCategoryModalById(catId) {
 }
 
 async function confirmDeleteCategoryById(catId) {
-  const cat = categories.find(c => String(c._id) === String(catId));
+  let targetCatId = String(catId);
+  const tracker = inFlightCategoryCreations.get(targetCatId);
+  if (tracker && tracker.realId) {
+    targetCatId = String(tracker.realId);
+  }
+
+  let cat = categories.find(c => String(c._id) === targetCatId);
+  if (!cat) {
+    const card = document.querySelector(`.category-admin-card[data-id="${catId}"]`);
+    if (card && card.dataset.id && card.dataset.id !== catId) {
+      targetCatId = String(card.dataset.id);
+      cat = categories.find(c => String(c._id) === targetCatId);
+    }
+  }
+  if (!cat) {
+    for (const [tempId, trk] of inFlightCategoryCreations.entries()) {
+      if (tempId === targetCatId || (trk.realId && String(trk.realId) === targetCatId)) {
+        if (trk.realId) {
+          targetCatId = String(trk.realId);
+          cat = categories.find(c => String(c._id) === targetCatId);
+        } else {
+          cat = categories.find(c => String(c._id) === tempId);
+        }
+        if (cat) break;
+      }
+    }
+  }
   if (!cat) return;
 
   if (cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL")) {
@@ -2235,28 +2441,44 @@ async function confirmDeleteCategoryById(catId) {
     return;
   }
 
-  const dishCount = dishes.filter(d => String(d.categoryId) === String(catId)).length;
+  const dishCount = dishes.filter(d => String(d.categoryId) === targetCatId || String(d.categoryId) === String(catId)).length;
   const confirmMsg = `Are you sure you want to delete category "${cat.name}"?` +
     (dishCount > 0 ? ` WARNING: This will also delete ${dishCount} associated dish(es)!` : "");
 
   if (!confirm(confirmMsg)) return;
+
+  // Mark in-flight creation as cancelled if pending
+  if (tracker) {
+    tracker.cancelled = true;
+  }
+  for (const [tId, trk] of inFlightCategoryCreations.entries()) {
+    if (tId === targetCatId || (trk.realId && String(trk.realId) === targetCatId) || tId === String(catId)) {
+      trk.cancelled = true;
+    }
+  }
 
   const prevCategories = [...categories];
   const prevDishes = [...dishes];
   const prevSelectedCatId = selectedCategoryId;
 
   // Immediate optimistic update
-  categories = categories.filter(c => String(c._id) !== String(catId));
-  dishes = dishes.filter(d => String(d.categoryId) !== String(catId));
-  if (selectedCategoryId === String(catId)) {
+  categories = categories.filter(c => String(c._id) !== targetCatId && String(c._id) !== String(catId));
+  dishes = dishes.filter(d => String(d.categoryId) !== targetCatId && String(d.categoryId) !== String(catId));
+  if (selectedCategoryId === targetCatId || selectedCategoryId === String(catId)) {
     selectedCategoryId = null;
   }
 
   refreshMenuUI();
   showNotification(`Category "${cat.name}" deleted.`);
 
+  // If this category is still being created in-flight and doesn't have a realId yet,
+  // the creation fetch will automatically delete it upon completion when tracker.cancelled is true.
+  if (targetCatId.startsWith("temp_cat_")) {
+    return;
+  }
+
   // Background delete
-  fetch(`/api/owner/categories?id=${catId}`, {
+  fetch(`/api/owner/categories?id=${targetCatId}`, {
     method: "DELETE"
   })
   .then(res => res.json())
@@ -3084,6 +3306,9 @@ function createBlankCategoryRow() {
 
     // Optimistic creation
     const tempCatId = `temp_cat_${Date.now()}`;
+    const creationTracker = { cancelled: false, realId: null };
+    inFlightCategoryCreations.set(tempCatId, creationTracker);
+
     const isAvail = availCheckbox ? availCheckbox.checked : true;
     const optimisticCat = {
       _id: tempCatId,
@@ -3121,28 +3346,51 @@ function createBlankCategoryRow() {
     .then(data => {
       if (data.success && data.category) {
         const realId = String(data.category._id);
+        creationTracker.realId = realId;
+
+        // If user already deleted this category while creation was in flight
+        if (creationTracker.cancelled) {
+          inFlightCategoryCreations.delete(tempCatId);
+          fetch(`/api/owner/categories?id=${realId}`, { method: "DELETE" }).catch(() => {});
+          return;
+        }
+
         const idx = categories.findIndex(c => String(c._id) === tempCatId);
         if (idx !== -1) {
-          categories[idx] = data.category;
+          // Mutate existing object in-place so closures referencing it reflect the real ID
+          Object.assign(categories[idx], data.category);
         }
         const catCard = document.querySelector(`.category-admin-card[data-id="${tempCatId}"]`);
-        if (catCard) catCard.dataset.id = realId;
+        if (catCard) {
+          catCard.dataset.id = realId;
+          const catDelBtn = catCard.querySelector(".delete-cat-btn");
+          if (catDelBtn) catDelBtn.dataset.id = realId;
+          const availCb = catCard.querySelector(".category-avail-checkbox");
+          if (availCb) availCb.dataset.id = realId;
+        }
         const tabEl = document.querySelector(`.category-dropdown-item[data-cat-id="${tempCatId}"]`);
         if (tabEl) tabEl.dataset.catId = realId;
         if (selectedCategoryId === tempCatId) {
           selectedCategoryId = realId;
         }
         populateCategoryDropdown();
+        inFlightCategoryCreations.delete(tempCatId);
       } else {
-        categories = categories.filter(c => String(c._id) !== tempCatId);
-        refreshMenuUI();
-        showNotification(data.error || "Failed to add category.", "error");
+        inFlightCategoryCreations.delete(tempCatId);
+        if (!creationTracker.cancelled) {
+          categories = categories.filter(c => String(c._id) !== tempCatId);
+          refreshMenuUI();
+          showNotification(data.error || "Failed to add category.", "error");
+        }
       }
     })
     .catch(err => {
-      categories = categories.filter(c => String(c._id) !== tempCatId);
-      refreshMenuUI();
-      showNotification("Network error adding category.", "error");
+      inFlightCategoryCreations.delete(tempCatId);
+      if (!creationTracker.cancelled) {
+        categories = categories.filter(c => String(c._id) !== tempCatId);
+        refreshMenuUI();
+        showNotification("Network error adding category.", "error");
+      }
     });
   }
 
@@ -3288,6 +3536,9 @@ categoryForm.addEventListener("submit", (e) => {
     });
   } else {
     const tempCatId = `temp_cat_${Date.now()}`;
+    const creationTracker = { cancelled: false, realId: null };
+    inFlightCategoryCreations.set(tempCatId, creationTracker);
+
     const optimisticCat = {
       _id: tempCatId,
       name,
@@ -3315,30 +3566,51 @@ categoryForm.addEventListener("submit", (e) => {
     .then(data => {
       if (data.success && data.category) {
         const realId = String(data.category._id);
+        creationTracker.realId = realId;
+
+        if (creationTracker.cancelled) {
+          inFlightCategoryCreations.delete(tempCatId);
+          fetch(`/api/owner/categories?id=${realId}`, { method: "DELETE" }).catch(() => {});
+          return;
+        }
+
         const idx = categories.findIndex(c => String(c._id) === tempCatId);
         if (idx !== -1) {
-          categories[idx] = data.category;
+          Object.assign(categories[idx], data.category);
         }
         if (selectedCategoryId === tempCatId) {
           selectedCategoryId = realId;
         }
         const catCard = document.querySelector(`.category-admin-card[data-id="${tempCatId}"]`);
-        if (catCard) catCard.dataset.id = realId;
+        if (catCard) {
+          catCard.dataset.id = realId;
+          const catDelBtn = catCard.querySelector(".delete-cat-btn");
+          if (catDelBtn) catDelBtn.dataset.id = realId;
+          const availCb = catCard.querySelector(".category-avail-checkbox");
+          if (availCb) availCb.dataset.id = realId;
+        }
         const tabEl = document.querySelector(`.category-dropdown-item[data-cat-id="${tempCatId}"]`);
         if (tabEl) tabEl.dataset.catId = realId;
         populateCategoryDropdown();
+        inFlightCategoryCreations.delete(tempCatId);
       } else {
-        categories = categories.filter(c => String(c._id) !== tempCatId);
-        if (selectedCategoryId === tempCatId) selectedCategoryId = null;
-        refreshMenuUI();
-        showNotification(data.error || "Failed to add category.", "error");
+        inFlightCategoryCreations.delete(tempCatId);
+        if (!creationTracker.cancelled) {
+          categories = categories.filter(c => String(c._id) !== tempCatId);
+          if (selectedCategoryId === tempCatId) selectedCategoryId = null;
+          refreshMenuUI();
+          showNotification(data.error || "Failed to add category.", "error");
+        }
       }
     })
     .catch(err => {
-      categories = categories.filter(c => String(c._id) !== tempCatId);
-      if (selectedCategoryId === tempCatId) selectedCategoryId = null;
-      refreshMenuUI();
-      showNotification("Network error adding category.", "error");
+      inFlightCategoryCreations.delete(tempCatId);
+      if (!creationTracker.cancelled) {
+        categories = categories.filter(c => String(c._id) !== tempCatId);
+        if (selectedCategoryId === tempCatId) selectedCategoryId = null;
+        refreshMenuUI();
+        showNotification("Network error adding category.", "error");
+      }
     });
   }
 });

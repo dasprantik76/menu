@@ -278,7 +278,13 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ success: false, error: "Category ID is required to delete." });
       }
 
-      const catId = new ObjectId(id);
+      let catId = null;
+      try {
+        catId = new ObjectId(id);
+      } catch (e) {
+        return res.status(200).json({ success: true, message: "Category deleted." });
+      }
+
       const existing = await db.collection(COLLECTIONS.CATEGORIES).findOne({
         _id: catId,
         businessId: business._id

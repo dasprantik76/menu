@@ -90,7 +90,7 @@ module.exports = async function handler(req, res) {
 
       const categories = await db.collection(COLLECTIONS.CATEGORIES)
         .find({ businessId: business._id })
-        .sort({ displayOrder: 1, _id: 1 })
+        .sort({ displayOrder: 1, createdAt: -1, _id: -1 })
         .toArray();
 
       return res.status(200).json({
@@ -117,12 +117,17 @@ module.exports = async function handler(req, res) {
       }
 
       let nextOrder = 0;
-      if (typeof displayOrder === "number") {
+      if (typeof displayOrder === "number" && displayOrder > 0) {
         nextOrder = displayOrder;
       } else {
         // By default, insert right below Today's Special (displayOrder: 0), shifting existing non-special categories forward
         await db.collection(COLLECTIONS.CATEGORIES).updateMany(
-          { businessId: business._id, displayOrder: { $gte: 0 } },
+          {
+            businessId: business._id,
+            displayOrder: { $gte: 0 },
+            isFixed: { $ne: true },
+            name: { $ne: "TODAY'S SPECIAL" }
+          },
           { $inc: { displayOrder: 1 } }
         );
         nextOrder = 0;

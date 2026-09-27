@@ -1376,6 +1376,7 @@ const HARDCODED_TODAY_SPECIAL = {
 let categories = [{ ...HARDCODED_TODAY_SPECIAL }];
 let dishes = [];
 let selectedCategoryId = null;
+let newlyCreatedCategoryId = null;
 let isFetchingMenuData = false;
 let isInitialMenuDataLoaded = false;
 let activeFetchesCount = 0;
@@ -1447,6 +1448,27 @@ const categoryNameInput = document.getElementById("categoryNameInput");
 const closeCategoryModalBtn = document.getElementById("closeCategoryModalBtn");
 const cancelCategoryBtn = document.getElementById("cancelCategoryBtn");
 
+// Today's Special Info Modal Elements
+const todaySpecialInfoModal = document.getElementById("todaySpecialInfoModal");
+const todaySpecialInfoOkBtn = document.getElementById("todaySpecialInfoOkBtn");
+
+function openTodaySpecialInfoModal() {
+  const modal = document.getElementById("todaySpecialInfoModal") || todaySpecialInfoModal;
+  if (modal) openModal(modal);
+}
+
+function closeTodaySpecialInfoModal() {
+  const modal = document.getElementById("todaySpecialInfoModal") || todaySpecialInfoModal;
+  if (modal) {
+    modal.style.display = "none";
+    updateScrollLock();
+  }
+}
+
+if (todaySpecialInfoOkBtn) {
+  todaySpecialInfoOkBtn.addEventListener("click", closeTodaySpecialInfoModal);
+}
+
 // Dish Modal Elements
 const dishModal = document.getElementById("dishModal");
 const dishModalTitle = document.getElementById("dishModalTitle");
@@ -1506,7 +1528,14 @@ async function loadMenuData() {
       }
 
       const otherCats = serverCats.filter(c => c !== serverSpecial && !(c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
-      otherCats.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      otherCats.sort((a, b) => {
+        const orderDiff = (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
+        if (orderDiff !== 0) return orderDiff;
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (aTime !== bTime) return bTime - aTime;
+        return String(b._id || "").localeCompare(String(a._id || ""));
+      });
 
       categories = [specialCat, ...otherCats];
     } else {
@@ -1742,6 +1771,7 @@ function renderCategoriesList() {
     const dishCount = isFixed
       ? dishes.filter(d => isDishSpecial(d)).length
       : dishes.filter(d => String(d.categoryId) === String(cat._id)).length;
+    const isJustCreated = !isFixed && newlyCreatedCategoryId && String(cat._id) === newlyCreatedCategoryId;
     const card = document.createElement("div");
     card.className = `category-admin-card ${isFixed ? "today-special-card" : ""} ${isAvail ? "" : "unavailable"}`.trim();
     card.dataset.id = cat._id;
@@ -1766,8 +1796,16 @@ function renderCategoriesList() {
         `}
       </div>
       <div class="category-row-actions">
-        <span class="category-dish-count-badge">${dishCount} item${dishCount === 1 ? "" : "s"}</span>
-        ${isFixed ? "" : `
+        <span class="category-dish-count-badge ${isJustCreated ? "badge-appear-smooth" : ""}">${dishCount} item${dishCount === 1 ? "" : "s"}</span>
+        ${isFixed ? `
+          <button type="button" class="today-special-info-btn" id="todaySpecialInfoBtn" title="About Today's Special" aria-label="About Today's Special">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </button>
+        ` : `
           <button type="button" class="delete-cat-btn delete-icon-btn" data-id="${cat._id}" title="Delete Category" aria-label="Delete Category">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1790,8 +1828,16 @@ function renderCategoriesList() {
       });
     }
 
-    // Inline edit category name on click (only for non-fixed)
-    if (!isFixed) {
+    if (isFixed) {
+      const infoBtn = card.querySelector(".today-special-info-btn");
+      if (infoBtn) {
+        infoBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openTodaySpecialInfoModal();
+        });
+      }
+    } else {
+      // Inline edit category name on click (only for non-fixed)
       const nameEl = card.querySelector(".category-card-name");
       if (nameEl) attachInlineCategoryEditor(nameEl, cat);
 
@@ -1806,37 +1852,50 @@ function renderCategoriesList() {
 
     categoriesGrid.appendChild(card);
   });
+
+  newlyCreatedCategoryId = null;
 }
 
 /**
  * Enable click-to-edit for Category Name
  */
 function attachInlineCategoryEditor(nameEl, cat) {
+  nameEl.setAttribute("data-placeholder", "Category name");
+
   function startEdit() {
-    if (nameEl.classList.contains("is-editing")) return;
+    if (nameEl.getAttribute("contenteditable") === "true" || nameEl.classList.contains("is-editing")) return;
+
+    nameEl.setAttribute("contenteditable", "plaintext-only");
+    if (nameEl.contentEditable !== "plaintext-only") {
+      nameEl.contentEditable = "true";
+    }
+
+    nameEl.setAttribute("enterkeyhint", "done");
+    nameEl.setAttribute("autocomplete", "off");
+    nameEl.setAttribute("autocorrect", "off");
+    nameEl.setAttribute("spellcheck", "false");
     nameEl.classList.add("is-editing");
+    nameEl.focus();
 
-    const originalName = cat.name;
-    const input = document.createElement("input");
-    input.type = "text";
-    input.className = "dish-inline-input category-inline-input";
-    input.value = originalName;
-    input.placeholder = "Category name";
-    input.setAttribute("aria-label", "Category name");
-
-    nameEl.textContent = "";
-    nameEl.appendChild(input);
-    input.focus();
-    input.select();
-
-    input.addEventListener("click", (e) => e.stopPropagation());
+    const sel = window.getSelection();
+    if (sel) {
+      const range = document.createRange();
+      range.selectNodeContents(nameEl);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
 
     let finished = false;
     async function commit(save) {
       if (finished) return;
       finished = true;
-      const newName = input.value.trim();
+      nameEl.removeAttribute("contenteditable");
       nameEl.classList.remove("is-editing");
+      if (typeof nameEl.blur === "function") nameEl.blur();
+
+      const originalName = cat.name;
+      const newName = (nameEl.textContent || "").trim();
 
       if (save && newName && newName !== originalName) {
         nameEl.textContent = newName;
@@ -1866,19 +1925,48 @@ function attachInlineCategoryEditor(nameEl, cat) {
       }
     }
 
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
+    function onKeyDown(e) {
+      if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
         e.preventDefault();
+        cleanup();
         commit(true);
-      } else if (e.key === "Escape") {
+      } else if (e.key === "Escape" || e.keyCode === 27) {
         e.preventDefault();
+        cleanup();
         commit(false);
       }
-    });
+    }
 
-    input.addEventListener("blur", () => {
+    function onKeyUp(e) {
+      if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
+        e.preventDefault();
+        cleanup();
+        commit(true);
+      }
+    }
+
+    function onBlur() {
+      cleanup();
       commit(true);
-    });
+    }
+
+    function onPaste(e) {
+      e.preventDefault();
+      const text = ((e.clipboardData || window.clipboardData)?.getData("text/plain") || "").replace(/[\r\n]+/g, " ");
+      document.execCommand("insertText", false, text);
+    }
+
+    function cleanup() {
+      nameEl.removeEventListener("keydown", onKeyDown);
+      nameEl.removeEventListener("keyup", onKeyUp);
+      nameEl.removeEventListener("blur", onBlur);
+      nameEl.removeEventListener("paste", onPaste);
+    }
+
+    nameEl.addEventListener("keydown", onKeyDown);
+    nameEl.addEventListener("keyup", onKeyUp);
+    nameEl.addEventListener("blur", onBlur);
+    nameEl.addEventListener("paste", onPaste);
   }
 
   nameEl.addEventListener("click", startEdit);
@@ -2582,6 +2670,14 @@ function createBlankCategoryRow() {
   // Find the 'Today's Special' card (first card in grid)
   const todaySpecialCard = categoriesGrid.querySelector(".today-special-card") || categoriesGrid.firstElementChild;
 
+  // 1. Capture initial positions of all category cards currently below Today's Special
+  const existingCards = Array.from(categoriesGrid.querySelectorAll(".category-admin-card"));
+  const cardsToPushDown = existingCards.filter(card => !card.classList.contains("today-special-card") && !card.classList.contains("is-new-blank-row"));
+  const firstTops = new Map();
+  cardsToPushDown.forEach(card => {
+    firstTops.set(card, card.getBoundingClientRect().top);
+  });
+
   const row = document.createElement("div");
   row.className = "category-admin-card is-new-blank-row";
   row.innerHTML = `
@@ -2593,11 +2689,10 @@ function createBlankCategoryRow() {
         </span>
       </label>
       <div class="category-card-name is-editing" style="flex: 1; min-width: 0;">
-        <input type="text" class="dish-inline-input category-inline-input" placeholder="Category Name" aria-label="New category name">
+        <input type="text" class="category-inline-input" placeholder="Category Name" aria-label="New category name" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
     </div>
     <div class="category-row-actions">
-      <span class="category-dish-count-badge">0 items</span>
       <button type="button" class="delete-cat-btn delete-icon-btn cancel-new-cat-btn" title="Cancel" aria-label="Cancel">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -2607,12 +2702,56 @@ function createBlankCategoryRow() {
     </div>
   `;
 
+  // Start new row invisible and slightly elevated for fluid entrance
+  row.style.opacity = "0";
+  row.style.transform = "translateY(-12px) scale(0.98)";
+  row.style.transition = "none";
+
   // Insert below Today's Special
   if (todaySpecialCard && todaySpecialCard.nextSibling) {
     categoriesGrid.insertBefore(row, todaySpecialCard.nextSibling);
   } else {
     categoriesGrid.appendChild(row);
   }
+
+  // 2. INVERT: Instantly move the existing cards back to their previous visual positions
+  cardsToPushDown.forEach(card => {
+    const firstTop = firstTops.get(card);
+    const lastTop = card.getBoundingClientRect().top;
+    const dy = firstTop - lastTop;
+    if (dy !== 0) {
+      card.style.transform = `translateY(${dy}px)`;
+      card.style.transition = "none";
+    }
+  });
+
+  // Force layout flush so the inverted transforms are committed
+  void categoriesGrid.offsetHeight;
+
+  // 3. PLAY: Animate the existing cards smoothly down to translateY(0), and animate in the new row
+  requestAnimationFrame(() => {
+    const ease = "cubic-bezier(0.16, 1, 0.3, 1)";
+    const duration = "380ms";
+
+    cardsToPushDown.forEach(card => {
+      card.style.transition = `transform ${duration} ${ease}`;
+      card.style.transform = "translateY(0)";
+    });
+
+    row.style.transition = `opacity 280ms ease-out, transform ${duration} ${ease}`;
+    row.style.opacity = "1";
+    row.style.transform = "translateY(0) scale(1)";
+
+    setTimeout(() => {
+      cardsToPushDown.forEach(card => {
+        card.style.transition = "";
+        card.style.transform = "";
+      });
+      row.style.transition = "";
+      row.style.transform = "";
+      row.style.opacity = "";
+    }, 400);
+  });
 
   const input = row.querySelector(".category-inline-input");
   const cancelBtn = row.querySelector(".cancel-new-cat-btn");
@@ -2624,10 +2763,54 @@ function createBlankCategoryRow() {
   function discardRow() {
     if (isDiscarded) return;
     isDiscarded = true;
-    row.remove();
-    if (categories.length === 0 && !isFetchingMenuData && emptyCategoriesState) {
-      emptyCategoriesState.style.display = "flex";
-    }
+
+    const allCards = Array.from(categoriesGrid.querySelectorAll(".category-admin-card"));
+    const rowIndex = allCards.indexOf(row);
+    const cardsBelow = rowIndex !== -1 ? allCards.slice(rowIndex + 1) : [];
+
+    const preTops = new Map();
+    cardsBelow.forEach(card => {
+      preTops.set(card, card.getBoundingClientRect().top);
+    });
+
+    row.style.transition = "opacity 180ms ease-out, transform 220ms cubic-bezier(0.4, 0, 0.2, 1)";
+    row.style.opacity = "0";
+    row.style.transform = "translateY(-10px) scale(0.98)";
+    row.style.pointerEvents = "none";
+
+    setTimeout(() => {
+      if (row.parentNode) row.remove();
+      if (categories.length === 0 && !isFetchingMenuData && emptyCategoriesState) {
+        emptyCategoriesState.style.display = "flex";
+      }
+
+      cardsBelow.forEach(card => {
+        const first = preTops.get(card);
+        const last = card.getBoundingClientRect().top;
+        const dy = first - last;
+        if (dy !== 0) {
+          card.style.transform = `translateY(${dy}px)`;
+          card.style.transition = "none";
+        }
+      });
+
+      void categoriesGrid.offsetHeight;
+
+      requestAnimationFrame(() => {
+        const ease = "cubic-bezier(0.16, 1, 0.3, 1)";
+        cardsBelow.forEach(card => {
+          card.style.transition = `transform 320ms ${ease}`;
+          card.style.transform = "";
+        });
+
+        setTimeout(() => {
+          cardsBelow.forEach(card => {
+            card.style.transition = "";
+            card.style.transform = "";
+          });
+        }, 340);
+      });
+    }, 180);
   }
 
   async function commitNewCategory() {
@@ -2657,8 +2840,9 @@ function createBlankCategoryRow() {
 
       const data = await res.json();
       if (data.success && data.category) {
-        row.remove();
+        newlyCreatedCategoryId = String(data.category._id);
         await loadMenuData();
+        if (row.parentNode) row.remove();
         showNotification(`Category "${data.category.name}" added successfully.`);
       } else {
         showNotification(data.error || "Failed to add category.", "error");
@@ -2680,12 +2864,21 @@ function createBlankCategoryRow() {
   });
 
   input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
       e.preventDefault();
+      input.blur();
       commitNewCategory();
-    } else if (e.key === "Escape") {
+    } else if (e.key === "Escape" || e.keyCode === 27) {
       e.preventDefault();
       discardRow();
+    }
+  });
+
+  input.addEventListener("keyup", (e) => {
+    if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
+      e.preventDefault();
+      input.blur();
+      commitNewCategory();
     }
   });
 
@@ -2706,9 +2899,13 @@ function createBlankCategoryRow() {
 
   setTimeout(() => {
     if (input && !isDiscarded) {
-      input.focus();
+      try {
+        input.focus({ preventScroll: true });
+      } catch (e) {
+        input.focus();
+      }
     }
-  }, 40);
+  }, 100);
 
   row.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
@@ -2754,7 +2951,7 @@ categoryForm.addEventListener("submit", async (e) => {
   const isEdit = !!catId;
   const endpoint = "/api/owner/categories";
   const method = isEdit ? "PATCH" : "POST";
-  const payload = isEdit ? { id: catId, name } : { name };
+  const payload = isEdit ? { id: catId, name } : { name, displayOrder: 0 };
 
   try {
     const res = await fetch(endpoint, {
@@ -2765,6 +2962,9 @@ categoryForm.addEventListener("submit", async (e) => {
     const data = await res.json();
     if (data.success) {
       closeCategoryModal();
+      if (!isEdit && data.category) {
+        newlyCreatedCategoryId = String(data.category._id);
+      }
       await loadMenuData();
       if (!isEdit && data.category) {
         selectedCategoryId = String(data.category._id);
@@ -3117,7 +3317,7 @@ if (dishSearchToggleBtn) {
 setupDishSearchInputListeners();
 
 // Backdrop click and touch prevention for modals
-[categoryModal, dishModal, logoutModal].forEach(modal => {
+[categoryModal, dishModal, logoutModal, todaySpecialInfoModal].forEach(modal => {
   if (!modal) return;
   modal.addEventListener("touchmove", (e) => {
     if (e.target === modal) {
@@ -3129,6 +3329,7 @@ setupDishSearchInputListeners();
       if (modal === categoryModal) closeCategoryModal();
       if (modal === dishModal) closeDishModal();
       if (modal === logoutModal) closeLogoutModal();
+      if (modal === todaySpecialInfoModal) closeTodaySpecialInfoModal();
     }
   });
 });
@@ -3143,6 +3344,8 @@ document.addEventListener("keydown", (e) => {
       closeCategoryModal();
     } else if (dishModal && dishModal.style.display === "flex") {
       closeDishModal();
+    } else if (todaySpecialInfoModal && todaySpecialInfoModal.style.display === "flex") {
+      closeTodaySpecialInfoModal();
     } else if (drawerSidebar && drawerSidebar.classList.contains("open")) {
       closeDrawer();
     }

@@ -83,7 +83,7 @@ module.exports = async function handler(req, res) {
     // 2. Fetch all categories for this restaurant sorted by display order
     const allCategories = await db.collection(COLLECTIONS.CATEGORIES)
       .find({ businessId: business._id })
-      .sort({ displayOrder: 1, _id: 1 })
+      .sort({ displayOrder: 1, createdAt: -1, _id: -1 })
       .toArray();
 
     // Clean up or find Today's Special if present

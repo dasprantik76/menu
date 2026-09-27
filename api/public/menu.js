@@ -80,14 +80,13 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // 2. Fetch all categories for this restaurant sorted by display order
-    const allCategories = await db.collection(COLLECTIONS.CATEGORIES)
+    // 2. Fetch all categories for this restaurant
+    const allCategoriesRaw = await db.collection(COLLECTIONS.CATEGORIES)
       .find({ businessId: business._id })
-      .sort({ displayOrder: 1, createdAt: -1, _id: -1 })
       .toArray();
 
     // Clean up or find Today's Special if present
-    const specials = allCategories.filter(c => c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
+    const specials = allCategoriesRaw.filter(c => c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
     let specialCat = null;
 
     if (specials.length > 0) {
@@ -116,9 +115,23 @@ module.exports = async function handler(req, res) {
       };
       const insertRes = await db.collection(COLLECTIONS.CATEGORIES).insertOne(newFixedCat);
       newFixedCat._id = insertRes.insertedId;
-      allCategories.unshift(newFixedCat);
       specialCat = newFixedCat;
     }
+
+    // Sort categories in the EXACT order as viewable on the Category tab (Top to Bottom):
+    // 1. TODAY'S SPECIAL on top
+    // 2. All other categories sorted by displayOrder ASC, then createdAt DESC, then _id DESC
+    const otherCats = allCategoriesRaw.filter(c => c !== specialCat && !specials.includes(c) && !(c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
+    otherCats.sort((a, b) => {
+      const orderDiff = (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
+      if (orderDiff !== 0) return orderDiff;
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (aTime !== bTime) return bTime - aTime;
+      return String(b._id || "").localeCompare(String(a._id || ""));
+    });
+
+    const allCategories = specialCat ? [specialCat, ...otherCats] : otherCats;
 
     // Filter categories: A category is ACTIVE only when its toggle switch is ON
     // (both isVisible !== false and isAvailable !== false)
@@ -137,7 +150,7 @@ module.exports = async function handler(req, res) {
       .sort({ displayOrder: 1, _id: 1 })
       .toArray();
 
-    // 4. Group items under active categories to match frontend schema
+    // 4. Group items under active categories to match frontend schema in exact top-to-bottom order
     const formattedCategories = activeCategories
       .map(cat => {
         const isSpecial = cat.isFixed || (cat.name && cat.name.toUpperCase() === "TODAY'S SPECIAL");
@@ -158,15 +171,12 @@ module.exports = async function handler(req, res) {
           }));
 
         return {
+          _id: cat._id,
           category: cat.name,
           items: itemsInCat,
           isFixed: isSpecial,
           isVisible: true
         };
-      })
-      .filter(cat => {
-        // Only show categories that have at least 1 menu item added (including Today's Special)
-        return Array.isArray(cat.items) && cat.items.length > 0;
       });
 
     // Disable caching so newly added items/categories reflect immediately

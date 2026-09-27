@@ -1291,7 +1291,9 @@ function populateCategoryBlock(block, index) {
   if (!currentCategory.items || currentCategory.items.length === 0) {
     const emptyNotice = document.createElement("div");
     emptyNotice.className = "empty-menu-notice";
-    emptyNotice.textContent = "Today's specials will be updated shortly. Check back soon!";
+    emptyNotice.textContent = isSpecial
+      ? "Today's specials will be updated shortly. Check back soon!"
+      : "Items in this category will be updated shortly. Check back soon!";
     scrollBox.appendChild(emptyNotice);
   } else {
     currentCategory.items.forEach(dish => {
@@ -2185,9 +2187,9 @@ async function loadDynamicMenu() {
       updateRestaurantBranding(data.restaurant);
     }
 
-    // Update menu categories - filter out any category without items (including Today's Special)
+    // Update menu categories - preserve all active categories in exact backend/owner order
     const validCategories = Array.isArray(data.categories)
-      ? data.categories.filter(cat => Array.isArray(cat.items) && cat.items.length > 0)
+      ? data.categories.filter(cat => cat && (cat.category || cat.name))
       : [];
 
     if (validCategories.length > 0) {

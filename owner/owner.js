@@ -1740,8 +1740,18 @@ function isDishSpecial(dish) {
  * Update category badges and dropdown counts across dashboard
  */
 function updateCategoryCountsAndBadges() {
-  populateCategorySelectDropdown();
+  populateCategoryDropdown();
   renderCategoriesList();
+}
+
+/**
+ * Optimistically refresh all UI elements across both Category and Menu tabs immediately
+ */
+function refreshMenuUI() {
+  renderCategoriesList();
+  renderCategoryTabs();
+  populateCategoryDropdown();
+  renderDishesGrid();
 }
 
 /**
@@ -1785,14 +1795,14 @@ function renderCategoriesList() {
           </span>
         </label>
         ${isFixed ? `
-          <div class="category-card-name is-fixed" title="Today's Special" aria-label="Category name ${escapeHtml(cat.name)}">
+          <div class="category-card-name is-fixed" title="Today's Special" aria-label="Category name ${escapeHtml((cat.name || "").toUpperCase())}">
             <svg class="cat-star-icon" viewBox="0 0 24 24" width="16" height="16" fill="#f59e0b" stroke="#d97706" stroke-width="0.8" aria-hidden="true">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
-            ${escapeHtml(cat.name)}
+            ${escapeHtml((cat.name || "").toUpperCase())}
           </div>
         ` : `
-          <div class="category-card-name" title="Click to edit name" tabindex="0" role="button" aria-label="Edit category name ${escapeHtml(cat.name)}">${escapeHtml(cat.name)}</div>
+          <div class="category-card-name" title="Click to edit name" tabindex="0" role="button" aria-label="Edit category name ${escapeHtml((cat.name || "").toUpperCase())}">${escapeHtml((cat.name || "").toUpperCase())}</div>
         `}
       </div>
       <div class="category-row-actions">
@@ -1848,12 +1858,238 @@ function renderCategoriesList() {
           confirmDeleteCategoryById(cat._id);
         });
       }
+
+      // Long press and drag to reorder
+      attachCategoryDragListeners(card);
     }
 
     categoriesGrid.appendChild(card);
   });
 
   newlyCreatedCategoryId = null;
+}
+
+let activeDragSession = null;
+
+/**
+ * Enable Long-Press Drag-and-Drop Reordering on Category Row
+ */
+function attachCategoryDragListeners(card) {
+  if (card.classList.contains("today-special-card") || card.classList.contains("is-new-blank-row")) {
+    return;
+  }
+
+  let pressTimer = null;
+  let startX = 0;
+  let startY = 0;
+  let isPressing = false;
+
+  function onPointerDown(e) {
+    if (activeDragSession) return;
+    // Don't drag if user interacted with switches, buttons, or editable elements
+    if (e.target.closest(".switch, .category-avail-checkbox, .delete-cat-btn, [contenteditable='true'], [contenteditable='plaintext-only'], .is-editing, input, button")) {
+      return;
+    }
+    if (e.button !== undefined && e.button !== 0) return;
+
+    startX = e.clientX;
+    startY = e.clientY;
+    isPressing = true;
+
+    pressTimer = setTimeout(() => {
+      if (!isPressing) return;
+      isPressing = false;
+      cleanupPressCheck();
+      startCategoryDrag(card, startX, startY);
+    }, 320);
+
+    window.addEventListener("pointermove", onPointerMoveCheck, { passive: true });
+    window.addEventListener("pointerup", onPointerUpCheck);
+    window.addEventListener("pointercancel", onPointerUpCheck);
+  }
+
+  function onPointerMoveCheck(e) {
+    if (!isPressing) return;
+    const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+    if (dist > 8) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+      isPressing = false;
+      cleanupPressCheck();
+    }
+  }
+
+  function onPointerUpCheck() {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+    isPressing = false;
+    cleanupPressCheck();
+  }
+
+  function cleanupPressCheck() {
+    window.removeEventListener("pointermove", onPointerMoveCheck);
+    window.removeEventListener("pointerup", onPointerUpCheck);
+    window.removeEventListener("pointercancel", onPointerUpCheck);
+  }
+
+  card.addEventListener("pointerdown", onPointerDown);
+}
+
+function startCategoryDrag(card, startX, startY) {
+  if (activeDragSession || !categoriesGrid) return;
+
+  if (navigator.vibrate) {
+    try { navigator.vibrate(40); } catch (_) {}
+  }
+
+  const rect = card.getBoundingClientRect();
+  const cardHeight = rect.height;
+  const cardWidth = rect.width;
+
+  const placeholder = document.createElement("div");
+  placeholder.className = "category-drag-placeholder";
+  placeholder.style.width = cardWidth + "px";
+  placeholder.style.height = cardHeight + "px";
+  placeholder.style.margin = "0";
+
+  categoriesGrid.insertBefore(placeholder, card);
+
+  card.classList.add("is-drag-lifted");
+  card.style.position = "fixed";
+  card.style.top = rect.top + "px";
+  card.style.left = rect.left + "px";
+  card.style.width = cardWidth + "px";
+  card.style.height = cardHeight + "px";
+  card.style.margin = "0";
+  card.style.transform = "scale(1.025)";
+
+  const prevBodyOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+
+  function onPointerMove(e) {
+    const currentY = e.clientY;
+    const dy = currentY - startY;
+    card.style.transform = `translate3d(0, ${dy}px, 0) scale(1.025)`;
+
+    const currentCardCenterY = rect.top + dy + (cardHeight / 2);
+
+    const otherCards = Array.from(
+      categoriesGrid.querySelectorAll(".category-admin-card:not(.today-special-card):not(.is-new-blank-row):not(.is-drag-lifted)")
+    );
+
+    let targetBefore = null;
+    for (const c of otherCards) {
+      const cRect = c.getBoundingClientRect();
+      const cMidY = cRect.top + (cRect.height / 2);
+      if (currentCardCenterY < cMidY) {
+        targetBefore = c;
+        break;
+      }
+    }
+
+    if (placeholder.nextSibling !== targetBefore && placeholder !== targetBefore) {
+      const allSiblings = Array.from(categoriesGrid.children).filter(el => !el.classList.contains("is-drag-lifted"));
+      const firstTops = new Map();
+      allSiblings.forEach(el => firstTops.set(el, el.getBoundingClientRect().top));
+
+      if (targetBefore) {
+        categoriesGrid.insertBefore(placeholder, targetBefore);
+      } else {
+        categoriesGrid.appendChild(placeholder);
+      }
+
+      allSiblings.forEach(el => {
+        const first = firstTops.get(el);
+        const last = el.getBoundingClientRect().top;
+        const delta = first - last;
+        if (delta !== 0) {
+          el.style.transform = `translateY(${delta}px)`;
+          el.style.transition = "none";
+        }
+      });
+
+      void categoriesGrid.offsetHeight;
+      requestAnimationFrame(() => {
+        allSiblings.forEach(el => {
+          el.style.transition = "transform 250ms cubic-bezier(0.2, 0, 0, 1)";
+          el.style.transform = "";
+        });
+      });
+    }
+  }
+
+  function onPointerEnd() {
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", onPointerEnd);
+    window.removeEventListener("pointercancel", onPointerEnd);
+    document.body.style.overflow = prevBodyOverflow;
+
+    const pRect = placeholder.getBoundingClientRect();
+    const finalDx = pRect.left - rect.left;
+    const finalDy = pRect.top - rect.top;
+
+    card.style.transition = "transform 200ms cubic-bezier(0.2, 0, 0, 1)";
+    card.style.transform = `translate3d(${finalDx}px, ${finalDy}px, 0) scale(1)`;
+
+    setTimeout(() => {
+      categoriesGrid.insertBefore(card, placeholder);
+      placeholder.remove();
+
+      card.classList.remove("is-drag-lifted");
+      card.style.position = "";
+      card.style.top = "";
+      card.style.left = "";
+      card.style.width = "";
+      card.style.height = "";
+      card.style.margin = "";
+      card.style.transform = "";
+      card.style.transition = "";
+
+      Array.from(categoriesGrid.children).forEach(el => {
+        el.style.transform = "";
+        el.style.transition = "";
+      });
+
+      activeDragSession = null;
+
+      const newOrderedIds = Array.from(
+        categoriesGrid.querySelectorAll(".category-admin-card:not(.today-special-card):not(.is-new-blank-row)")
+      ).map(el => el.dataset.id).filter(Boolean);
+
+      const specialCat = categories.find(c => c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
+      const otherCatsOrdered = newOrderedIds.map(id => categories.find(c => String(c._id) === String(id))).filter(Boolean);
+
+      otherCatsOrdered.forEach((c, idx) => {
+        c.displayOrder = idx;
+      });
+
+      categories = specialCat ? [specialCat, ...otherCatsOrdered] : otherCatsOrdered;
+
+      renderCategoryTabs();
+      populateCategoryDropdown();
+
+      fetch("/api/owner/categories", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: newOrderedIds })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success) {
+          showNotification(data.error || "Failed to save category order", "error");
+        }
+      })
+      .catch(err => {
+        showNotification("Network error saving category order", "error");
+      });
+    }, 210);
+  }
+
+  window.addEventListener("pointermove", onPointerMove, { passive: false });
+  window.addEventListener("pointerup", onPointerEnd);
+  window.addEventListener("pointercancel", onPointerEnd);
+
+  activeDragSession = { card, placeholder };
 }
 
 /**
@@ -1894,32 +2130,34 @@ function attachInlineCategoryEditor(nameEl, cat) {
       nameEl.classList.remove("is-editing");
       if (typeof nameEl.blur === "function") nameEl.blur();
 
-      const originalName = cat.name;
-      const newName = (nameEl.textContent || "").trim();
+      const originalName = (cat.name || "").toUpperCase();
+      const newName = (nameEl.textContent || "").trim().toUpperCase();
 
       if (save && newName && newName !== originalName) {
         nameEl.textContent = newName;
         cat.name = newName;
-        try {
-          const res = await fetch("/api/owner/categories", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id: cat._id, name: newName })
-          });
-          const data = await res.json();
-          if (data.success) {
-            renderCategoryTabs();
-            renderDishesGrid();
-          } else {
+        refreshMenuUI();
+
+        fetch("/api/owner/categories", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: cat._id, name: newName })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) {
             showNotification(data.error || "Failed to update category name", "error");
             cat.name = originalName;
             nameEl.textContent = originalName;
+            refreshMenuUI();
           }
-        } catch (err) {
+        })
+        .catch(err => {
           showNotification("Network error updating category name", "error");
           cat.name = originalName;
           nameEl.textContent = originalName;
-        }
+          refreshMenuUI();
+        });
       } else {
         nameEl.textContent = originalName;
       }
@@ -1952,7 +2190,7 @@ function attachInlineCategoryEditor(nameEl, cat) {
 
     function onPaste(e) {
       e.preventDefault();
-      const text = ((e.clipboardData || window.clipboardData)?.getData("text/plain") || "").replace(/[\r\n]+/g, " ");
+      const text = ((e.clipboardData || window.clipboardData)?.getData("text/plain") || "").replace(/[\r\n]+/g, " ").toUpperCase();
       document.execCommand("insertText", false, text);
     }
 
@@ -1983,7 +2221,7 @@ function openEditCategoryModalById(catId) {
   if (!cat) return;
   categoryModalTitle.textContent = "Rename Category";
   categoryIdInput.value = cat._id;
-  categoryNameInput.value = cat.name;
+  categoryNameInput.value = (cat.name || "").toUpperCase();
   openModal(categoryModal);
   categoryNameInput.focus();
 }
@@ -2003,22 +2241,41 @@ async function confirmDeleteCategoryById(catId) {
 
   if (!confirm(confirmMsg)) return;
 
-  try {
-    const res = await fetch(`/api/owner/categories?id=${catId}`, {
-      method: "DELETE"
-    });
-    const data = await res.json();
-    if (data.success) {
-      if (selectedCategoryId === String(catId)) {
-        selectedCategoryId = null;
-      }
-      await loadMenuData();
-    } else {
+  const prevCategories = [...categories];
+  const prevDishes = [...dishes];
+  const prevSelectedCatId = selectedCategoryId;
+
+  // Immediate optimistic update
+  categories = categories.filter(c => String(c._id) !== String(catId));
+  dishes = dishes.filter(d => String(d.categoryId) !== String(catId));
+  if (selectedCategoryId === String(catId)) {
+    selectedCategoryId = null;
+  }
+
+  refreshMenuUI();
+  showNotification(`Category "${cat.name}" deleted.`);
+
+  // Background delete
+  fetch(`/api/owner/categories?id=${catId}`, {
+    method: "DELETE"
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.success) {
+      categories = prevCategories;
+      dishes = prevDishes;
+      selectedCategoryId = prevSelectedCatId;
+      refreshMenuUI();
       showNotification(data.error || "Failed to delete category.", "error");
     }
-  } catch (err) {
+  })
+  .catch(err => {
+    categories = prevCategories;
+    dishes = prevDishes;
+    selectedCategoryId = prevSelectedCatId;
+    refreshMenuUI();
     showNotification("Network error deleting category.", "error");
-  }
+  });
 }
 
 /**
@@ -2815,7 +3072,7 @@ function createBlankCategoryRow() {
 
   async function commitNewCategory() {
     if (isCommitting || isDiscarded) return;
-    const nameVal = input.value.trim();
+    const nameVal = input.value.trim().toUpperCase();
 
     if (!nameVal) {
       discardRow();
@@ -2825,42 +3082,82 @@ function createBlankCategoryRow() {
     isCommitting = true;
     input.disabled = true;
 
-    try {
-      const isAvail = availCheckbox ? availCheckbox.checked : true;
-      const res = await fetch("/api/owner/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: nameVal,
-          displayOrder: 0,
-          isAvailable: isAvail,
-          isVisible: isAvail
-        })
-      });
+    // Optimistic creation
+    const tempCatId = `temp_cat_${Date.now()}`;
+    const isAvail = availCheckbox ? availCheckbox.checked : true;
+    const optimisticCat = {
+      _id: tempCatId,
+      name: nameVal,
+      displayOrder: 0,
+      isAvailable: isAvail,
+      isVisible: isAvail,
+      createdAt: new Date().toISOString()
+    };
 
-      const data = await res.json();
+    newlyCreatedCategoryId = tempCatId;
+
+    const specialIndex = categories.findIndex(c => c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
+    const insertIdx = specialIndex !== -1 ? specialIndex + 1 : 0;
+    categories.splice(insertIdx, 0, optimisticCat);
+
+    // Remove the blank row immediately so the real row takes its place
+    if (row.parentNode) row.remove();
+
+    refreshMenuUI();
+    showNotification(`Category "${nameVal}" added.`);
+
+    // Perform background backend write
+    fetch("/api/owner/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: nameVal,
+        displayOrder: 0,
+        isAvailable: isAvail,
+        isVisible: isAvail
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
       if (data.success && data.category) {
-        newlyCreatedCategoryId = String(data.category._id);
-        await loadMenuData();
-        if (row.parentNode) row.remove();
-        showNotification(`Category "${data.category.name}" added successfully.`);
+        const realId = String(data.category._id);
+        const idx = categories.findIndex(c => String(c._id) === tempCatId);
+        if (idx !== -1) {
+          categories[idx] = data.category;
+        }
+        const catCard = document.querySelector(`.category-admin-card[data-id="${tempCatId}"]`);
+        if (catCard) catCard.dataset.id = realId;
+        const tabEl = document.querySelector(`.category-dropdown-item[data-cat-id="${tempCatId}"]`);
+        if (tabEl) tabEl.dataset.catId = realId;
+        if (selectedCategoryId === tempCatId) {
+          selectedCategoryId = realId;
+        }
+        populateCategoryDropdown();
       } else {
+        categories = categories.filter(c => String(c._id) !== tempCatId);
+        refreshMenuUI();
         showNotification(data.error || "Failed to add category.", "error");
-        input.disabled = false;
-        isCommitting = false;
-        input.focus();
       }
-    } catch (err) {
+    })
+    .catch(err => {
+      categories = categories.filter(c => String(c._id) !== tempCatId);
+      refreshMenuUI();
       showNotification("Network error adding category.", "error");
-      input.disabled = false;
-      isCommitting = false;
-      input.focus();
-    }
+    });
   }
 
   cancelBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     discardRow();
+  });
+
+  input.addEventListener("input", () => {
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    input.value = input.value.toUpperCase();
+    if (start !== null && end !== null) {
+      input.setSelectionRange(start, end);
+    }
   });
 
   input.addEventListener("keydown", (e) => {
@@ -2928,7 +3225,7 @@ function openEditCategoryModal() {
 
   categoryModalTitle.textContent = "Rename Category";
   categoryIdInput.value = activeCat._id;
-  categoryNameInput.value = activeCat.name;
+  categoryNameInput.value = (activeCat.name || "").toUpperCase();
   openModal(categoryModal);
   categoryNameInput.focus();
 }
@@ -2938,10 +3235,21 @@ function closeCategoryModal() {
   updateScrollLock();
 }
 
-categoryForm.addEventListener("submit", async (e) => {
+if (categoryNameInput) {
+  categoryNameInput.addEventListener("input", () => {
+    const start = categoryNameInput.selectionStart;
+    const end = categoryNameInput.selectionEnd;
+    categoryNameInput.value = categoryNameInput.value.toUpperCase();
+    if (start !== null && end !== null) {
+      categoryNameInput.setSelectionRange(start, end);
+    }
+  });
+}
+
+categoryForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const catId = categoryIdInput.value;
-  const name = categoryNameInput.value.trim();
+  const name = categoryNameInput.value.trim().toUpperCase();
 
   if (!name) {
     showNotification("Category name cannot be blank.", "error");
@@ -2949,33 +3257,89 @@ categoryForm.addEventListener("submit", async (e) => {
   }
 
   const isEdit = !!catId;
-  const endpoint = "/api/owner/categories";
-  const method = isEdit ? "PATCH" : "POST";
-  const payload = isEdit ? { id: catId, name } : { name, displayOrder: 0 };
+  closeCategoryModal();
 
-  try {
-    const res = await fetch(endpoint, {
-      method,
+  if (isEdit) {
+    const cat = categories.find(c => String(c._id) === String(catId));
+    if (!cat) return;
+    const originalName = (cat.name || "").toUpperCase();
+    cat.name = name;
+
+    refreshMenuUI();
+    showNotification(`Category renamed to "${name}".`);
+
+    fetch("/api/owner/categories", {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ id: catId, name })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) {
+        cat.name = originalName;
+        refreshMenuUI();
+        showNotification(data.error || "Failed to update category.", "error");
+      }
+    })
+    .catch(err => {
+      cat.name = originalName;
+      refreshMenuUI();
+      showNotification("Network error updating category.", "error");
     });
-    const data = await res.json();
-    if (data.success) {
-      closeCategoryModal();
-      if (!isEdit && data.category) {
-        newlyCreatedCategoryId = String(data.category._id);
+  } else {
+    const tempCatId = `temp_cat_${Date.now()}`;
+    const optimisticCat = {
+      _id: tempCatId,
+      name,
+      displayOrder: 0,
+      isAvailable: true,
+      isVisible: true,
+      createdAt: new Date().toISOString()
+    };
+
+    newlyCreatedCategoryId = tempCatId;
+    const specialIndex = categories.findIndex(c => c.isFixed || (c.name && c.name.toUpperCase() === "TODAY'S SPECIAL"));
+    const insertIdx = specialIndex !== -1 ? specialIndex + 1 : 0;
+    categories.splice(insertIdx, 0, optimisticCat);
+    selectedCategoryId = tempCatId;
+
+    refreshMenuUI();
+    showNotification(`Category "${name}" added.`);
+
+    fetch("/api/owner/categories", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, displayOrder: 0 })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && data.category) {
+        const realId = String(data.category._id);
+        const idx = categories.findIndex(c => String(c._id) === tempCatId);
+        if (idx !== -1) {
+          categories[idx] = data.category;
+        }
+        if (selectedCategoryId === tempCatId) {
+          selectedCategoryId = realId;
+        }
+        const catCard = document.querySelector(`.category-admin-card[data-id="${tempCatId}"]`);
+        if (catCard) catCard.dataset.id = realId;
+        const tabEl = document.querySelector(`.category-dropdown-item[data-cat-id="${tempCatId}"]`);
+        if (tabEl) tabEl.dataset.catId = realId;
+        populateCategoryDropdown();
+      } else {
+        categories = categories.filter(c => String(c._id) !== tempCatId);
+        if (selectedCategoryId === tempCatId) selectedCategoryId = null;
+        refreshMenuUI();
+        showNotification(data.error || "Failed to add category.", "error");
       }
-      await loadMenuData();
-      if (!isEdit && data.category) {
-        selectedCategoryId = String(data.category._id);
-        renderCategoryTabs();
-        renderDishesGrid();
-      }
-    } else {
-      showNotification(data.error || "Failed to save category.", "error");
-    }
-  } catch (err) {
-    showNotification("Network error saving category.", "error");
+    })
+    .catch(err => {
+      categories = categories.filter(c => String(c._id) !== tempCatId);
+      if (selectedCategoryId === tempCatId) selectedCategoryId = null;
+      refreshMenuUI();
+      showNotification("Network error adding category.", "error");
+    });
   }
 });
 
@@ -3101,7 +3465,7 @@ function closeDishModal() {
   updateScrollLock();
 }
 
-dishForm.addEventListener("submit", async (e) => {
+dishForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const dishId = dishIdInput.value;
   const categoryId = dishCategorySelect.value;
@@ -3123,46 +3487,120 @@ dishForm.addEventListener("submit", async (e) => {
   }
 
   const isEdit = !!dishId;
-  const endpoint = "/api/owner/items";
-  const method = isEdit ? "PATCH" : "POST";
-  const payload = isEdit
-    ? { id: dishId, categoryId, name, price, isAvailable }
-    : { categoryId, name, price, isAvailable };
+  closeDishModal();
 
-  try {
-    const res = await fetch(endpoint, {
-      method,
+  if (isEdit) {
+    const existingDish = dishes.find(d => String(d._id) === String(dishId));
+    if (!existingDish) return;
+    const prevDish = { ...existingDish };
+
+    existingDish.categoryId = categoryId;
+    existingDish.name = name;
+    existingDish.price = price;
+    existingDish.isAvailable = isAvailable;
+
+    renderDishesGrid();
+    renderCategoriesList();
+    showNotification(`Dish "${name}" updated.`);
+
+    fetch("/api/owner/items", {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ id: dishId, categoryId, name, price, isAvailable })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) {
+        Object.assign(existingDish, prevDish);
+        renderDishesGrid();
+        renderCategoriesList();
+        showNotification(data.error || "Failed to save dish.", "error");
+      }
+    })
+    .catch(err => {
+      Object.assign(existingDish, prevDish);
+      renderDishesGrid();
+      renderCategoriesList();
+      showNotification("Network error saving dish.", "error");
     });
-    const data = await res.json();
-    if (data.success) {
-      closeDishModal();
-      await loadMenuData();
-    } else {
-      showNotification(data.error || "Failed to save dish.", "error");
-    }
-  } catch (err) {
-    showNotification("Network error saving dish.", "error");
+  } else {
+    const tempDishId = `temp_dish_${Date.now()}`;
+    const optimisticDish = {
+      _id: tempDishId,
+      categoryId,
+      name,
+      price,
+      isAvailable,
+      isSpecial: false,
+      isFeatured: false,
+      createdAt: new Date().toISOString()
+    };
+
+    dishes.unshift(optimisticDish);
+
+    renderDishesGrid();
+    renderCategoriesList();
+    showNotification(`Dish "${name}" added.`);
+
+    fetch("/api/owner/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ categoryId, name, price, isAvailable })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && (data.item || data.dish)) {
+        const realItem = data.item || data.dish;
+        const idx = dishes.findIndex(d => String(d._id) === tempDishId);
+        if (idx !== -1) {
+          dishes[idx] = realItem;
+        }
+        const card = document.querySelector(`.dish-admin-card[data-id="${tempDishId}"]`);
+        if (card) card.dataset.id = realItem._id;
+      } else {
+        dishes = dishes.filter(d => String(d._id) !== tempDishId);
+        renderDishesGrid();
+        renderCategoriesList();
+        showNotification(data.error || "Failed to add dish.", "error");
+      }
+    })
+    .catch(err => {
+      dishes = dishes.filter(d => String(d._id) !== tempDishId);
+      renderDishesGrid();
+      renderCategoriesList();
+      showNotification("Network error adding dish.", "error");
+    });
   }
 });
 
 async function confirmDeleteDish(dish) {
   if (!confirm(`Are you sure you want to delete dish "${dish.name}"?`)) return;
 
-  try {
-    const res = await fetch(`/api/owner/items?id=${dish._id}`, {
-      method: "DELETE"
-    });
-    const data = await res.json();
-    if (data.success) {
-      await loadMenuData();
-    } else {
+  const prevDishes = [...dishes];
+  dishes = dishes.filter(d => String(d._id) !== String(dish._id));
+
+  renderDishesGrid();
+  renderCategoriesList();
+  showNotification(`Dish "${dish.name}" deleted.`);
+
+  fetch(`/api/owner/items?id=${dish._id}`, {
+    method: "DELETE"
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.success) {
+      dishes = prevDishes;
+      renderDishesGrid();
+      renderCategoriesList();
       showNotification(data.error || "Failed to delete dish.", "error");
     }
-  } catch (err) {
+  })
+  .catch(err => {
+    dishes = prevDishes;
+    renderDishesGrid();
+    renderCategoriesList();
     showNotification("Network error deleting dish.", "error");
-  }
+  });
 }
 
 // Dish event listeners
@@ -5024,6 +5462,32 @@ if (importConfirmBtn) {
     }
   });
 }
+
+// Disable right-click context menu across the owner portal
+document.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+});
+
+// Disable text selection across owner portal except in inputs and editable fields
+document.addEventListener("selectstart", (e) => {
+  const target = e.target;
+  if (!target) return;
+  if (
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.isContentEditable ||
+    (target.closest && (
+      target.closest("input") ||
+      target.closest("textarea") ||
+      target.closest("[contenteditable='true']") ||
+      target.closest("[contenteditable='plaintext-only']") ||
+      target.closest(".is-editing")
+    ))
+  ) {
+    return;
+  }
+  e.preventDefault();
+});
 
 // Start initialization on page load
 document.addEventListener("DOMContentLoaded", () => {

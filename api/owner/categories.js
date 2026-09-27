@@ -158,6 +158,34 @@ module.exports = async function handler(req, res) {
     // PATCH: Update category
     // -------------------------------------------------------------
     if (req.method === "PATCH") {
+      // Batch reorder categories by ordered array of IDs
+      if (Array.isArray(body.order)) {
+        const bulkOps = body.order
+          .filter(id => id && id !== "today_special_fixed" && id !== "today_special")
+          .map((id, index) => {
+            try {
+              return {
+                updateOne: {
+                  filter: { _id: new ObjectId(id), businessId: business._id },
+                  update: { $set: { displayOrder: index } }
+                }
+              };
+            } catch (e) {
+              return null;
+            }
+          })
+          .filter(Boolean);
+
+        if (bulkOps.length > 0) {
+          await db.collection(COLLECTIONS.CATEGORIES).bulkWrite(bulkOps);
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: "Categories reordered successfully."
+        });
+      }
+
       const { id, name, isVisible, isAvailable, displayOrder } = body;
       if (!id) {
         return res.status(400).json({ success: false, error: "Category ID ('id') is required." });

@@ -2180,18 +2180,18 @@ function startCategoryDrag(card, inputType, touchId, startX, startY) {
     const pRect = placeholder.getBoundingClientRect();
 
     // Smooth landing transition with dissolving shadow and scaling down
+    card.classList.remove("is-drag-lifted");
     card.classList.add("is-landing");
-    card.style.transition = "top 240ms cubic-bezier(0.2, 0, 0, 1), left 240ms cubic-bezier(0.2, 0, 0, 1), transform 240ms cubic-bezier(0.2, 0, 0, 1), box-shadow 260ms cubic-bezier(0.2, 0, 0, 1)";
+    card.style.boxShadow = "";
+    card.style.transform = "";
+    card.style.transition = "top 240ms cubic-bezier(0.2, 0, 0, 1), left 240ms cubic-bezier(0.2, 0, 0, 1)";
     card.style.top = pRect.top + "px";
     card.style.left = pRect.left + "px";
-    card.style.transform = "scale(1)";
-    card.style.boxShadow = "0 0 0 0 rgba(15, 23, 42, 0), 0 0 0 0 rgba(15, 23, 42, 0)";
 
     setTimeout(() => {
       categoriesGrid.insertBefore(card, placeholder);
       placeholder.remove();
 
-      card.classList.remove("is-drag-lifted");
       card.classList.remove("is-landing");
       card.style.position = "";
       card.style.top = "";

@@ -250,7 +250,13 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ success: false, error: "Item ID is required to delete." });
       }
 
-      const itemId = new ObjectId(id);
+      let itemId = null;
+      try {
+        itemId = new ObjectId(id);
+      } catch (e) {
+        return res.status(200).json({ success: true, message: "Menu item removed." });
+      }
+
       const existing = await db.collection(COLLECTIONS.MENU_ITEMS).findOne({
         _id: itemId,
         businessId: business._id

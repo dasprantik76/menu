@@ -1332,6 +1332,59 @@ function closeLogoutModal() {
   }
 }
 
+const deleteCategoryModal = document.getElementById("deleteCategoryModal");
+const deleteCategoryModalTitle = document.getElementById("deleteCategoryModalTitle");
+const deleteCategoryModalMsg = document.getElementById("deleteCategoryModalMsg");
+const cancelDeleteCategoryBtn = document.getElementById("cancelDeleteCategoryBtn");
+const confirmDeleteCategoryBtn = document.getElementById("confirmDeleteCategoryBtn");
+
+let pendingCategoryDeletion = null;
+
+function closeDeleteCategoryModal() {
+  if (deleteCategoryModal) {
+    deleteCategoryModal.style.display = "none";
+    updateScrollLock();
+  }
+  pendingCategoryDeletion = null;
+}
+
+if (cancelDeleteCategoryBtn) {
+  cancelDeleteCategoryBtn.addEventListener("click", closeDeleteCategoryModal);
+}
+
+if (confirmDeleteCategoryBtn) {
+  confirmDeleteCategoryBtn.addEventListener("click", () => {
+    if (!pendingCategoryDeletion) {
+      closeDeleteCategoryModal();
+      return;
+    }
+    const { targetCatId, catId, cat, tracker } = pendingCategoryDeletion;
+    closeDeleteCategoryModal();
+    executeCategoryDeletion(targetCatId, catId, cat, tracker);
+  });
+}
+
+const selectCategoryAlertModal = document.getElementById("selectCategoryAlertModal");
+const okSelectCategoryAlertBtn = document.getElementById("okSelectCategoryAlertBtn");
+
+function openSelectCategoryAlertModal() {
+  if (selectCategoryAlertModal) {
+    openModal(selectCategoryAlertModal);
+    if (okSelectCategoryAlertBtn) okSelectCategoryAlertBtn.focus();
+  }
+}
+
+function closeSelectCategoryAlertModal() {
+  if (selectCategoryAlertModal) {
+    selectCategoryAlertModal.style.display = "none";
+    updateScrollLock();
+  }
+}
+
+if (okSelectCategoryAlertBtn) {
+  okSelectCategoryAlertBtn.addEventListener("click", closeSelectCategoryAlertModal);
+}
+
 if (logoutBtn) {
   logoutBtn.addEventListener("click", openLogoutModal);
 }
@@ -1867,6 +1920,16 @@ function renderCategoriesList() {
 
       // Long press and drag to reorder
       attachCategoryDragListeners(card);
+
+      if (isJustCreated) {
+        setTimeout(() => {
+          const b = card.querySelector(".badge-appear-smooth");
+          if (b) {
+            b.classList.remove("badge-appear-smooth");
+            b.style.animation = "none";
+          }
+        }, 400);
+      }
     }
 
     categoriesGrid.appendChild(card);
@@ -1934,6 +1997,13 @@ function attachCategoryDragListeners(card) {
     }
     if (!e.touches || e.touches.length !== 1) return;
 
+    // Disarm any appearance animations on badges immediately upon touch
+    const badge = card.querySelector(".category-dish-count-badge");
+    if (badge) {
+      badge.classList.remove("badge-appear-smooth");
+      badge.style.animation = "none";
+    }
+
     const touch = e.touches[0];
     activeTouchId = touch.identifier;
     startX = currentX = touch.clientX;
@@ -1979,6 +2049,13 @@ function attachCategoryDragListeners(card) {
     if (e.button !== 0) return;
     if (e.target.closest(".switch, .category-avail-checkbox, .delete-cat-btn, [contenteditable='true'], [contenteditable='plaintext-only'], .is-editing, input, button")) {
       return;
+    }
+
+    // Disarm any appearance animations on badges immediately upon click
+    const badge = card.querySelector(".category-dish-count-badge");
+    if (badge) {
+      badge.classList.remove("badge-appear-smooth");
+      badge.style.animation = "none";
     }
 
     startX = currentX = e.clientX;
@@ -2035,6 +2112,13 @@ function startCategoryDrag(card, inputType, touchId, startX, startY) {
 
   const grabOffsetY = startY - unscaledTop;
   const grabOffsetX = startX - unscaledLeft;
+
+  // Disarm any appearance animations on badges inside the card
+  const badge = card.querySelector(".category-dish-count-badge");
+  if (badge) {
+    badge.classList.remove("badge-appear-smooth");
+    badge.style.animation = "none";
+  }
 
   // Create placeholder to reserve exact slot in grid with unscaled size
   const placeholder = document.createElement("div");
@@ -2193,6 +2277,11 @@ function startCategoryDrag(card, inputType, touchId, startX, startY) {
       placeholder.remove();
 
       card.classList.remove("is-landing");
+      const endBadge = card.querySelector(".category-dish-count-badge");
+      if (endBadge) {
+        endBadge.classList.remove("badge-appear-smooth");
+        endBadge.style.animation = "none";
+      }
       card.style.position = "";
       card.style.top = "";
       card.style.left = "";
@@ -2444,8 +2533,23 @@ async function confirmDeleteCategoryById(catId) {
   const confirmMsg = `Are you sure you want to delete category "${cat.name}"?` +
     (dishCount > 0 ? ` WARNING: This will also delete ${dishCount} associated dish(es)!` : "");
 
-  if (!confirm(confirmMsg)) return;
+  pendingCategoryDeletion = { targetCatId, catId, cat, tracker };
 
+  if (deleteCategoryModalMsg) {
+    deleteCategoryModalMsg.textContent = confirmMsg;
+  }
+
+  if (deleteCategoryModal) {
+    openModal(deleteCategoryModal);
+    if (confirmDeleteCategoryBtn) confirmDeleteCategoryBtn.focus();
+  } else {
+    if (confirm(confirmMsg)) {
+      executeCategoryDeletion(targetCatId, catId, cat, tracker);
+    }
+  }
+}
+
+function executeCategoryDeletion(targetCatId, catId, cat, tracker) {
   // Mark in-flight creation as cancelled if pending
   if (tracker) {
     tracker.cancelled = true;
@@ -2460,14 +2564,74 @@ async function confirmDeleteCategoryById(catId) {
   const prevDishes = [...dishes];
   const prevSelectedCatId = selectedCategoryId;
 
-  // Immediate optimistic update
+  // Optimistic data update
   categories = categories.filter(c => String(c._id) !== targetCatId && String(c._id) !== String(catId));
   dishes = dishes.filter(d => String(d.categoryId) !== targetCatId && String(d.categoryId) !== String(catId));
   if (selectedCategoryId === targetCatId || selectedCategoryId === String(catId)) {
     selectedCategoryId = null;
   }
 
-  refreshMenuUI();
+  // Smooth deletion animation if card is in the category grid
+  const card = (categoriesGrid && (
+    categoriesGrid.querySelector(`.category-admin-card[data-id="${targetCatId}"]`) ||
+    categoriesGrid.querySelector(`.category-admin-card[data-id="${catId}"]`)
+  )) || null;
+
+  if (card && card.parentNode === categoriesGrid) {
+    const allCards = Array.from(categoriesGrid.querySelectorAll(".category-admin-card"));
+    const cardIndex = allCards.indexOf(card);
+    const cardsBelow = cardIndex !== -1 ? allCards.slice(cardIndex + 1) : [];
+
+    const preTops = new Map();
+    cardsBelow.forEach(c => preTops.set(c, c.getBoundingClientRect().top));
+
+    // Smooth exit animation on deleting card
+    card.style.pointerEvents = "none";
+    card.style.transition = "opacity 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 220ms cubic-bezier(0.4, 0, 0.2, 1)";
+    card.style.opacity = "0";
+    card.style.transform = "translateY(-8px) scale(0.97)";
+
+    setTimeout(() => {
+      if (card.parentNode) card.remove();
+
+      // Invert: shift cardsBelow back to their pre-removal visual positions
+      cardsBelow.forEach(c => {
+        if (!c.parentNode) return;
+        const oldTop = preTops.get(c);
+        const newTop = c.getBoundingClientRect().top;
+        const dy = oldTop - newTop;
+        if (dy !== 0) {
+          c.style.transform = `translateY(${dy}px)`;
+          c.style.transition = "none";
+        }
+      });
+
+      void categoriesGrid.offsetHeight; // Flush layout
+
+      // Play: animate cardsBelow smoothly up into place
+      requestAnimationFrame(() => {
+        cardsBelow.forEach(c => {
+          if (!c.parentNode) return;
+          c.style.transition = "transform 280ms cubic-bezier(0.16, 1, 0.3, 1)";
+          c.style.transform = "translateY(0)";
+        });
+
+        setTimeout(() => {
+          cardsBelow.forEach(c => {
+            c.style.transition = "";
+            c.style.transform = "";
+          });
+        }, 300);
+      });
+
+      renderCategoryTabs();
+      populateCategoryDropdown();
+      renderDishesGrid();
+    }, 200);
+  } else {
+    refreshMenuUI();
+  }
+
   showNotification(`Category "${cat.name}" deleted.`);
 
   // If this category is still being created in-flight and doesn't have a realId yet,
@@ -2860,9 +3024,14 @@ function renderDishesGrid() {
     attachInlinePriceEditor(priceEl, dish);
 
     // Delete button
-    card.querySelector(".delete-dish-btn").addEventListener("click", () => {
-      confirmDeleteDish(dish);
-    });
+    const delDishBtn = card.querySelector(".delete-dish-btn");
+    if (delDishBtn) {
+      delDishBtn.addEventListener("click", () => {
+        const currentTargetId = card.dataset.id || delDishBtn.dataset.id || dish._id;
+        const currentDishObj = dishes.find(d => String(d._id) === String(currentTargetId)) || dish;
+        confirmDeleteDish(currentDishObj);
+      });
+    }
 
     dishesGrid.appendChild(card);
   });
@@ -3692,6 +3861,10 @@ cancelCategoryBtn.addEventListener("click", closeCategoryModal);
  * Dish Modal Logic
  */
 function openAddDishModal() {
+  if (selectedCategoryId === null || !selectedCategoryId) {
+    openSelectCategoryAlertModal();
+    return;
+  }
   if (isTodaySpecialCategorySelected()) {
     showNotification("Today's Special items are managed using the star toggle on dishes in other categories.", "info");
     return;
@@ -3844,39 +4017,483 @@ dishForm.addEventListener("submit", (e) => {
   }
 });
 
+const inFlightDishCreations = new Map(); // tempDishId -> { cancelled: false, realId: null }
+
+/**
+ * Create a blank dish row with inline fields at the top of the dishes grid
+ */
+function createBlankDishRow() {
+  if (selectedCategoryId === null || !selectedCategoryId) {
+    openSelectCategoryAlertModal();
+    return;
+  }
+  if (isTodaySpecialCategorySelected()) {
+    showNotification("Today's Special items are managed using the star toggle on dishes in other categories.", "info");
+    return;
+  }
+  if (!dishesGrid) return;
+
+  // Clear any active search so newly added dish is directly visible in its category
+  if (dishSearchQuery) {
+    dishSearchQuery = "";
+    const searchInput = document.getElementById("dishSearchInput");
+    if (searchInput) searchInput.value = "";
+    renderDishesGrid();
+  }
+
+  // If a blank row is already being edited, focus it and scroll it into view
+  const existingRow = dishesGrid.querySelector(".dish-admin-card.is-new-blank-row");
+  if (existingRow) {
+    const existingInput = existingRow.querySelector(".dish-blank-name-input");
+    if (existingInput) {
+      existingInput.focus();
+      existingInput.select();
+    }
+    existingRow.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    return;
+  }
+
+  if (emptyDishesState) emptyDishesState.style.display = "none";
+
+  // 1. Capture initial positions of all existing dish cards in the grid
+  const existingCards = Array.from(dishesGrid.querySelectorAll(".dish-admin-card:not(.is-new-blank-row)"));
+  const firstTops = new Map();
+  existingCards.forEach(card => {
+    firstTops.set(card, card.getBoundingClientRect().top);
+  });
+
+  const row = document.createElement("div");
+  row.className = "dish-admin-card is-new-blank-row";
+  row.innerHTML = `
+    <div class="dish-row-info">
+      <label class="switch-label dish-row-switch" title="Available (click to toggle)">
+        <span class="switch">
+          <input type="checkbox" class="dish-avail-checkbox" checked>
+          <span class="slider"></span>
+        </span>
+      </label>
+      <button type="button" class="dish-star-btn" title="Add to Today's Special" aria-label="Toggle Today's Special">
+        <svg class="star-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      </button>
+      <div class="dish-card-title is-editing" style="flex: 1; min-width: 0;">
+        <input type="text" class="dish-blank-name-input" placeholder="Item Name" aria-label="New item name" enterkeyhint="next" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="dish-row-actions">
+      <div class="dish-card-price is-editing">
+        <input type="text" inputmode="decimal" class="dish-blank-price-input" placeholder="Price" aria-label="New item price" enterkeyhint="done" autocomplete="off">
+      </div>
+      <button type="button" class="delete-dish-btn delete-icon-btn cancel-new-dish-btn" title="Cancel" aria-label="Cancel">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+  `;
+
+  // Start new row invisible and slightly elevated for fluid entrance
+  row.style.opacity = "0";
+  row.style.transform = "translateY(-12px) scale(0.98)";
+  row.style.transition = "none";
+
+  // Insert at top of dishesGrid
+  if (dishesGrid.firstChild) {
+    dishesGrid.insertBefore(row, dishesGrid.firstChild);
+  } else {
+    dishesGrid.appendChild(row);
+  }
+
+  // 2. INVERT: Instantly move existing cards back to their previous visual positions
+  existingCards.forEach(card => {
+    const firstTop = firstTops.get(card);
+    const lastTop = card.getBoundingClientRect().top;
+    const dy = firstTop - lastTop;
+    if (dy !== 0) {
+      card.style.transform = `translateY(${dy}px)`;
+      card.style.transition = "none";
+    }
+  });
+
+  // Force layout flush so inverted transforms are committed
+  void dishesGrid.offsetHeight;
+
+  // 3. PLAY: Animate existing cards smoothly down, and animate in the new row
+  requestAnimationFrame(() => {
+    const ease = "cubic-bezier(0.16, 1, 0.3, 1)";
+    const duration = "380ms";
+
+    existingCards.forEach(card => {
+      card.style.transition = `transform ${duration} ${ease}`;
+      card.style.transform = "translateY(0)";
+    });
+
+    row.style.transition = `opacity 280ms ease-out, transform ${duration} ${ease}`;
+    row.style.opacity = "1";
+    row.style.transform = "translateY(0) scale(1)";
+
+    setTimeout(() => {
+      existingCards.forEach(card => {
+        card.style.transition = "";
+        card.style.transform = "";
+      });
+      row.style.transition = "";
+      row.style.transform = "";
+      row.style.opacity = "";
+    }, 400);
+  });
+
+  const nameInput = row.querySelector(".dish-blank-name-input");
+  const priceInput = row.querySelector(".dish-blank-price-input");
+  const cancelBtn = row.querySelector(".cancel-new-dish-btn");
+  const availCheckbox = row.querySelector(".dish-avail-checkbox");
+  const starBtn = row.querySelector(".dish-star-btn");
+
+  let isSpecial = false;
+  if (starBtn) {
+    starBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      isSpecial = !isSpecial;
+      starBtn.classList.toggle("active", isSpecial);
+      starBtn.title = isSpecial ? "Remove from Today's Special" : "Add to Today's Special";
+    });
+  }
+
+  setTimeout(() => {
+    if (nameInput) {
+      nameInput.focus();
+    }
+  }, 50);
+
+  let isCommitting = false;
+  let isDiscarded = false;
+
+  function discardRow() {
+    if (isDiscarded) return;
+    isDiscarded = true;
+
+    const allCards = Array.from(dishesGrid.querySelectorAll(".dish-admin-card"));
+    const rowIndex = allCards.indexOf(row);
+    const cardsBelow = rowIndex !== -1 ? allCards.slice(rowIndex + 1) : [];
+
+    const preTops = new Map();
+    cardsBelow.forEach(card => {
+      preTops.set(card, card.getBoundingClientRect().top);
+    });
+
+    row.style.transition = "opacity 180ms ease-out, transform 220ms cubic-bezier(0.4, 0, 0.2, 1)";
+    row.style.opacity = "0";
+    row.style.transform = "translateY(-10px) scale(0.98)";
+    row.style.pointerEvents = "none";
+
+    setTimeout(() => {
+      if (row.parentNode) row.remove();
+      const currentCategoryDishes = dishes.filter(d => String(d.categoryId) === String(selectedCategoryId));
+      if (currentCategoryDishes.length === 0 && !isFetchingMenuData && emptyDishesState) {
+        emptyDishesState.style.display = "flex";
+      }
+
+      cardsBelow.forEach(card => {
+        const first = preTops.get(card);
+        const last = card.getBoundingClientRect().top;
+        const dy = first - last;
+        if (dy !== 0) {
+          card.style.transform = `translateY(${dy}px)`;
+          card.style.transition = "none";
+        }
+      });
+
+      void dishesGrid.offsetHeight;
+
+      requestAnimationFrame(() => {
+        const ease = "cubic-bezier(0.16, 1, 0.3, 1)";
+        cardsBelow.forEach(card => {
+          card.style.transition = `transform 320ms ${ease}`;
+          card.style.transform = "";
+        });
+
+        setTimeout(() => {
+          cardsBelow.forEach(card => {
+            card.style.transition = "";
+            card.style.transform = "";
+          });
+        }, 340);
+      });
+    }, 180);
+  }
+
+  async function commitNewDish() {
+    if (isCommitting || isDiscarded) return;
+    const nameVal = nameInput.value.trim();
+
+    if (!nameVal) {
+      discardRow();
+      return;
+    }
+
+    isCommitting = true;
+    nameInput.disabled = true;
+    priceInput.disabled = true;
+
+    let priceVal = priceInput.value.trim();
+    let numPrice = parseFloat(priceVal);
+    if (isNaN(numPrice) || numPrice < 0) {
+      numPrice = 0;
+    }
+
+    const isAvail = availCheckbox ? availCheckbox.checked : true;
+    const targetCategoryId = selectedCategoryId;
+
+    // Optimistic dish creation
+    const tempDishId = `temp_dish_${Date.now()}`;
+    const creationTracker = { cancelled: false, realId: null };
+    inFlightDishCreations.set(tempDishId, creationTracker);
+
+    const optimisticDish = {
+      _id: tempDishId,
+      categoryId: targetCategoryId,
+      name: nameVal,
+      price: numPrice,
+      isAvailable: isAvail,
+      isSpecial: isSpecial,
+      isFeatured: isSpecial,
+      createdAt: new Date().toISOString()
+    };
+
+    dishes.unshift(optimisticDish);
+
+    // Remove blank row immediately so real row takes its place smoothly
+    if (row.parentNode) row.remove();
+
+    renderDishesGrid();
+    updateCategoryCountsAndBadges();
+    showNotification(`Dish "${nameVal}" added.`);
+
+    // Perform background backend write
+    fetch("/api/owner/items", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        categoryId: targetCategoryId,
+        name: nameVal,
+        price: numPrice,
+        isAvailable: isAvail,
+        isSpecial: isSpecial,
+        isFeatured: isSpecial
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success && (data.item || data.dish)) {
+        const realItem = data.item || data.dish;
+        const realId = String(realItem._id);
+        creationTracker.realId = realId;
+
+        // If user already deleted this dish while creation was in flight
+        if (creationTracker.cancelled) {
+          inFlightDishCreations.delete(tempDishId);
+          fetch(`/api/owner/items?id=${realId}`, { method: "DELETE" }).catch(() => {});
+          return;
+        }
+
+        const idx = dishes.findIndex(d => String(d._id) === tempDishId);
+        if (idx !== -1) {
+          Object.assign(dishes[idx], realItem);
+        }
+        const dishCard = document.querySelector(`.dish-admin-card[data-id="${tempDishId}"]`);
+        if (dishCard) {
+          dishCard.dataset.id = realId;
+          const dishDelBtn = dishCard.querySelector(".delete-dish-btn");
+          if (dishDelBtn) dishDelBtn.dataset.id = realId;
+          const availCb = dishCard.querySelector(".dish-avail-checkbox");
+          if (availCb) availCb.dataset.id = realId;
+          const starB = dishCard.querySelector(".dish-star-btn");
+          if (starB) starB.dataset.id = realId;
+        }
+        inFlightDishCreations.delete(tempDishId);
+      } else {
+        inFlightDishCreations.delete(tempDishId);
+        if (!creationTracker.cancelled) {
+          dishes = dishes.filter(d => String(d._id) !== tempDishId);
+          renderDishesGrid();
+          updateCategoryCountsAndBadges();
+          showNotification(data.error || "Failed to add dish.", "error");
+        }
+      }
+    })
+    .catch(err => {
+      inFlightDishCreations.delete(tempDishId);
+      if (!creationTracker.cancelled) {
+        dishes = dishes.filter(d => String(d._id) !== tempDishId);
+        renderDishesGrid();
+        updateCategoryCountsAndBadges();
+        showNotification("Network error adding dish.", "error");
+      }
+    });
+  }
+
+  cancelBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    discardRow();
+  });
+
+  nameInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
+      e.preventDefault();
+      if (!nameInput.value.trim()) {
+        discardRow();
+      } else {
+        priceInput.focus();
+        priceInput.select();
+      }
+    } else if (e.key === "Escape" || e.keyCode === 27) {
+      e.preventDefault();
+      discardRow();
+    }
+  });
+
+  priceInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
+      e.preventDefault();
+      commitNewDish();
+    } else if (e.key === "Escape" || e.keyCode === 27) {
+      e.preventDefault();
+      discardRow();
+    }
+  });
+
+  function handleBlurCheck(e) {
+    if (e.relatedTarget && (
+      row.contains(e.relatedTarget) ||
+      e.relatedTarget.closest(".cancel-new-dish-btn")
+    )) {
+      return;
+    }
+    setTimeout(() => {
+      if (!isCommitting && !isDiscarded) {
+        const activeEl = document.activeElement;
+        if (activeEl && row.contains(activeEl)) return;
+        if (!nameInput.value.trim()) {
+          discardRow();
+        } else {
+          commitNewDish();
+        }
+      }
+    }, 150);
+  }
+
+  nameInput.addEventListener("blur", handleBlurCheck);
+  priceInput.addEventListener("blur", handleBlurCheck);
+}
+
 async function confirmDeleteDish(dish) {
   if (!confirm(`Are you sure you want to delete dish "${dish.name}"?`)) return;
 
-  const prevDishes = [...dishes];
-  dishes = dishes.filter(d => String(d._id) !== String(dish._id));
+  const targetId = String(dish._id);
+  const tracker = inFlightDishCreations.get(targetId);
+  if (tracker) {
+    tracker.cancelled = true;
+    inFlightDishCreations.delete(targetId);
+    if (tracker.realId) {
+      fetch(`/api/owner/items?id=${tracker.realId}`, { method: "DELETE" }).catch(() => {});
+    }
+  }
 
-  renderDishesGrid();
-  renderCategoriesList();
+  const prevDishes = [...dishes];
+  dishes = dishes.filter(d => String(d._id) !== targetId);
+
+  // Smooth deletion animation if card is in the dishes grid
+  const card = (dishesGrid && (
+    dishesGrid.querySelector(`.dish-admin-card[data-id="${targetId}"]`)
+  )) || null;
+
+  if (card && card.parentNode === dishesGrid) {
+    const allCards = Array.from(dishesGrid.querySelectorAll(".dish-admin-card"));
+    const cardIndex = allCards.indexOf(card);
+    const cardsBelow = cardIndex !== -1 ? allCards.slice(cardIndex + 1) : [];
+
+    const preTops = new Map();
+    cardsBelow.forEach(c => preTops.set(c, c.getBoundingClientRect().top));
+
+    card.style.pointerEvents = "none";
+    card.style.transition = "opacity 180ms ease-out, transform 200ms cubic-bezier(0.4, 0, 0.2, 1)";
+    card.style.opacity = "0";
+    card.style.transform = "translateY(-8px) scale(0.97)";
+
+    setTimeout(() => {
+      if (card.parentNode) card.remove();
+
+      // Show empty state if this was the last dish
+      const currentCategoryDishes = dishes.filter(d => String(d.categoryId) === String(selectedCategoryId));
+      if (currentCategoryDishes.length === 0 && !isFetchingMenuData && emptyDishesState) {
+        emptyDishesState.style.display = "flex";
+      }
+
+      cardsBelow.forEach(c => {
+        if (!c.parentNode) return;
+        const oldTop = preTops.get(c);
+        const newTop = c.getBoundingClientRect().top;
+        const dy = oldTop - newTop;
+        if (dy !== 0) {
+          c.style.transform = `translateY(${dy}px)`;
+          c.style.transition = "none";
+        }
+      });
+
+      void dishesGrid.offsetHeight;
+
+      requestAnimationFrame(() => {
+        cardsBelow.forEach(c => {
+          if (!c.parentNode) return;
+          c.style.transition = "transform 280ms cubic-bezier(0.16, 1, 0.3, 1)";
+          c.style.transform = "translateY(0)";
+        });
+
+        setTimeout(() => {
+          cardsBelow.forEach(c => {
+            c.style.transition = "";
+            c.style.transform = "";
+          });
+        }, 300);
+      });
+
+      updateCategoryCountsAndBadges();
+      updateDishCountDisplay(currentCategoryDishes.length);
+    }, 180);
+  } else {
+    renderDishesGrid();
+    updateCategoryCountsAndBadges();
+  }
+
   showNotification(`Dish "${dish.name}" deleted.`);
 
-  fetch(`/api/owner/items?id=${dish._id}`, {
-    method: "DELETE"
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (!data.success) {
+  if (!targetId.startsWith("temp_dish_")) {
+    fetch(`/api/owner/items?id=${targetId}`, {
+      method: "DELETE"
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) {
+        dishes = prevDishes;
+        renderDishesGrid();
+        updateCategoryCountsAndBadges();
+        showNotification(data.error || "Failed to delete dish.", "error");
+      }
+    })
+    .catch(err => {
       dishes = prevDishes;
       renderDishesGrid();
       renderCategoriesList();
-      showNotification(data.error || "Failed to delete dish.", "error");
-    }
-  })
-  .catch(err => {
-    dishes = prevDishes;
-    renderDishesGrid();
-    renderCategoriesList();
-    showNotification("Network error deleting dish.", "error");
-  });
+      showNotification("Network error deleting dish.", "error");
+    });
+  }
 }
 
 // Dish event listeners
-if (openAddDishBtn) openAddDishBtn.addEventListener("click", openAddDishModal);
-if (emptyStateAddDishBtn) emptyStateAddDishBtn.addEventListener("click", openAddDishModal);
+if (openAddDishBtn) openAddDishBtn.addEventListener("click", createBlankDishRow);
+if (emptyStateAddDishBtn) emptyStateAddDishBtn.addEventListener("click", createBlankDishRow);
 if (closeDishModalBtn) closeDishModalBtn.addEventListener("click", closeDishModal);
 if (cancelDishBtn) cancelDishBtn.addEventListener("click", closeDishModal);
 
@@ -4026,7 +4643,7 @@ if (dishSearchToggleBtn) {
 setupDishSearchInputListeners();
 
 // Backdrop click and touch prevention for modals
-[categoryModal, dishModal, logoutModal, todaySpecialInfoModal].forEach(modal => {
+[categoryModal, dishModal, logoutModal, deleteCategoryModal, selectCategoryAlertModal, todaySpecialInfoModal].forEach(modal => {
   if (!modal) return;
   modal.addEventListener("touchmove", (e) => {
     if (e.target === modal) {
@@ -4038,6 +4655,8 @@ setupDishSearchInputListeners();
       if (modal === categoryModal) closeCategoryModal();
       if (modal === dishModal) closeDishModal();
       if (modal === logoutModal) closeLogoutModal();
+      if (modal === deleteCategoryModal) closeDeleteCategoryModal();
+      if (modal === selectCategoryAlertModal) closeSelectCategoryAlertModal();
       if (modal === todaySpecialInfoModal) closeTodaySpecialInfoModal();
     }
   });
@@ -4047,7 +4666,11 @@ setupDishSearchInputListeners();
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     const lm = document.getElementById("logoutModal");
-    if (lm && lm.style.display === "flex") {
+    if (selectCategoryAlertModal && selectCategoryAlertModal.style.display === "flex") {
+      closeSelectCategoryAlertModal();
+    } else if (deleteCategoryModal && deleteCategoryModal.style.display === "flex") {
+      closeDeleteCategoryModal();
+    } else if (lm && lm.style.display === "flex") {
       closeLogoutModal();
     } else if (categoryModal && categoryModal.style.display === "flex") {
       closeCategoryModal();

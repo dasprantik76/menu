@@ -2292,6 +2292,8 @@ function attachInlineCategoryEditor(nameEl, cat) {
     nameEl.setAttribute("autocorrect", "off");
     nameEl.setAttribute("spellcheck", "false");
     nameEl.classList.add("is-editing");
+    const card = nameEl.closest(".category-admin-card");
+    if (card) card.classList.add("is-editing-name");
     nameEl.focus();
 
     const sel = window.getSelection();
@@ -2309,6 +2311,8 @@ function attachInlineCategoryEditor(nameEl, cat) {
       finished = true;
       nameEl.removeAttribute("contenteditable");
       nameEl.classList.remove("is-editing");
+      const parentCard = nameEl.closest(".category-admin-card");
+      if (parentCard) parentCard.classList.remove("is-editing-name");
       if (typeof nameEl.blur === "function") nameEl.blur();
 
       const originalName = (cat.name || "").toUpperCase();

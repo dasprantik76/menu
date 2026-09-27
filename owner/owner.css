@@ -3014,7 +3014,7 @@ body.dashboard-initial-loading .sticky-add-dish-bar {
   gap: 12px;
   transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 240ms cubic-bezier(0.2, 0, 0, 1), opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   box-sizing: border-box;
-  box-shadow: none !important;
+  box-shadow: 0 0 0 0 rgba(15, 23, 42, 0), 0 0 0 0 rgba(15, 23, 42, 0);
   transform: scale(1);
   transform-origin: center center;
   will-change: transform, box-shadow;
@@ -3039,6 +3039,17 @@ body.dashboard-initial-loading .sticky-add-dish-bar {
   transition: transform 240ms cubic-bezier(0.2, 0, 0, 1), box-shadow 260ms cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
+@keyframes categoryDragShadowBloom {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(15, 23, 42, 0), 0 0 0 0 rgba(15, 23, 42, 0);
+  }
+  100% {
+    transform: scale(1.035);
+    box-shadow: 0 12px 28px 0 rgba(15, 23, 42, 0.25), 0 4px 10px 0 rgba(15, 23, 42, 0.12);
+  }
+}
+
 .category-admin-card.is-drag-lifted {
   position: fixed !important;
   z-index: 999999 !important;
@@ -3048,14 +3059,15 @@ body.dashboard-initial-loading .sticky-add-dish-bar {
   border-radius: 12px !important;
   pointer-events: none !important;
   cursor: grabbing !important;
-  will-change: top, transform;
+  will-change: top, transform, box-shadow;
   opacity: 0.97 !important;
   touch-action: none !important;
   -webkit-touch-callout: none !important;
-  transition: transform 240ms cubic-bezier(0.2, 0, 0, 1) !important;
+  animation: categoryDragShadowBloom 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }
 
 .category-admin-card.is-landing {
+  animation: none !important;
   transform: scale(1) !important;
   transform-origin: center center;
   box-shadow: 0 0 0 0 rgba(15, 23, 42, 0), 0 0 0 0 rgba(15, 23, 42, 0) !important;
@@ -3080,7 +3092,7 @@ body.dashboard-initial-loading .sticky-add-dish-bar {
   border: none !important;
   background: #e1cfbb !important;
   background: linear-gradient(180deg, #e6d6c2 0%, #dccab4 100%) !important;
-  box-shadow: none !important;
+  box-shadow: 0 0 0 0 rgba(15, 23, 42, 0), 0 0 0 0 rgba(15, 23, 42, 0);
   outline: none !important;
 }
 

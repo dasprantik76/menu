@@ -1940,18 +1940,11 @@ function attachCategoryDragListeners(card) {
     startY = currentY = touch.clientY;
     isPressing = true;
 
-    // Small delay before visual feedback so normal scrolling/swiping never flickers the card
-    pressFeedbackTimer = setTimeout(() => {
-      if (!isPressing) return;
-      card.classList.add("is-drag-pressing");
-    }, 120);
-
     // Intentional touch & hold activation delay (450ms) to prevent accidental drags while scrolling
     pressTimer = setTimeout(() => {
       if (!isPressing) return;
       isPressing = false;
       removeCheckListeners();
-      card.classList.add("is-drag-pressing");
       startCategoryDrag(card, "touch", activeTouchId, currentX, currentY);
     }, 450);
 
@@ -1992,18 +1985,12 @@ function attachCategoryDragListeners(card) {
     startY = currentY = e.clientY;
     isPressing = true;
 
-    pressFeedbackTimer = setTimeout(() => {
-      if (!isPressing) return;
-      card.classList.add("is-drag-pressing");
-    }, 100);
-
     pressTimer = setTimeout(() => {
       if (!isPressing) return;
       isPressing = false;
       removeCheckListeners();
-      card.classList.add("is-drag-pressing");
       startCategoryDrag(card, "mouse", null, currentX, currentY);
-    }, 400);
+    }, 380);
 
     window.addEventListener("mousemove", onMouseMoveCheck);
     window.addEventListener("mouseup", onMouseUpCheck);
@@ -2069,9 +2056,9 @@ function startCategoryDrag(card, inputType, touchId, startX, startY) {
   card.style.width = unscaledWidth + "px";
   card.style.height = unscaledHeight + "px";
   card.style.margin = "0";
-  card.style.transform = "scale(1.035)";
   card.style.zIndex = "999999";
-  card.style.boxShadow = "0 12px 28px 0 rgba(15, 23, 42, 0.25), 0 4px 10px 0 rgba(15, 23, 42, 0.12)";
+  card.style.boxShadow = "";
+  card.style.transform = "";
 
   let lastClientY = startY;
   let autoScrollRaf = null;

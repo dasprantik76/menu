@@ -6358,8 +6358,9 @@ input:checked + .slider:before {
 }
 
 .import-apps-box {
-  background: #ffffff;
-  border: 1.5px solid #e2e8f0;
+  background: #e1cfbb;
+  background: linear-gradient(180deg, #e6d6c2 0%, #dccab4 100%);
+  border: 1px solid rgba(156, 107, 62, 0.22);
   border-radius: 12px;
   padding: 16px 20px;
   display: flex;
@@ -6451,8 +6452,9 @@ input:checked + .slider:before {
 .import-prompt-text {
   flex: 1;
   min-width: 0;
-  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 0.88rem;
+  font-family: 'Source Code Pro', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.84rem;
+  font-weight: 500;
   line-height: 1.5;
   color: #3b1368;
   display: -webkit-box;
@@ -6546,8 +6548,8 @@ input:checked + .slider:before {
     padding: 10px 14px;
   }
   .import-prompt-text {
-    font-size: 0.82rem;
-    line-height: 1.42;
+    font-size: 0.78rem;
+    line-height: 1.45;
   }
   .import-apps-box {
     padding: 14px 16px;

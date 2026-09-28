@@ -3183,7 +3183,7 @@ body.dashboard-initial-loading .sticky-add-dish-bar {
 .category-card-name:empty::before,
 .category-card-name.is-editing:empty::before {
   content: attr(data-placeholder);
-  color: #334155;
+  color: #64748b;
   font-weight: 400;
   pointer-events: none;
 }
@@ -3386,7 +3386,7 @@ body.dashboard-initial-loading .sticky-add-dish-bar {
 }
 
 .category-inline-input::placeholder {
-  color: #334155 !important;
+  color: #64748b !important;
   opacity: 1 !important;
   text-transform: none;
   font-weight: 400 !important;
@@ -3394,7 +3394,7 @@ body.dashboard-initial-loading .sticky-add-dish-bar {
 }
 
 .category-inline-input::-webkit-input-placeholder {
-  color: #334155 !important;
+  color: #64748b !important;
   opacity: 1 !important;
   text-transform: none;
   font-weight: 400 !important;
@@ -3402,7 +3402,7 @@ body.dashboard-initial-loading .sticky-add-dish-bar {
 }
 
 .category-inline-input::-moz-placeholder {
-  color: #334155 !important;
+  color: #64748b !important;
   opacity: 1 !important;
   text-transform: none;
   font-weight: 400 !important;

@@ -2353,7 +2353,7 @@ function startCategoryDrag(card, inputType, touchId, startX, startY) {
  * Enable click-to-edit for Category Name
  */
 function attachInlineCategoryEditor(nameEl, cat) {
-  nameEl.setAttribute("data-placeholder", "Category name");
+  nameEl.setAttribute("data-placeholder", "Category name...");
 
   function startEdit() {
     if (nameEl.getAttribute("contenteditable") === "true" || nameEl.classList.contains("is-editing")) return;
@@ -3336,7 +3336,7 @@ function createBlankCategoryRow() {
         </span>
       </label>
       <div class="category-card-name is-editing" style="flex: 1; min-width: 0;">
-        <input type="text" class="category-inline-input" placeholder="Category Name" aria-label="New category name" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false">
+        <input type="text" class="category-inline-input" placeholder="Category name..." aria-label="New category name" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
     </div>
     <div class="category-row-actions">

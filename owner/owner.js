@@ -6047,6 +6047,65 @@ if (importPromptBox) {
   importPromptBox.addEventListener("click", copyPromptToClipboard);
 }
 
+// Step 2: Open Installed Phone Apps (Gemini & ChatGPT)
+const openGeminiAppBtn = document.getElementById("openGeminiAppBtn");
+const openChatGPTAppBtn = document.getElementById("openChatGPTAppBtn");
+
+function setupInstalledAppOpeners() {
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  const GEMINI_ANDROID_INTENT = "intent://gemini.google.com/#Intent;scheme=https;package=com.google.android.apps.bard;S.browser_fallback_url=https%3A%2F%2Fgemini.google.com;end;";
+  const CHATGPT_ANDROID_INTENT = "intent://chatgpt.com/#Intent;scheme=https;package=com.openai.chatgpt;S.browser_fallback_url=https%3A%2F%2Fchatgpt.com;end;";
+
+  // Configure Android hrefs directly for seamless native browser dispatch
+  if (isAndroid) {
+    if (openGeminiAppBtn) {
+      openGeminiAppBtn.href = GEMINI_ANDROID_INTENT;
+      openGeminiAppBtn.removeAttribute("target");
+    }
+    if (openChatGPTAppBtn) {
+      openChatGPTAppBtn.href = CHATGPT_ANDROID_INTENT;
+      openChatGPTAppBtn.removeAttribute("target");
+    }
+  }
+
+  function launchPhoneApp(appName, e) {
+    if (isAndroid) {
+      const intentUrl = appName === "gemini" ? GEMINI_ANDROID_INTENT : CHATGPT_ANDROID_INTENT;
+      window.location.href = intentUrl;
+      return;
+    }
+
+    if (isIOS) {
+      if (e) e.preventDefault();
+      const start = Date.now();
+      const fallbackUrl = appName === "gemini" ? "https://gemini.google.com" : "https://chatgpt.com";
+      const customScheme = appName === "gemini" ? "googleapp://robin" : "chatgpt://";
+
+      setTimeout(() => {
+        if (!document.hidden && Date.now() - start < 2000) {
+          window.location.href = fallbackUrl;
+        }
+      }, 1200);
+
+      window.location.href = customScheme;
+      return;
+    }
+
+    // Desktop: default link opens in a new tab
+  }
+
+  if (openGeminiAppBtn) {
+    openGeminiAppBtn.addEventListener("click", (e) => launchPhoneApp("gemini", e));
+  }
+  if (openChatGPTAppBtn) {
+    openChatGPTAppBtn.addEventListener("click", (e) => launchPhoneApp("chatgpt", e));
+  }
+}
+
+setupInstalledAppOpeners();
+
 // Sample Menu Template for instant 1-click test
 const SAMPLE_MENU_TEMPLATE = `[CHICKEN ITEMS]
 Veg Biryani (Full) - 120

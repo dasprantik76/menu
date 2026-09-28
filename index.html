@@ -786,33 +786,6 @@
               <span class="import-app-name">ChatGPT</span>
             </a>
           </div>
-          <script>
-            (function() {
-              var isAndroid = /Android/i.test(navigator.userAgent);
-              var isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-              var g = document.getElementById("openGeminiAppBtn");
-              var c = document.getElementById("openChatGPTAppBtn");
-              if (isAndroid) {
-                if (g) {
-                  g.href = "intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.google.android.apps.bard;end;";
-                  g.removeAttribute("target");
-                }
-                if (c) {
-                  c.href = "intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.openai.chatgpt;end;";
-                  c.removeAttribute("target");
-                }
-              } else if (isIOS) {
-                if (g) {
-                  g.href = "googlegemini://";
-                  g.removeAttribute("target");
-                }
-                if (c) {
-                  c.href = "chatgpt://";
-                  c.removeAttribute("target");
-                }
-              }
-            })();
-          </script>
         </div>
 
         <div class="import-manual-textarea-wrap">
@@ -1217,6 +1190,6 @@
   </main>
 
   <script src="/owner/qrcode.min.js"></script>
-  <script src="/owner/owner.js?v=188"></script>
+  <script src="/owner/owner.js?v=189"></script>
 </body>
 </html>

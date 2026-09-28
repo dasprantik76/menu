@@ -6053,38 +6053,6 @@ function setupInstalledAppOpeners() {
   const chatgptBtn = document.getElementById("openChatGPTAppBtn");
   if (!geminiBtn && !chatgptBtn) return;
 
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  // Standard Chrome for Android launcher intents targeting installed apps directly (no browser fallback)
-  const GEMINI_ANDROID_INTENT = "intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.google.android.apps.bard;end;";
-  const CHATGPT_ANDROID_INTENT = "intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.openai.chatgpt;end;";
-
-  if (isAndroid) {
-    if (geminiBtn) {
-      geminiBtn.href = GEMINI_ANDROID_INTENT;
-      geminiBtn.removeAttribute("target");
-    }
-    if (chatgptBtn) {
-      chatgptBtn.href = CHATGPT_ANDROID_INTENT;
-      chatgptBtn.removeAttribute("target");
-    }
-    return;
-  }
-
-  if (isIOS) {
-    if (geminiBtn) {
-      geminiBtn.href = "googlegemini://";
-      geminiBtn.removeAttribute("target");
-    }
-    if (chatgptBtn) {
-      chatgptBtn.href = "chatgpt://";
-      chatgptBtn.removeAttribute("target");
-    }
-    return;
-  }
-
-  // Desktop: opens in new tab in browser
   if (geminiBtn) {
     geminiBtn.href = "https://gemini.google.com";
     geminiBtn.target = "_blank";

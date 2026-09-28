@@ -6058,36 +6058,45 @@ function setupInstalledAppOpeners() {
   const GEMINI_ANDROID_INTENT = "intent://gemini.google.com/#Intent;scheme=https;package=com.google.android.apps.bard;S.browser_fallback_url=https%3A%2F%2Fgemini.google.com;end;";
   const CHATGPT_ANDROID_INTENT = "intent://chatgpt.com/#Intent;scheme=https;package=com.openai.chatgpt;S.browser_fallback_url=https%3A%2F%2Fchatgpt.com;end;";
 
-  // Configure Android hrefs directly for seamless native browser dispatch
+  // Configure Android hrefs directly with target="_blank" for native app launch with new-tab web fallback
   if (isAndroid) {
     if (openGeminiAppBtn) {
       openGeminiAppBtn.href = GEMINI_ANDROID_INTENT;
-      openGeminiAppBtn.removeAttribute("target");
+      openGeminiAppBtn.target = "_blank";
+      openGeminiAppBtn.rel = "noopener noreferrer";
     }
     if (openChatGPTAppBtn) {
       openChatGPTAppBtn.href = CHATGPT_ANDROID_INTENT;
-      openChatGPTAppBtn.removeAttribute("target");
+      openChatGPTAppBtn.target = "_blank";
+      openChatGPTAppBtn.rel = "noopener noreferrer";
     }
   }
 
   function launchPhoneApp(appName, e) {
+    const webUrl = appName === "gemini" ? "https://gemini.google.com" : "https://chatgpt.com";
+
     if (isAndroid) {
-      const intentUrl = appName === "gemini" ? GEMINI_ANDROID_INTENT : CHATGPT_ANDROID_INTENT;
-      window.location.href = intentUrl;
+      // Native link handles intent directly with target="_blank" (opens app if installed, or fallback in new tab)
       return;
     }
 
     if (isIOS) {
       if (e) e.preventDefault();
-      const start = Date.now();
-      const fallbackUrl = appName === "gemini" ? "https://gemini.google.com" : "https://chatgpt.com";
       const customScheme = appName === "gemini" ? "googleapp://robin" : "chatgpt://";
+      const start = Date.now();
+
+      let appOpened = false;
+      const handleVisibilityChange = () => {
+        if (document.hidden) appOpened = true;
+      };
+      document.addEventListener("visibilitychange", handleVisibilityChange, { once: true });
 
       setTimeout(() => {
-        if (!document.hidden && Date.now() - start < 2000) {
-          window.location.href = fallbackUrl;
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+        if (!appOpened && !document.hidden && Date.now() - start < 2200) {
+          window.open(webUrl, "_blank", "noopener,noreferrer");
         }
-      }, 1200);
+      }, 1000);
 
       window.location.href = customScheme;
       return;

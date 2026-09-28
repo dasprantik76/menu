@@ -1500,14 +1500,14 @@ function switchCategorySmoothly(newIndex, direction = 'next') {
   const exitY = direction === 'prev' ? '100%' : '-100%';
 
   nextBlock.style.transform = `translateY(${startY})`;
-  nextBlock.style.transition = 'transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1)';
+  nextBlock.style.transition = 'transform 0.44s cubic-bezier(0.2, 0.9, 0.3, 1)';
   stage.appendChild(nextBlock);
 
   // Force reflow so initial translation registers before animating
   void nextBlock.offsetWidth;
 
   if (currentBlock && currentBlock !== nextBlock) {
-    currentBlock.style.transition = 'transform 0.32s cubic-bezier(0.2, 0.9, 0.3, 1)';
+    currentBlock.style.transition = 'transform 0.44s cubic-bezier(0.2, 0.9, 0.3, 1)';
     currentBlock.style.transform = `translateY(${exitY})`;
   }
   nextBlock.style.transform = 'translateY(0)';
@@ -1533,7 +1533,7 @@ function switchCategorySmoothly(newIndex, direction = 'next') {
     atBottomSince = 0;
     atTopSince = 0;
     isTransitioningCategory = false;
-  }, 340);
+  }, 460);
 }
 
 // Update Platter Count Digit inside the Platter Icon
@@ -2527,10 +2527,10 @@ function handleDragEnd() {
     const oldBlock = currentBlock;
     activeTargetBlock = finishedBlock;
 
-    oldBlock.style.transition = "transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    oldBlock.style.transition = "transform 0.40s cubic-bezier(0.2, 0.9, 0.3, 1)";
     oldBlock.style.transform = "translateY(-100%)";
 
-    finishedBlock.style.transition = "transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    finishedBlock.style.transition = "transform 0.40s cubic-bezier(0.2, 0.9, 0.3, 1)";
     finishedBlock.style.transform = "translateY(0)";
 
     activeTransitionTimer = setTimeout(() => {
@@ -2551,7 +2551,7 @@ function handleDragEnd() {
       peekBlock = null;
       currentBlock = null;
       setTimeout(() => { wasCategoryDragged = false; }, 80);
-    }, 300);
+    }, 420);
     return;
   }
 
@@ -2567,10 +2567,10 @@ function handleDragEnd() {
     const oldBlock = currentBlock;
     activeTargetBlock = finishedBlock;
 
-    oldBlock.style.transition = "transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    oldBlock.style.transition = "transform 0.40s cubic-bezier(0.2, 0.9, 0.3, 1)";
     oldBlock.style.transform = "translateY(100%)";
 
-    finishedBlock.style.transition = "transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)";
+    finishedBlock.style.transition = "transform 0.40s cubic-bezier(0.2, 0.9, 0.3, 1)";
     finishedBlock.style.transform = "translateY(0)";
 
     activeTransitionTimer = setTimeout(() => {
@@ -2591,7 +2591,7 @@ function handleDragEnd() {
       peekBlock = null;
       currentBlock = null;
       setTimeout(() => { wasCategoryDragged = false; }, 80);
-    }, 300);
+    }, 420);
     return;
   }
 
@@ -2601,11 +2601,11 @@ function handleDragEnd() {
   const unneededPeek = peekBlock;
   activeTargetBlock = returningBlock;
 
-  returningBlock.style.transition = "transform 0.24s cubic-bezier(0.22, 1, 0.36, 1)";
+  returningBlock.style.transition = "transform 0.34s cubic-bezier(0.22, 1, 0.36, 1)";
   returningBlock.style.transform = "translateY(0)";
 
   if (unneededPeek) {
-    unneededPeek.style.transition = "transform 0.24s cubic-bezier(0.22, 1, 0.36, 1)";
+    unneededPeek.style.transition = "transform 0.34s cubic-bezier(0.22, 1, 0.36, 1)";
     unneededPeek.style.transform = dragTargetIndex > activeCategoryIndex ? "translateY(100%)" : "translateY(-100%)";
   }
 
@@ -2627,7 +2627,7 @@ function handleDragEnd() {
     peekBlock = null;
     currentBlock = null;
     setTimeout(() => { wasCategoryDragged = false; }, 80);
-  }, 260);
+  }, 360);
 }
 
 // Mobile Touch Listeners
@@ -2698,7 +2698,7 @@ window.addEventListener("wheel", (e) => {
     if (maxScroll <= 6) {
       wheelCooldown = true;
       goToNextCategory();
-      setTimeout(() => { wheelCooldown = false; }, 380);
+      setTimeout(() => { wheelCooldown = false; }, 480);
       return;
     }
 
@@ -2709,7 +2709,7 @@ window.addEventListener("wheel", (e) => {
         atBottomSince = 0;
         wheelCooldown = true;
         goToNextCategory();
-        setTimeout(() => { wheelCooldown = false; }, 380);
+        setTimeout(() => { wheelCooldown = false; }, 480);
       }
     } else {
       atBottomSince = 0;
@@ -2723,7 +2723,7 @@ window.addEventListener("wheel", (e) => {
     if (maxScroll <= 6) {
       wheelCooldown = true;
       goToPrevCategory();
-      setTimeout(() => { wheelCooldown = false; }, 380);
+      setTimeout(() => { wheelCooldown = false; }, 480);
       return;
     }
 
@@ -2734,7 +2734,7 @@ window.addEventListener("wheel", (e) => {
         atTopSince = 0;
         wheelCooldown = true;
         goToPrevCategory();
-        setTimeout(() => { wheelCooldown = false; }, 380);
+        setTimeout(() => { wheelCooldown = false; }, 480);
       }
     } else {
       atTopSince = 0;

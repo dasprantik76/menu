@@ -371,6 +371,9 @@ function showView(viewElement) {
     viewElement.classList.remove("fade-in-active");
     void viewElement.offsetWidth;
     viewElement.classList.add("fade-in-active");
+    if (typeof initStickyBarScroll === "function") {
+      initStickyBarScroll();
+    }
   }
 
   const stickyActionBar = document.getElementById("stickyDashboardActionBar") || document.getElementById("stickyAddDishBar");
@@ -1761,20 +1764,21 @@ function initViewSwitcher() {
  * Handle smooth shadow appearance behind switcher bar on scroll
  */
 function initStickyBarScroll() {
-  const ownerStickyBar = document.getElementById("ownerStickyBar");
-  if (!ownerStickyBar || ownerStickyBar._scrollInit) return;
-  ownerStickyBar._scrollInit = true;
+  const stickyBars = document.querySelectorAll(".owner-sticky-bar");
+  if (!stickyBars.length) return;
 
-  let isBarScrolled = false;
   const handleStickyBarScroll = () => {
     const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
     const shouldBeScrolled = scrollY > 10;
-    if (shouldBeScrolled !== isBarScrolled) {
-      isBarScrolled = shouldBeScrolled;
-      ownerStickyBar.classList.toggle("scrolled", isBarScrolled);
-    }
+    stickyBars.forEach(bar => {
+      bar.classList.toggle("scrolled", shouldBeScrolled);
+    });
   };
-  window.addEventListener("scroll", handleStickyBarScroll, { passive: true });
+
+  if (!window._stickyBarScrollAttached) {
+    window._stickyBarScrollAttached = true;
+    window.addEventListener("scroll", handleStickyBarScroll, { passive: true });
+  }
   handleStickyBarScroll();
 }
 
@@ -5810,8 +5814,408 @@ window.addEventListener("hashchange", () => {
 });
 
 // ==========================================================================
-// Import Menu with AI Controller
+// Import Menu Controller (Manual Import & AI Import)
 // ==========================================================================
+const importCapsuleSwitcher = document.getElementById("importCapsuleSwitcher");
+const importManualTabBtn = document.getElementById("importManualTabBtn");
+const importAiTabBtn = document.getElementById("importAiTabBtn");
+const importManualCard = document.getElementById("importManualCard");
+const importUploadCard = document.getElementById("importUploadCard");
+const manualImportTextarea = document.getElementById("manualImportTextarea");
+const manualFileInput = document.getElementById("manualFileInput");
+const manualFileTriggerBtn = document.getElementById("manualFileTriggerBtn");
+const loadSampleTemplateBtn = document.getElementById("loadSampleTemplateBtn");
+const clearManualTextBtn = document.getElementById("clearManualTextBtn");
+const parseManualMenuBtn = document.getElementById("parseManualMenuBtn");
+const manualStatusMessage = document.getElementById("manualStatusMessage");
+const importManualModeAppendLabel = document.getElementById("importManualModeAppendLabel");
+const importManualModeReplaceLabel = document.getElementById("importManualModeReplaceLabel");
+
+let currentImportType = "manual";
+
+function setImportType(type) {
+  currentImportType = type;
+  if (importCapsuleSwitcher) {
+    importCapsuleSwitcher.setAttribute("data-active", type);
+  }
+  if (importManualTabBtn) {
+    importManualTabBtn.classList.toggle("active", type === "manual");
+    importManualTabBtn.setAttribute("aria-selected", type === "manual" ? "true" : "false");
+  }
+  if (importAiTabBtn) {
+    importAiTabBtn.classList.toggle("active", type === "ai");
+    importAiTabBtn.setAttribute("aria-selected", type === "ai" ? "true" : "false");
+  }
+
+  if (importExtractedCard) importExtractedCard.style.display = "none";
+  if (importMenuView) importMenuView.classList.remove("preview-active");
+
+  if (type === "manual") {
+    if (importManualCard) importManualCard.style.display = "flex";
+    if (importUploadCard) importUploadCard.style.display = "none";
+  } else {
+    if (importManualCard) importManualCard.style.display = "none";
+    if (importUploadCard) importUploadCard.style.display = "flex";
+  }
+}
+
+if (importManualTabBtn) {
+  importManualTabBtn.addEventListener("click", () => setImportType("manual"));
+}
+if (importAiTabBtn) {
+  importAiTabBtn.addEventListener("click", () => setImportType("ai"));
+}
+
+function showManualStatus(msg, type = "info") {
+  if (!manualStatusMessage) return;
+  manualStatusMessage.textContent = msg;
+  manualStatusMessage.className = `import-status-banner ${type}`;
+  manualStatusMessage.style.display = "block";
+}
+
+function hideManualStatus() {
+  if (manualStatusMessage) {
+    manualStatusMessage.style.display = "none";
+    manualStatusMessage.textContent = "";
+  }
+}
+
+// Synchronize strategy selection between Manual and AI cards
+const manualModeRadios = document.querySelectorAll('input[name="importManualMode"]');
+const aiModeRadios = document.querySelectorAll('input[name="importMode"]');
+
+manualModeRadios.forEach(radio => {
+  radio.addEventListener("change", (e) => {
+    if (importManualModeAppendLabel) importManualModeAppendLabel.classList.toggle("active", e.target.value === "append");
+    if (importManualModeReplaceLabel) importManualModeReplaceLabel.classList.toggle("active", e.target.value === "replace");
+    const match = document.querySelector(`input[name="importMode"][value="${e.target.value}"]`);
+    if (match) {
+      match.checked = true;
+      if (importModeAppendLabel) importModeAppendLabel.classList.toggle("active", e.target.value === "append");
+      if (importModeReplaceLabel) importModeReplaceLabel.classList.toggle("active", e.target.value === "replace");
+    }
+  });
+});
+
+aiModeRadios.forEach(radio => {
+  radio.addEventListener("change", (e) => {
+    if (importModeAppendLabel) importModeAppendLabel.classList.toggle("active", e.target.value === "append");
+    if (importModeReplaceLabel) importModeReplaceLabel.classList.toggle("active", e.target.value === "replace");
+    const match = document.querySelector(`input[name="importManualMode"][value="${e.target.value}"]`);
+    if (match) {
+      match.checked = true;
+      if (importManualModeAppendLabel) importManualModeAppendLabel.classList.toggle("active", e.target.value === "append");
+      if (importManualModeReplaceLabel) importManualModeReplaceLabel.classList.toggle("active", e.target.value === "replace");
+    }
+  });
+});
+
+// Step 1: Full AI Extraction Prompt for 1-click clipboard copy
+const AI_IMPORT_PROMPT = `Analyze the uploaded menu image(s) and extract all menu items.
+
+Return ONLY the extracted menu text in exactly this format:
+
+[CATEGORY NAME]
+Item Name (Sub Text) - Price
+
+Example:
+
+[CHICKEN ITEMS]
+Veg Biryani (Full) - 120
+Chilli Chicken (8pc) - 80
+Chicken Tikka (6 Pieces) - 220
+
+Rules:
+
+1. CATEGORY NAMES must always be written in ALL CAPITAL LETTERS and within square brackets.
+   Example: [CHICKEN ITEMS]
+
+2. MENU ITEM NAMES must use title-style capitalization:
+
+   * Capitalize the first letter of each main word.
+   * Example: Chilli Chicken, Butter Paneer, Chicken Biryani
+
+3. SUB TEXT inside parentheses must also use title-style capitalization when it contains words.
+   Example: (Full), (Half Plate), (Boneless), (8 Pieces)
+
+4. If the sub text starts with a NUMBER followed by letters, keep the letters immediately after the number in lowercase.
+   Example:
+   (8pc)
+   (4pcs)
+   (2kg)
+   (500ml)
+
+5. Preserve numbers and units accurately.
+   Do not change:
+   (8pc) → (8 Pieces)
+   (500ml) → (500 Ml)
+   unless the menu itself clearly shows the expanded form.
+
+6. If there is no sub text, do not add parentheses.
+   Example:
+   Butter Chicken - 320
+
+7. Keep the price exactly as shown on the menu. Do not invent or estimate prices. Do not add anything  before and after the price digits.
+
+8. If an item has multiple sizes or prices, make the as separate menu items.
+   Example:
+   Chicken Biryani (Half) - 100
+   Chicken Biryani (Full) - 180
+
+9. Keep the original category and item structure. Do not create new categories unless the menu clearly contains them.
+
+10. Ignore restaurant information such as:
+
+* Restaurant name
+* Address
+* Phone number
+* Website
+* Social media
+* Opening hours
+* Promotional text
+
+11. If text is unclear or a price cannot be confidently read, do not guess.
+
+12. Do not add:
+
+* [square brackets]
+* bullets
+* numbering
+* symbols
+* Markdown
+* explanations
+* introductory text
+* closing text
+
+Return ONLY the menu in the required format.`;
+
+const copyPromptBtn = document.getElementById("copyPromptBtn");
+const importPromptBox = document.getElementById("importPromptBox");
+
+function copyPromptToClipboard() {
+  const textToCopy = AI_IMPORT_PROMPT;
+  const btn = document.getElementById("copyPromptBtn");
+  const copyTextEl = btn ? btn.querySelector(".copy-btn-text") : null;
+  const copyIconEl = btn ? btn.querySelector(".copy-icon") : null;
+
+  const showCopiedState = () => {
+    if (btn) btn.classList.add("copied");
+    if (copyTextEl) copyTextEl.textContent = "Copied!";
+    if (copyIconEl) {
+      copyIconEl.innerHTML = `<polyline points="20 6 9 17 4 12"></polyline>`;
+    }
+    setTimeout(() => {
+      if (btn) btn.classList.remove("copied");
+      if (copyTextEl) copyTextEl.textContent = "Copy";
+      if (copyIconEl) {
+        copyIconEl.innerHTML = `<rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>`;
+      }
+    }, 2000);
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(textToCopy).then(showCopiedState).catch(() => {
+      fallbackCopyText(textToCopy);
+      showCopiedState();
+    });
+  } else {
+    fallbackCopyText(textToCopy);
+    showCopiedState();
+  }
+}
+
+function fallbackCopyText(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.top = "0";
+  ta.style.left = "0";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand("copy");
+  } catch (err) {}
+  document.body.removeChild(ta);
+}
+
+if (copyPromptBtn) {
+  copyPromptBtn.addEventListener("click", copyPromptToClipboard);
+}
+if (importPromptBox) {
+  importPromptBox.addEventListener("click", copyPromptToClipboard);
+}
+
+// Sample Menu Template for instant 1-click test
+const SAMPLE_MENU_TEMPLATE = `[CHICKEN ITEMS]
+Veg Biryani (Full) - 120
+Chilli Chicken (8pc) - 80
+Chicken Roll (Double Egg) - 90
+
+[STARTERS]
+Crispy Paneer Tikka (Charcoal grilled cottage cheese with mint chutney) - 240
+Golden Fried Corn (Crunchy sweet corn tossed with bell peppers & spices) - 180
+Veg Spring Rolls (Crispy rolls stuffed with seasoned veggies) - 160
+
+[MAIN COURSE]
+Butter Chicken (Rich creamy tomato butter gravy with tender chicken) - 360
+Paneer Butter Masala (Cottage cheese cooked in rich buttery sauce) - 280
+Dal Makhani (Slow-cooked black lentils with fresh cream & butter) - 220
+Butter Naan (Fresh clay oven flatbread brushed with butter) - 50
+
+[BEVERAGES]
+Fresh Lime Soda (Sweet and salty chilled soda with mint) - 90
+Mango Lassi (Traditional thick yogurt drink with Alphonso mango) - 120
+Cold Coffee (Chilled blended coffee with vanilla ice cream) - 140`;
+
+if (loadSampleTemplateBtn && manualImportTextarea) {
+  loadSampleTemplateBtn.addEventListener("click", () => {
+    manualImportTextarea.value = SAMPLE_MENU_TEMPLATE;
+    hideManualStatus();
+    manualImportTextarea.focus();
+  });
+}
+
+if (clearManualTextBtn && manualImportTextarea) {
+  clearManualTextBtn.addEventListener("click", () => {
+    manualImportTextarea.value = "";
+    hideManualStatus();
+  });
+}
+
+if (manualFileTriggerBtn && manualFileInput) {
+  manualFileTriggerBtn.addEventListener("click", () => {
+    manualFileInput.click();
+  });
+}
+
+if (manualFileInput && manualImportTextarea) {
+  manualFileInput.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      manualImportTextarea.value = event.target.result || "";
+      showManualStatus(`Loaded "${file.name}" successfully. Click "Preview & Process Menu" below.`, "success");
+    };
+    reader.onerror = () => {
+      showManualStatus(`Failed to read file "${file.name}".`, "error");
+    };
+    reader.readAsText(file);
+    manualFileInput.value = "";
+  });
+}
+
+function parseManualMenuText(text) {
+  const lines = text.split(/\r?\n/);
+  const categories = [];
+  let currentCategory = null;
+
+  for (let rawLine of lines) {
+    let line = rawLine.trim();
+    if (!line) continue;
+
+    // 1. Check for Category Header enclosed in square brackets: [CATEGORY NAME]
+    const bracketMatch = line.match(/^\[\s*(.*?)\s*\]\s*:?$/);
+    if (bracketMatch) {
+      const catName = bracketMatch[1].trim().replace(/:$/, "").trim();
+      if (catName) {
+        currentCategory = categories.find(c => c.name.toUpperCase() === catName.toUpperCase());
+        if (!currentCategory) {
+          currentCategory = {
+            id: "cat_" + Math.random().toString(36).substring(2, 9),
+            name: catName,
+            items: []
+          };
+          categories.push(currentCategory);
+        }
+        continue;
+      }
+    }
+
+    // 2. Check if line is an item line: Item Name (Sub Text) - Price (or Item Name - Price)
+    const lastDashIdx = Math.max(line.lastIndexOf("-"), line.lastIndexOf("–"), line.lastIndexOf("—"));
+    const pricePart = lastDashIdx !== -1 ? line.slice(lastDashIdx + 1).trim() : "";
+    const itemPart = lastDashIdx !== -1 ? line.slice(0, lastDashIdx).trim() : "";
+    const isItemLine = lastDashIdx !== -1 && itemPart && /\d+/.test(pricePart);
+
+    if (isItemLine) {
+      const price = parseFloat(pricePart.replace(/[^0-9.]/g, "")) || 0;
+      const itemName = itemPart;
+      const description = "";
+
+      // If no category header was encountered yet, assign to a default category
+      let targetCat = currentCategory;
+      if (!targetCat) {
+        targetCat = categories.find(c => c.name.toUpperCase() === "GENERAL");
+        if (!targetCat) {
+          targetCat = {
+            id: "cat_" + Math.random().toString(36).substring(2, 9),
+            name: "GENERAL",
+            items: []
+          };
+          categories.push(targetCat);
+        }
+        currentCategory = targetCat;
+      }
+
+      targetCat.items.push({
+        id: "item_" + Math.random().toString(36).substring(2, 9),
+        name: itemName,
+        price: price,
+        description: description,
+        selected: true
+      });
+      continue;
+    }
+
+    // 3. Fallback: also accept Category Header without brackets if line is not an item line
+    let catName = line.replace(/:$/, "").trim();
+    if (catName) {
+      currentCategory = categories.find(c => c.name.toUpperCase() === catName.toUpperCase());
+      if (!currentCategory) {
+        currentCategory = {
+          id: "cat_" + Math.random().toString(36).substring(2, 9),
+          name: catName,
+          items: []
+        };
+        categories.push(currentCategory);
+      }
+    }
+  }
+
+  return categories.filter(c => c.items.length > 0);
+}
+
+if (parseManualMenuBtn && manualImportTextarea) {
+  parseManualMenuBtn.addEventListener("click", () => {
+    const text = manualImportTextarea.value.trim();
+    if (!text) {
+      showManualStatus("Please enter or paste menu items first, or click 'Load Sample'.", "error");
+      return;
+    }
+
+    const parsedCats = parseManualMenuText(text);
+    if (parsedCats.length === 0) {
+      showManualStatus("Could not find any items matching the required format:\n[CATEGORY NAME]\nItem Name (Sub Text) - Price", "error");
+      return;
+    }
+
+    extractedCategories = parsedCats;
+    hideManualStatus();
+    renderExtractedPreviewUI();
+
+    if (importExtractedCard) {
+      importExtractedCard.style.display = "block";
+      importExtractedCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (importMenuView) importMenuView.classList.add("preview-active");
+  });
+}
+
+// AI Import elements & handlers
 const importDropzone = document.getElementById("importDropzone");
 const menuPhotosInput = document.getElementById("menuPhotosInput");
 const importBrowseTrigger = document.getElementById("importBrowseTrigger");
@@ -5846,7 +6250,7 @@ function compressMenuImage(file) {
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
-        const maxDim = 1600;
+        const maxDim = 1400;
         let w = img.width;
         let h = img.height;
         if (w > maxDim || h > maxDim) {
@@ -5863,7 +6267,7 @@ function compressMenuImage(file) {
         canvas.height = h;
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.80);
         resolve({
           id: "photo_" + Math.random().toString(36).substring(2, 9),
           name: file.name,
@@ -6029,17 +6433,48 @@ if (analyzeMenuBtn) {
     showImportStatus("Analyzing menu with Gemini AI... Reading categories, dishes and prices.", "loading");
 
     try {
-      const res = await fetch("/api/owner/extract-menu", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          images: importSelectedFiles.map(f => ({ base64: f.base64, mimeType: f.mimeType }))
-        })
+      let res;
+      let data;
+      const payload = JSON.stringify({
+        images: importSelectedFiles.map(f => ({ base64: f.base64, mimeType: f.mimeType }))
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to analyze menu photos.");
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          if (attempt === 2) {
+            showImportStatus("Server container warming up... Retrying analysis automatically.", "loading");
+          }
+          res = await fetch("/api/owner/extract-menu", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: payload
+          });
+
+          const contentType = res.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            data = await res.json();
+            if (res.ok || (res.status !== 502 && res.status !== 503 && res.status !== 504)) {
+              break;
+            }
+          } else {
+            // Received non-JSON (e.g. 504 Gateway Timeout HTML page)
+            if (attempt === 1 && (res.status === 502 || res.status === 503 || res.status === 504 || res.status === 500)) {
+              await new Promise(r => setTimeout(r, 1200));
+              continue;
+            }
+            throw new Error("Server took too long to respond. Please click 'Analyze Menu with AI' again.");
+          }
+        } catch (fetchErr) {
+          if (attempt === 1) {
+            await new Promise(r => setTimeout(r, 1200));
+            continue;
+          }
+          throw fetchErr;
+        }
+      }
+
+      if (!data || !res || !res.ok || !data.success) {
+        throw new Error((data && data.error) || "Failed to analyze menu photos.");
       }
 
       const cats = Array.isArray(data.categories) ? data.categories : [];
@@ -6067,6 +6502,7 @@ if (analyzeMenuBtn) {
         importExtractedCard.style.display = "flex";
         importExtractedCard.scrollIntoView({ behavior: "smooth", block: "start" });
       }
+      if (importMenuView) importMenuView.classList.add("preview-active");
     } catch (err) {
       console.error("AI Analysis Error:", err);
       showImportStatus(err.message || "Failed to analyze menu images.", "error");
@@ -6291,6 +6727,7 @@ if (importClearBtn) {
       importSelectedFiles = [];
       renderSelectedPhotosUI();
       if (importExtractedCard) importExtractedCard.style.display = "none";
+      if (importMenuView) importMenuView.classList.remove("preview-active");
       hideImportStatus();
     }
   });
@@ -6299,7 +6736,9 @@ if (importClearBtn) {
 // Commit Import Action
 if (importConfirmBtn) {
   importConfirmBtn.addEventListener("click", async () => {
-    const selectedMode = document.querySelector('input[name="importMode"]:checked')?.value || "append";
+    const selectedMode = (currentImportType === "manual"
+      ? document.querySelector('input[name="importManualMode"]:checked')?.value
+      : document.querySelector('input[name="importMode"]:checked')?.value) || "append";
 
     let totalSelected = 0;
     extractedCategories.forEach(c => c.items.forEach(it => { if (it.selected) totalSelected++; }));
@@ -6342,6 +6781,7 @@ if (importConfirmBtn) {
       importSelectedFiles = [];
       renderSelectedPhotosUI();
       if (importExtractedCard) importExtractedCard.style.display = "none";
+      if (importMenuView) importMenuView.classList.remove("preview-active");
       hideImportStatus();
 
       // Refresh dashboard menu editor so user sees dishes immediately

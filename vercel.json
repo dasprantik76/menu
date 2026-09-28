@@ -5,6 +5,9 @@
     },
     "api/**/*.js": {
       "includeFiles": "{assets/**,api/_lib/**}"
+    },
+    "api/owner/extract-menu.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [

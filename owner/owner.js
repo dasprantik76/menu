@@ -6053,6 +6053,34 @@ function setupInstalledAppOpeners() {
   const chatgptBtn = document.getElementById("openChatGPTAppBtn");
   if (!geminiBtn && !chatgptBtn) return;
 
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (isAndroid) {
+    if (geminiBtn) {
+      geminiBtn.href = "intent://gemini.google.com/#Intent;scheme=https;package=com.google.android.apps.bard;end;";
+      geminiBtn.removeAttribute("target");
+    }
+    if (chatgptBtn) {
+      chatgptBtn.href = "intent://chatgpt.com/#Intent;scheme=https;package=com.openai.chatgpt;end;";
+      chatgptBtn.removeAttribute("target");
+    }
+    return;
+  }
+
+  if (isIOS) {
+    if (geminiBtn) {
+      geminiBtn.href = "googlegemini://";
+      geminiBtn.removeAttribute("target");
+    }
+    if (chatgptBtn) {
+      chatgptBtn.href = "chatgpt://";
+      chatgptBtn.removeAttribute("target");
+    }
+    return;
+  }
+
+  // Desktop: opens in new tab in browser
   if (geminiBtn) {
     geminiBtn.href = "https://gemini.google.com";
     geminiBtn.target = "_blank";

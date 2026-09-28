@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&display=swap');
 
 @font-face {
   font-family: 'Google Sans Medium';
@@ -5615,6 +5615,8 @@ input:checked + .slider:before {
 }
 
 .theme-mockup-topbar {
+  position: relative;
+  overflow: hidden;
   background-color: #991e2e;
   padding: 12px 16px;
   color: #ffffff;
@@ -5625,6 +5627,8 @@ input:checked + .slider:before {
 }
 
 .theme-mockup-restaurant-name {
+  position: relative;
+  z-index: 2;
   font-family: var(--preview-name-font, 'Lobster'), cursive, sans-serif;
   font-size: 1.25rem;
   color: var(--preview-name-color, #991e2e);
@@ -5637,6 +5641,20 @@ input:checked + .slider:before {
   padding: 2px 10px;
   box-sizing: border-box;
   max-width: 95%;
+}
+
+.theme-mockup-topbar .header-corner-ornament {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  width: auto;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  object-fit: contain;
+  object-position: right bottom;
+  opacity: 0.1;
 }
 
 .theme-mockup-body {

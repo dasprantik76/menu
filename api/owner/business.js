@@ -295,7 +295,7 @@ module.exports = async function handler(req, res) {
         safeUpdates.branding.hasNameStroke = hasStrokeVal;
       }
 
-      const ALLOWED_FONTS = ["Bebas Neue", "Lobster", "Google Sans", "Berkshire Swash", "Kaushan Script"];
+      const ALLOWED_FONTS = ["Bebas Neue", "Lobster", "Google Sans", "Berkshire Swash", "Kaushan Script", "DM Serif Display"];
       const fontVal = body.nameFont || (body.branding && body.branding.nameFont) || body.fontFamily || (body.branding && body.branding.fontFamily);
       if (fontVal && typeof fontVal === "string" && ALLOWED_FONTS.includes(fontVal.trim())) {
         if (!safeUpdates.branding) {

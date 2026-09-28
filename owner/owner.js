@@ -5302,7 +5302,8 @@ const THEME_FONTS = [
   { id: "Bebas Neue", name: "Bebas Neue", family: "'Bebas Neue', sans-serif" },
   { id: "Google Sans", name: "Google Sans", family: "'Google Sans', sans-serif" },
   { id: "Berkshire Swash", name: "Berkshire Swash", family: "'Berkshire Swash', cursive, serif" },
-  { id: "Kaushan Script", name: "Kaushan Script", family: "'Kaushan Script', cursive" }
+  { id: "Kaushan Script", name: "Kaushan Script", family: "'Kaushan Script', cursive" },
+  { id: "DM Serif Display", name: "DM Serif Display", family: "'DM Serif Display', serif" }
 ];
 
 let currentTopColor = "#991E2E";
@@ -5329,7 +5330,7 @@ function normalizeHexColor(val) {
   return "";
 }
 
-function applyBlackOverlay(hex, opacity = 0.35) {
+function applyBlackOverlay(hex, opacity = 0.25) {
   if (!hex || typeof hex !== "string") return hex;
   let clean = hex.replace("#", "").trim();
   if (clean.length === 3) {
@@ -5359,23 +5360,23 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
 
   if (source === "swatch") {
     isCustomNameColor = true;
-    currentNameColor = normName || applyBlackOverlay(currentTopColor, 0.35);
+    currentNameColor = normName || applyBlackOverlay(currentTopColor, 0.25);
   } else if (source === "nameNative" || source === "nameHex") {
     if (normName) {
       currentNameColor = normName;
       isCustomNameColor = true;
     }
   } else if (!isCustomNameColor && (source === "topNative" || source === "topHex")) {
-    currentNameColor = applyBlackOverlay(currentTopColor, 0.35);
+    currentNameColor = applyBlackOverlay(currentTopColor, 0.25);
   } else if (source === "all") {
     if (normName) {
       currentNameColor = normName;
     } else if (!isCustomNameColor) {
-      currentNameColor = applyBlackOverlay(currentTopColor, 0.35);
+      currentNameColor = applyBlackOverlay(currentTopColor, 0.25);
     }
   }
 
-  const darkenedTop = applyBlackOverlay(currentTopColor, 0.35);
+  const darkenedTop = applyBlackOverlay(currentTopColor, 0.25);
   const fontObj = THEME_FONTS.find(f => f.id === currentNameFont) || THEME_FONTS[0];
 
   // Live preview mockup updates
@@ -5387,7 +5388,7 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     themeMockupBizName.style.setProperty("--preview-name-color", currentNameColor);
 
     if (currentHasNameStroke) {
-      const strokeWidth = (currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans") ? "1.8px" : "2.2px";
+      const strokeWidth = (currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans" || currentNameFont === "DM Serif Display") ? "1.8px" : "2.2px";
       const strokeVal = `${strokeWidth} ${currentBgColor}`;
       themeMockupBizName.style.setProperty("-webkit-text-stroke", strokeVal, "important");
       themeMockupBizName.style.setProperty("-webkit-text-stroke-width", strokeWidth, "important");
@@ -5601,7 +5602,7 @@ function renderThemeColorsView() {
     savedNameColor = existingName;
     isCustomNameColor = true;
   } else {
-    savedNameColor = applyBlackOverlay(savedTopColor, 0.35);
+    savedNameColor = applyBlackOverlay(savedTopColor, 0.25);
     isCustomNameColor = false;
   }
   currentNameColor = savedNameColor;

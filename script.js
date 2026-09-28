@@ -1271,6 +1271,25 @@ function resolveActiveTransition() {
   isDraggingCategory = false;
 }
 
+// Helper to parse dish name: bracketed text with > 6 characters moves to next line
+function parseDishName(rawName) {
+  const blockNotes = [];
+  const parsedMain = (rawName || "").replace(/\(([^)]*)\)/g, (match, inner) => {
+    const trimmedInner = inner.trim();
+    if (trimmedInner.length > 6) {
+      blockNotes.push(`(${trimmedInner})`);
+      return '';
+    } else {
+      return `<span class="dish-note">(${trimmedInner})</span>`;
+    }
+  }).replace(/\s+/g, ' ').trim();
+
+  return {
+    mainNameHtml: parsedMain || rawName || "",
+    blockNotes: blockNotes
+  };
+}
+
 function populateCategoryBlock(block, index) {
   const currentCategory = MENU_DATA[index];
   if (!currentCategory) return;
@@ -1301,18 +1320,25 @@ function populateCategoryBlock(block, index) {
       row.className = `menu-row ${selectedDishes.has(dish.name) ? 'selected' : ''}`;
       row.dataset.dish = dish.name;
 
-      const formattedName = dish.name.replace(/(\([^)]+\))/g, '<span class="dish-note">$1</span>');
-      const formattedPrice = dish.price.replace(/(₹|Rs\.?)\s*/g, '').trim();
+      const { mainNameHtml, blockNotes } = parseDishName(dish.name);
+      const rawPriceNum = (dish.price || "").replace(/(₹|Rs\.?)\s*/g, '').trim();
+      const formattedPrice = rawPriceNum ? `<span class="rupee-symbol">₹</span>${rawPriceNum}` : '';
+      const blockNoteHtml = blockNotes.length > 0
+        ? `<div class="dish-note-block">${blockNotes.join(' ')}</div>`
+        : '';
 
       row.innerHTML = `
-        <span class="row-selector" aria-hidden="true">
-          <svg viewBox="0 0 16 16" fill="none" class="check-icon">
-            <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </span>
-        <span class="dish-name">${formattedName}</span>
-        <span class="dot-leader"></span>
-        <span class="dish-price">${formattedPrice}</span>
+        <div class="menu-row-main">
+          <span class="row-selector" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none" class="check-icon">
+              <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="dish-name">${mainNameHtml}</span>
+          <span class="dot-leader"></span>
+          <span class="dish-price">${formattedPrice}</span>
+        </div>
+        ${blockNoteHtml}
       `;
 
       row.addEventListener("click", () => {
@@ -1601,16 +1627,36 @@ function renderPlatterList() {
   });
 }
 
+// Modal History Management for Phone Back Navigation
+let activeModalState = null; // 'category' | 'platter' | null
+let isClosingModalViaHistory = false;
+
 // Platter Dialog Controls
 function openPlatter() {
   renderPlatterList();
   platterSheet.classList.add("active");
   platterBackdrop.classList.add("active");
+  if (activeModalState !== "platter") {
+    activeModalState = "platter";
+    try {
+      history.pushState({ menuModal: "platter" }, "");
+    } catch (_) {}
+  }
 }
 
-function closePlatter() {
+function closePlatter(syncHistory) {
+  const shouldSyncHistory = syncHistory !== false;
   platterSheet.classList.remove("active");
   platterBackdrop.classList.remove("active");
+  if (shouldSyncHistory && activeModalState === "platter") {
+    activeModalState = null;
+    isClosingModalViaHistory = true;
+    try {
+      history.back();
+    } catch (_) {}
+  } else if (!shouldSyncHistory && activeModalState === "platter") {
+    activeModalState = null;
+  }
 }
 
 // Clear all items from platter
@@ -1791,12 +1837,57 @@ function openSheet() {
   if (categorySheetList && categorySheetList.scrollTop <= 8) {
     categorySheetList.classList.remove("has-scrolled");
   }
+  if (activeModalState !== "category") {
+    activeModalState = "category";
+    try {
+      history.pushState({ menuModal: "category" }, "");
+    } catch (_) {}
+  }
 }
 
-function closeSheet() {
+function closeSheet(syncHistory) {
+  const shouldSyncHistory = syncHistory !== false;
   categorySheet.classList.remove("active");
   modalBackdrop.classList.remove("active");
+  if (shouldSyncHistory && activeModalState === "category") {
+    activeModalState = null;
+    isClosingModalViaHistory = true;
+    try {
+      history.back();
+    } catch (_) {}
+  } else if (!shouldSyncHistory && activeModalState === "category") {
+    activeModalState = null;
+  }
 }
+
+// Intercept Phone / Browser Back Navigation to minimize open dialogs first
+window.addEventListener("popstate", (e) => {
+  if (isClosingModalViaHistory) {
+    isClosingModalViaHistory = false;
+    return;
+  }
+  // If the category sheet is open, minimize it first
+  if (categorySheet && categorySheet.classList.contains("active")) {
+    closeSheet(false);
+    return;
+  }
+  // If the platter sheet is open, minimize it first
+  if (platterSheet && platterSheet.classList.contains("active")) {
+    closePlatter(false);
+    return;
+  }
+});
+
+// Escape key to dismiss dialogs
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (categorySheet && categorySheet.classList.contains("active")) {
+      closeSheet();
+    } else if (platterSheet && platterSheet.classList.contains("active")) {
+      closePlatter();
+    }
+  }
+});
 
 // Category Sheet Event Listeners
 browseBtn.addEventListener("click", openSheet);
@@ -1874,7 +1965,7 @@ if (document.fonts && document.fonts.ready) {
   });
 }
 
-function applyBlackOverlay(hex, opacity = 0.35) {
+function applyBlackOverlay(hex, opacity = 0.25) {
   if (!hex || typeof hex !== "string") return hex;
   let clean = hex.replace("#", "").trim();
   if (clean.length === 3) {
@@ -1924,7 +2015,8 @@ function updateSplashBranding(restaurant) {
     "Bebas Neue": "'Bebas Neue', sans-serif",
     "Google Sans": "'Google Sans', sans-serif",
     "Berkshire Swash": "'Berkshire Swash', cursive, serif",
-    "Kaushan Script": "'Kaushan Script', cursive"
+    "Kaushan Script": "'Kaushan Script', cursive",
+    "DM Serif Display": "'DM Serif Display', serif"
   };
   const resolvedFont = fontMap[nameFont] || `'${nameFont}', cursive, sans-serif`;
 
@@ -2051,7 +2143,7 @@ function updateRestaurantBranding(restaurant) {
     if (restaurant.branding.accentColor) {
       const brandColor = restaurant.branding.accentColor;
       document.documentElement.style.setProperty("--brand-color", brandColor);
-      const darkenedBrand = applyBlackOverlay(brandColor, 0.35);
+      const darkenedBrand = applyBlackOverlay(brandColor, 0.25);
       document.documentElement.style.setProperty("--theme-darkened-brand", darkenedBrand);
       if (stickyHeader) {
         stickyHeader.style.backgroundColor = brandColor;
@@ -2082,7 +2174,8 @@ function updateRestaurantBranding(restaurant) {
         "Bebas Neue": "'Bebas Neue', sans-serif",
         "Google Sans": "'Google Sans', sans-serif",
         "Berkshire Swash": "'Berkshire Swash', cursive, serif",
-        "Kaushan Script": "'Kaushan Script', cursive"
+        "Kaushan Script": "'Kaushan Script', cursive",
+        "DM Serif Display": "'DM Serif Display', serif"
       };
       const resolvedFont = fontMap[restaurant.branding.nameFont] || `'${restaurant.branding.nameFont}', cursive, sans-serif`;
       document.documentElement.style.setProperty("--name-font", resolvedFont);

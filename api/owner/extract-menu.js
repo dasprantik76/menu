@@ -6,7 +6,7 @@ const { requireAuth } = require("../_lib/auth");
 /**
  * AI Menu Photo Extraction API
  * POST /api/owner/extract-menu
- * Accepts base64 images and uses Gemini 3.8 Flash Vision to extract categories and dishes.
+ * Accepts base64 images and uses Gemini 3.1 Flash-Lite to extract categories and dishes.
  */
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -110,7 +110,8 @@ Extraction Guidelines:
 
     parts.push({ text: promptText });
 
-    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+    const model = process.env.GEMINI_MODEL || "gemini-3.1-flash-lite";
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
     const geminiPayload = {
       contents: [{ parts }],

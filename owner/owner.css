@@ -4908,6 +4908,8 @@ input:checked + .slider:before {
 
   .import-body-content {
     padding-top: 14px;
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
   .dish-search-input {
@@ -6258,9 +6260,9 @@ input:checked + .slider:before {
 
 .import-body-content {
   width: 100%;
-  max-width: 860px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: 16px 0 100px;
+  padding: 16px 28px 100px;
   box-sizing: border-box;
 }
 

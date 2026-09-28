@@ -6059,26 +6059,26 @@ function setupInstalledAppOpeners() {
   const GEMINI_WEB = "https://gemini.google.com";
   const CHATGPT_WEB = "https://chatgpt.com";
 
-  // Explicit Android OS Launcher Intents targeting installed packages directly
-  const GEMINI_ANDROID_INTENT = "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.google.android.apps.bard;S.browser_fallback_url=https%3A%2F%2Fgemini.google.com;end;";
-  const CHATGPT_ANDROID_INTENT = "intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=com.openai.chatgpt;S.browser_fallback_url=https%3A%2F%2Fchatgpt.com;end;";
+  // Standard Chrome for Android Intent URIs - must be invoked via direct native <a> navigation without e.preventDefault()
+  const GEMINI_ANDROID_INTENT = "intent://gemini.google.com/#Intent;action=android.intent.action.VIEW;scheme=https;package=com.google.android.apps.bard;S.browser_fallback_url=https%3A%2F%2Fgemini.google.com;end;";
+  const CHATGPT_ANDROID_INTENT = "intent://chatgpt.com/#Intent;action=android.intent.action.VIEW;scheme=https;package=com.openai.chatgpt;S.browser_fallback_url=https%3A%2F%2Fchatgpt.com;end;";
 
-  function launchPhoneApp(appName, e) {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+  if (isAndroid) {
+    if (geminiBtn) {
+      geminiBtn.href = GEMINI_ANDROID_INTENT;
+      geminiBtn.removeAttribute("target");
     }
-
-    const webUrl = appName === "gemini" ? GEMINI_WEB : CHATGPT_WEB;
-
-    if (isAndroid) {
-      const intentUrl = appName === "gemini" ? GEMINI_ANDROID_INTENT : CHATGPT_ANDROID_INTENT;
-      window.location.href = intentUrl;
-      return;
+    if (chatgptBtn) {
+      chatgptBtn.href = CHATGPT_ANDROID_INTENT;
+      chatgptBtn.removeAttribute("target");
     }
+    // No click listener interception on Android: native anchor navigation allows Android OS Package Manager to launch app
+    return;
+  }
 
-    if (isIOS) {
-      const customScheme = appName === "gemini" ? "googlegemini://" : "chatgpt://";
+  if (isIOS) {
+    function launchIosApp(customScheme, fallbackUrl, e) {
+      if (e) e.preventDefault();
       const start = Date.now();
       let appOpened = false;
 
@@ -6090,25 +6090,34 @@ function setupInstalledAppOpeners() {
       setTimeout(() => {
         document.removeEventListener("visibilitychange", handleVisibilityChange);
         if (!appOpened && !document.hidden && Date.now() - start < 2200) {
-          window.open(webUrl, "_blank", "noopener,noreferrer");
+          window.open(fallbackUrl, "_blank", "noopener,noreferrer");
         }
       }, 1000);
 
       window.location.href = customScheme;
-      return;
     }
 
-    // Desktop: default link opens in a new tab
-    window.open(webUrl, "_blank", "noopener,noreferrer");
+    if (geminiBtn) {
+      geminiBtn.href = "googlegemini://";
+      geminiBtn.addEventListener("click", (e) => launchIosApp("googlegemini://", GEMINI_WEB, e));
+    }
+    if (chatgptBtn) {
+      chatgptBtn.href = "chatgpt://";
+      chatgptBtn.addEventListener("click", (e) => launchIosApp("chatgpt://", CHATGPT_WEB, e));
+    }
+    return;
   }
 
+  // Desktop: opens in new tab
   if (geminiBtn) {
-    if (isAndroid) geminiBtn.href = GEMINI_ANDROID_INTENT;
-    geminiBtn.addEventListener("click", (e) => launchPhoneApp("gemini", e));
+    geminiBtn.href = GEMINI_WEB;
+    geminiBtn.target = "_blank";
+    geminiBtn.rel = "noopener noreferrer";
   }
   if (chatgptBtn) {
-    if (isAndroid) chatgptBtn.href = CHATGPT_ANDROID_INTENT;
-    chatgptBtn.addEventListener("click", (e) => launchPhoneApp("chatgpt", e));
+    chatgptBtn.href = CHATGPT_WEB;
+    chatgptBtn.target = "_blank";
+    chatgptBtn.rel = "noopener noreferrer";
   }
 }
 

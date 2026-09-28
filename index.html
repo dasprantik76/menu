@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=330">
+  <link rel="stylesheet" href="/owner/owner.css?v=335">
   <script>
     (function() {
       try {
@@ -742,15 +742,9 @@
       <!-- 1. Manual Import Container Card -->
       <div class="import-card" id="importManualCard">
         <div class="import-manual-header">
-          <div class="import-step-title">Step 1 : <span class="import-step-desc">Copy the prompt</span></div>
+          <div class="import-step-title"><span class="import-step-prefix">Step 1 :</span> <span class="import-step-desc">Copy the prompt</span></div>
           <div class="import-prompt-copy-row">
             <div class="import-prompt-box" id="importPromptBox" title="Click to copy prompt">
-              <svg class="import-prompt-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-              </svg>
               <div class="import-prompt-text">Analyze the uploaded menu image(s) and extract all menu items. Return ONLY the extracted menu text in exactly this format: [CATEGORY NAME] Item Name (Sub Text) - Price ...'</div>
             </div>
             <button type="button" class="import-copy-prompt-btn" id="copyPromptBtn" title="Copy full prompt to clipboard" aria-label="Copy prompt">
@@ -764,7 +758,7 @@
         </div>
 
         <div class="import-step2-header">
-          <div class="import-step-title">Step 2 : <span class="import-step-desc">Open any app</span></div>
+          <div class="import-step-title"><span class="import-step-prefix">Step 2 :</span> <span class="import-step-desc">Open any AI app & upload your menu card images with the copied prompt</span></div>
           <div class="import-apps-box">
             <a href="https://gemini.google.com" id="openGeminiAppBtn" class="import-app-item" title="Open Google Gemini">
               <div class="import-app-squircle">
@@ -792,10 +786,20 @@
               <span class="import-app-name">ChatGPT</span>
             </a>
           </div>
+          <script>
+            (function() {
+              if (/Android/i.test(navigator.userAgent)) {
+                var g = document.getElementById("openGeminiAppBtn");
+                var c = document.getElementById("openChatGPTAppBtn");
+                if (g) g.href = "intent://gemini.google.com/#Intent;action=android.intent.action.VIEW;scheme=https;package=com.google.android.apps.bard;S.browser_fallback_url=https%3A%2F%2Fgemini.google.com;end;";
+                if (c) c.href = "intent://chatgpt.com/#Intent;action=android.intent.action.VIEW;scheme=https;package=com.openai.chatgpt;S.browser_fallback_url=https%3A%2F%2Fchatgpt.com;end;";
+              }
+            })();
+          </script>
         </div>
 
         <div class="import-manual-textarea-wrap">
-          <div class="import-step-title">Step 3 : <span class="import-step-desc">Paste your text result in the box</span></div>
+          <div class="import-step-title"><span class="import-step-prefix">Step 3 :</span> <span class="import-step-desc">Paste your AI text result in the box</span></div>
           <textarea id="manualImportTextarea" class="import-manual-textarea" placeholder="Paste your AI texts here or add text manually." rows="5"></textarea>
         </div>
 
@@ -806,15 +810,13 @@
             <label class="import-radio-card active" id="importManualModeAppendLabel">
               <input type="radio" name="importManualMode" value="append" checked>
               <div class="import-radio-text">
-                <span class="import-radio-title">Append to Existing Menu</span>
-                <span class="import-radio-sub">Adds items and merges with your existing categories.</span>
+                <span class="import-radio-title">Add with Existing Menu</span>
               </div>
             </label>
             <label class="import-radio-card" id="importManualModeReplaceLabel">
               <input type="radio" name="importManualMode" value="replace">
               <div class="import-radio-text">
                 <span class="import-radio-title">Replace Entire Menu</span>
-                <span class="import-radio-sub">Clears current menu items and creates a fresh menu from this list.</span>
               </div>
             </label>
           </div>
@@ -875,15 +877,13 @@
             <label class="import-radio-card active" id="importModeAppendLabel">
               <input type="radio" name="importMode" value="append" checked>
               <div class="import-radio-text">
-                <span class="import-radio-title">Append to Existing Menu</span>
-                <span class="import-radio-sub">Adds extracted dishes and merges with your existing categories.</span>
+                <span class="import-radio-title">Add with Existing Menu</span>
               </div>
             </label>
             <label class="import-radio-card" id="importModeReplaceLabel">
               <input type="radio" name="importMode" value="replace">
               <div class="import-radio-text">
                 <span class="import-radio-title">Replace Entire Menu</span>
-                <span class="import-radio-sub">Clears current menu items and creates a fresh menu from photos.</span>
               </div>
             </label>
           </div>
@@ -1200,6 +1200,6 @@
   </main>
 
   <script src="/owner/qrcode.min.js"></script>
-  <script src="/owner/owner.js?v=185"></script>
+  <script src="/owner/owner.js?v=186"></script>
 </body>
 </html>

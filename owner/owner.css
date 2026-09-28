@@ -4906,12 +4906,6 @@ input:checked + .slider:before {
     font-size: 1.05rem;
   }
 
-  .import-body-content {
-    padding-top: 14px;
-    padding-left: 14px;
-    padding-right: 14px;
-  }
-
   .dish-search-input {
     font-size: 0.88rem;
     padding: 0 42px 0 44px;
@@ -6262,8 +6256,14 @@ input:checked + .slider:before {
   width: 100%;
   max-width: 560px;
   margin: 0 auto;
-  padding: 16px 20px 100px;
+  padding: 24px 20px max(112px, calc(90px + env(safe-area-inset-bottom, 16px)));
   box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .import-body-content {
+    padding: 16px 14px max(112px, calc(90px + env(safe-area-inset-bottom, 16px)));
+  }
 }
 
 .import-menu-header {

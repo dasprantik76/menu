@@ -5053,6 +5053,10 @@ if (brandingForm) {
         const bizNameEl = document.getElementById("bizNameDisplay");
         if (bizNameEl) bizNameEl.textContent = currentBusiness.name;
 
+        if (typeof updateQrStandPanels === "function") {
+          updateQrStandPanels();
+        }
+
         if (brandingBtnLabel) {
           brandingBtnLabel.textContent = "Saved ✓";
           setTimeout(() => {
@@ -5166,6 +5170,13 @@ function isColorDark(hex) {
   return yiq < 140;
 }
 
+function getBusinessLogoUrl() {
+  const rawLogo = (currentBusiness && currentBusiness.branding && currentBusiness.branding.logoUrl) ||
+                  (currentBusiness && currentBusiness.logoUrl) ||
+                  (typeof brandingUploadedLogoData === "string" ? brandingUploadedLogoData : "") || "";
+  return (typeof rawLogo === "string") ? rawLogo.trim() : "";
+}
+
 function updateQrStandPanels() {
   const mockup = document.getElementById("qrStandMockup");
   if (!mockup) return;
@@ -5226,6 +5237,51 @@ function updateQrStandPanels() {
     qrBizName.style.setProperty("paint-order", "stroke fill", "important");
     qrBizName.style.setProperty("font-weight", (currentNameFont === "Google Sans") ? "700" : "400");
   }
+
+  // Prioritise business logo over business name (matching public menu page top bar)
+  const logoUrl = getBusinessLogoUrl();
+  const qrStandLogo = document.getElementById("qrStandLogo");
+  if (logoUrl) {
+    if (qrStandLogo) {
+      qrStandLogo.src = logoUrl;
+      qrStandLogo.alt = (currentBusiness && currentBusiness.name) ? `${currentBusiness.name} Logo` : "Business Logo";
+      qrStandLogo.style.display = "block";
+      qrStandLogo.onerror = function() {
+        qrStandLogo.style.display = "none";
+        if (qrBizName) qrBizName.style.display = "block";
+      };
+    }
+    if (qrBizName) {
+      qrBizName.style.display = "none";
+    }
+  } else {
+    if (qrStandLogo) {
+      qrStandLogo.style.display = "none";
+      qrStandLogo.src = "";
+    }
+    if (qrBizName) {
+      qrBizName.style.display = "block";
+    }
+  }
+
+  // Keep QR code color synchronized with the bottom panel color
+  if (qrCodeGraphic && currentBusiness && currentBusiness.slug) {
+    if (qrCodeGraphic._currentColor !== topBarColor) {
+      qrCodeGraphic._currentColor = topBarColor;
+      const fullUrl = `${window.location.origin}/r/${currentBusiness.slug}`;
+      qrCodeGraphic.innerHTML = "";
+      if (typeof QRCode !== "undefined") {
+        qrCodeInstance = new QRCode(qrCodeGraphic, {
+          text: fullUrl,
+          width: 260,
+          height: 260,
+          colorDark: topBarColor,
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      }
+    }
+  }
 }
 
 window.addEventListener("resize", () => {
@@ -5256,16 +5312,19 @@ function renderQrCodeView() {
     qrCodeOpenLink.href = fullUrl;
   }
 
+  const topBarColor = (currentTopColor || (currentBusiness && currentBusiness.branding && currentBusiness.branding.accentColor) || "#991E2E");
+
   qrCodeGraphic.innerHTML = "";
   if (typeof QRCode !== "undefined") {
     qrCodeInstance = new QRCode(qrCodeGraphic, {
       text: fullUrl,
       width: 260,
       height: 260,
-      colorDark: "#111827",
+      colorDark: topBarColor,
       colorLight: "#ffffff",
       correctLevel: QRCode.CorrectLevel.H
     });
+    qrCodeGraphic._currentColor = topBarColor;
   } else {
     qrCodeGraphic.innerHTML = '<p class="qrcode-loading-text">Generating QR Code...</p>';
   }
@@ -5325,6 +5384,7 @@ async function downloadQrCode() {
     const titleEl = mockup ? mockup.querySelector(".qr-stand-title") : null;
     const subtitleEl = mockup ? mockup.querySelector(".qr-stand-subtitle") : null;
     const bizNameEl = mockup ? document.getElementById("qrStandBizName") : null;
+    const qrStandLogoEl = mockup ? document.getElementById("qrStandLogo") : null;
     const qrBoxEl = mockup ? mockup.querySelector(".qr-stand-qr-box") : null;
     const qrGraphicEl = document.getElementById("qrCodeGraphic");
 
@@ -5437,8 +5497,8 @@ async function downloadQrCode() {
 
     // QR Box Border
     drawCanvasRoundRect(ctx, qrBoxX, qrBoxY, qrBoxW, qrBoxH, qrBoxRadius);
-    ctx.strokeStyle = "rgba(0, 0, 0, 0.06)";
-    ctx.lineWidth = Math.max(2, Math.round(1 * scale));
+    ctx.strokeStyle = "#9ca3af";
+    ctx.lineWidth = Math.max(3, Math.round(2 * scale));
     ctx.stroke();
 
     // 5. Render Crisp High-Resolution QR Barcode
@@ -5459,7 +5519,7 @@ async function downloadQrCode() {
           text: fullUrl,
           width: qrDimension,
           height: qrDimension,
-          colorDark: "#111827",
+          colorDark: topBarColor,
           colorLight: "#ffffff",
           correctLevel: QRCode.CorrectLevel.H
         });
@@ -5478,44 +5538,110 @@ async function downloadQrCode() {
       }
     }
 
-    // 6. Footer: Business Name
-    const bizName = (currentBusiness && currentBusiness.name) ? currentBusiness.name : "Royal Food Corner";
-    const fontObj = (typeof THEME_FONTS !== "undefined" ? THEME_FONTS.find(f => f.id === currentNameFont) : null) || { family: "'Lobster', cursive, sans-serif" };
-    const nameFontFamily = fontObj ? fontObj.family : "'Lobster', cursive, sans-serif";
-    const nameColor = currentNameColor || "#63141E";
-    const hasStroke = (typeof currentHasNameStroke !== "undefined") ? currentHasNameStroke : true;
-
-    let bizCenterY = splitY + (qrBoxH / 2) + Math.round((cardH - (splitY + (qrBoxH / 2))) / 2);
-    if (mockupRect && bizNameEl) {
-      const bRect = bizNameEl.getBoundingClientRect();
-      if (bRect.height > 0) {
-        bizCenterY = Math.round(((bRect.top + bRect.height / 2) - mockupRect.top) * scale);
+    // 6. Footer: Prioritise Business Logo over Business Name (same as public menu top bar & mockup)
+    const logoUrl = getBusinessLogoUrl();
+    const qrBoxBottom = qrBoxY + qrBoxH;
+    let footerCenterY = qrBoxBottom + Math.round((cardH - qrBoxBottom) / 2);
+    if (mockupRect) {
+      const activeFooterEl = (logoUrl && qrStandLogoEl && qrStandLogoEl.style.display !== "none") ? qrStandLogoEl : bizNameEl;
+      if (activeFooterEl) {
+        const bRect = activeFooterEl.getBoundingClientRect();
+        if (bRect.height > 0) {
+          footerCenterY = Math.round(((bRect.top + bRect.height / 2) - mockupRect.top) * scale);
+        }
       }
     }
 
-    ctx.font = `${(currentNameFont === "Google Sans") ? "700" : "400"} ${bizFontSize}px ${nameFontFamily}`;
-    const bizMeasure = ctx.measureText(bizName).width;
-    if (bizMeasure > (cardW - 140)) {
-      bizFontSize = Math.floor(bizFontSize * ((cardW - 140) / bizMeasure));
+    let logoDrawn = false;
+    if (logoUrl) {
+      try {
+        const loadedImg = await new Promise((resolve) => {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          let done = false;
+          const finish = (res) => {
+            if (!done) {
+              done = true;
+              resolve(res);
+            }
+          };
+          img.onload = () => finish(img);
+          img.onerror = () => finish(null);
+          img.src = logoUrl;
+          if (img.complete && img.naturalWidth) finish(img);
+          setTimeout(() => finish(null), 3000);
+        });
+
+        if (loadedImg && loadedImg.naturalWidth > 0 && loadedImg.naturalHeight > 0) {
+          let canExport = true;
+          try {
+            const probe = document.createElement("canvas");
+            probe.width = 1;
+            probe.height = 1;
+            const pCtx = probe.getContext("2d");
+            pCtx.drawImage(loadedImg, 0, 0, 1, 1);
+            probe.toDataURL();
+          } catch (corsErr) {
+            canExport = false;
+          }
+
+          if (canExport) {
+            const maxLogoW = Math.round(cardW * 0.74);
+            const footerAvailH = Math.max(60, cardH - qrBoxBottom - 56);
+            const maxLogoH = Math.round(footerAvailH * 0.68);
+
+            const fitRatio = Math.min(maxLogoW / loadedImg.naturalWidth, maxLogoH / loadedImg.naturalHeight);
+            const drawW = Math.round(loadedImg.naturalWidth * fitRatio);
+            const drawH = Math.round(loadedImg.naturalHeight * fitRatio);
+
+            const logoX = Math.round((cardW - drawW) / 2);
+            const logoY = Math.round(footerCenterY - (drawH / 2));
+
+            ctx.save();
+            ctx.shadowColor = "rgba(0, 0, 0, 0.16)";
+            ctx.shadowBlur = Math.round(6 * scale);
+            ctx.shadowOffsetY = Math.round(2 * scale);
+            ctx.drawImage(loadedImg, logoX, logoY, drawW, drawH);
+            ctx.restore();
+            logoDrawn = true;
+          }
+        }
+      } catch (err) {
+        console.warn("Logo export skipped, falling back to name:", err);
+      }
+    }
+
+    if (!logoDrawn) {
+      const bizName = (currentBusiness && currentBusiness.name) ? currentBusiness.name : "Royal Food Corner";
+      const fontObj = (typeof THEME_FONTS !== "undefined" ? THEME_FONTS.find(f => f.id === currentNameFont) : null) || { family: "'Lobster', cursive, sans-serif" };
+      const nameFontFamily = fontObj ? fontObj.family : "'Lobster', cursive, sans-serif";
+      const nameColor = currentNameColor || "#63141E";
+      const hasStroke = (typeof currentHasNameStroke !== "undefined") ? currentHasNameStroke : true;
+
       ctx.font = `${(currentNameFont === "Google Sans") ? "700" : "400"} ${bizFontSize}px ${nameFontFamily}`;
-    }
+      const bizMeasure = ctx.measureText(bizName).width;
+      if (bizMeasure > (cardW - 140)) {
+        bizFontSize = Math.floor(bizFontSize * ((cardW - 140) / bizMeasure));
+        ctx.font = `${(currentNameFont === "Google Sans") ? "700" : "400"} ${bizFontSize}px ${nameFontFamily}`;
+      }
 
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    if ("letterSpacing" in ctx) {
-      ctx.letterSpacing = `${(0.5 * scale).toFixed(1)}px`;
-    }
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      if ("letterSpacing" in ctx) {
+        ctx.letterSpacing = `${(0.5 * scale).toFixed(1)}px`;
+      }
 
-    if (hasStroke) {
-      const strokeWidth = ((currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans" || currentNameFont === "DM Serif Display") ? 1.8 : 2.2) * scale;
-      ctx.strokeStyle = menuBgColor;
-      ctx.lineWidth = strokeWidth;
-      ctx.lineJoin = "round";
-      ctx.miterLimit = 2;
-      ctx.strokeText(bizName, cardW / 2, bizCenterY);
+      if (hasStroke) {
+        const strokeWidth = ((currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans" || currentNameFont === "DM Serif Display") ? 1.8 : 2.2) * scale;
+        ctx.strokeStyle = menuBgColor;
+        ctx.lineWidth = strokeWidth;
+        ctx.lineJoin = "round";
+        ctx.miterLimit = 2;
+        ctx.strokeText(bizName, cardW / 2, footerCenterY);
+      }
+      ctx.fillStyle = nameColor;
+      ctx.fillText(bizName, cardW / 2, footerCenterY);
     }
-    ctx.fillStyle = nameColor;
-    ctx.fillText(bizName, cardW / 2, bizCenterY);
 
     // 7. Export High-Quality JPG
     const dataUrl = exportCanvas.toDataURL("image/jpeg", 0.96);

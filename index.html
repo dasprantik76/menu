@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Roboto:wght@400;500;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=337">
+  <link rel="stylesheet" href="/owner/owner.css?v=373">
   <script>
     (function() {
       try {
@@ -213,7 +213,7 @@
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span>Import Menu</span>
+          <span>Import Menu - <span class="nav-ai-text">AI</span></span>
         </a>
         <a href="#branding" class="drawer-nav-item" id="drawerBrandingLink">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -742,40 +742,64 @@
       <!-- 1. Manual Import Container Card -->
       <div class="import-card" id="importManualCard">
         <div class="import-manual-header">
-          <div class="import-step-title"><span class="import-step-prefix">Step 1 :</span> <span class="import-step-desc">Copy the prompt</span></div>
+          <div class="import-step-title"><span class="import-step-prefix"><span class="import-step-dot">•</span>Step 1 :</span> <span class="import-step-desc">Copy the prompt</span></div>
           <div class="import-prompt-copy-row">
             <div class="import-prompt-box" id="importPromptBox" title="Click to copy prompt">
               <div class="import-prompt-text">Analyze the uploaded menu image(s) and extract all menu items. Return ONLY the extracted menu text in exactly this format: [CATEGORY NAME] Item Name (Sub Text) - Price ...'</div>
+              <button type="button" class="import-copy-prompt-btn" id="copyPromptBtn" title="Copy full prompt to clipboard" aria-label="Copy prompt">
+                <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+                </svg>
+                <span class="copy-btn-text">Copy</span>
+              </button>
             </div>
-            <button type="button" class="import-copy-prompt-btn" id="copyPromptBtn" title="Copy full prompt to clipboard" aria-label="Copy prompt">
-              <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-              </svg>
-              <span class="copy-btn-text">Copy</span>
-            </button>
           </div>
         </div>
 
         <div class="import-step2-header">
-          <div class="import-step-title"><span class="import-step-prefix">Step 2 :</span> <span class="import-step-desc">Open any AI app & upload your menu card images with the copied prompt</span></div>
+          <div class="import-step-title"><span class="import-step-prefix"><span class="import-step-dot">•</span>Step 2 :</span> <span class="import-step-desc">Open any AI app & upload your menu card images with the copied prompt</span></div>
           <div class="import-apps-box">
             <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" id="openGeminiAppBtn" class="import-app-item" title="Open Google Gemini">
               <div class="import-app-squircle">
-                <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+                <svg width="34" height="34" viewBox="0 0 65 65" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <mask id="gemini_mask" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="65" height="65">
+                    <path d="M32.447 0c.68 0 1.273.465 1.439 1.125a38.904 38.904 0 001.999 5.905c2.152 5 5.105 9.376 8.854 13.125 3.751 3.75 8.126 6.703 13.125 8.855a38.98 38.98 0 005.906 1.999c.66.166 1.124.758 1.124 1.438 0 .68-.464 1.273-1.125 1.439a38.902 38.902 0 00-5.905 1.999c-5 2.152-9.375 5.105-13.125 8.854-3.749 3.751-6.702 8.126-8.854 13.125a38.973 38.973 0 00-2 5.906 1.485 1.485 0 01-1.438 1.124c-.68 0-1.272-.464-1.438-1.125a38.913 38.913 0 00-2-5.905c-2.151-5-5.103-9.375-8.854-13.125-3.75-3.749-8.125-6.702-13.125-8.854a38.973 38.973 0 00-5.905-2A1.485 1.485 0 010 32.448c0-.68.465-1.272 1.125-1.438a38.903 38.903 0 005.905-2c5-2.151 9.376-5.104 13.125-8.854 3.75-3.749 6.703-8.125 8.855-13.125a38.972 38.972 0 001.999-5.905A1.485 1.485 0 0132.447 0z" fill="#000"/>
+                    <path d="M32.447 0c.68 0 1.273.465 1.439 1.125a38.904 38.904 0 001.999 5.905c2.152 5 5.105 9.376 8.854 13.125 3.751 3.75 8.126 6.703 13.125 8.855a38.98 38.98 0 005.906 1.999c.66.166 1.124.758 1.124 1.438 0 .68-.464 1.273-1.125 1.439a38.902 38.902 0 00-5.905 1.999c-5 2.152-9.375 5.105-13.125 8.854-3.749 3.751-6.702 8.126-8.854 13.125a38.973 38.973 0 00-2 5.906 1.485 1.485 0 01-1.438 1.124c-.68 0-1.272-.464-1.438-1.125a38.913 38.913 0 00-2-5.905c-2.151-5-5.103-9.375-8.854-13.125-3.75-3.749-8.125-6.702-13.125-8.854a38.973 38.973 0 00-5.905-2A1.485 1.485 0 010 32.448c0-.68.465-1.272 1.125-1.438a38.903 38.903 0 005.905-2c5-2.151 9.376-5.104 13.125-8.854 3.75-3.749 6.703-8.125 8.855-13.125a38.972 38.972 0 001.999-5.905A1.485 1.485 0 0132.447 0z" fill="url(#gemini_linear)"/>
+                  </mask>
+                  <g mask="url(#gemini_mask)">
+                    <g filter="url(#gemini_f0)"><path d="M-5.859 50.734c7.498 2.663 16.116-2.33 19.249-11.152 3.133-8.821-.406-18.131-7.904-20.794-7.498-2.663-16.116 2.33-19.25 11.151-3.132 8.822.407 18.132 7.905 20.795z" fill="#FFE432"/></g>
+                    <g filter="url(#gemini_f1)"><path d="M27.433 21.649c10.3 0 18.651-8.535 18.651-19.062 0-10.528-8.35-19.062-18.651-19.062S8.78-7.94 8.78 2.587c0 10.527 8.35 19.062 18.652 19.062z" fill="#FC413D"/></g>
+                    <g filter="url(#gemini_f2)"><path d="M20.184 82.608c10.753-.525 18.918-12.244 18.237-26.174-.68-13.93-9.95-24.797-20.703-24.271C6.965 32.689-1.2 44.407-.519 58.337c.681 13.93 9.95 24.797 20.703 24.271z" fill="#00B95C"/></g>
+                    <g filter="url(#gemini_f3)"><path d="M20.184 82.608c10.753-.525 18.918-12.244 18.237-26.174-.68-13.93-9.95-24.797-20.703-24.271C6.965 32.689-1.2 44.407-.519 58.337c.681 13.93 9.95 24.797 20.703 24.271z" fill="#00B95C"/></g>
+                    <g filter="url(#gemini_f4)"><path d="M30.954 74.181c9.014-5.485 11.427-17.976 5.389-27.9-6.038-9.925-18.241-13.524-27.256-8.04-9.015 5.486-11.428 17.977-5.39 27.902 6.04 9.924 18.242 13.523 27.257 8.038z" fill="#00B95C"/></g>
+                    <g filter="url(#gemini_f5)"><path d="M67.391 42.993c10.132 0 18.346-7.91 18.346-17.666 0-9.757-8.214-17.667-18.346-17.667s-18.346 7.91-18.346 17.667c0 9.757 8.214 17.666 18.346 17.666z" fill="#3186FF"/></g>
+                    <g filter="url(#gemini_f6)"><path d="M-13.065 40.944c9.33 7.094 22.959 4.869 30.442-4.972 7.483-9.84 5.987-23.569-3.343-30.663C4.704-1.786-8.924.439-16.408 10.28c-7.483 9.84-5.986 23.57 3.343 30.664z" fill="#FBBC04"/></g>
+                    <g filter="url(#gemini_f7)"><path d="M34.74 51.43c11.135 7.656 25.896 5.524 32.968-4.764 7.073-10.287 3.779-24.832-7.357-32.488C49.215 6.52 34.455 8.654 27.382 18.94c-7.072 10.288-3.779 24.833 7.357 32.49z" fill="#3186FF"/></g>
+                    <g filter="url(#gemini_f8)"><path d="M54.984-2.336c2.833 3.852-.808 11.34-8.131 16.727-7.324 5.387-15.557 6.631-18.39 2.78-2.833-3.853.807-11.342 8.13-16.728 7.324-5.387 15.558-6.631 18.39-2.78z" fill="#749BFF"/></g>
+                    <g filter="url(#gemini_f9)"><path d="M31.727 16.104C43.053 5.598 46.94-8.626 40.41-15.666c-6.53-7.04-21.006-4.232-32.332 6.274s-15.214 24.73-8.683 31.77c6.53 7.04 21.006 4.232 32.332-6.274z" fill="#FC413D"/></g>
+                    <g filter="url(#gemini_f10)"><path d="M8.51 53.838c6.732 4.818 14.46 5.55 17.262 1.636 2.802-3.915-.384-10.994-7.116-15.812-6.731-4.818-14.46-5.55-17.261-1.636-2.802 3.915.383 10.994 7.115 15.812z" fill="#FFEE48"/></g>
+                  </g>
                   <defs>
-                    <linearGradient id="geminiStarGrad" x1="10%" y1="90%" x2="90%" y2="10%">
-                      <stop offset="0%" stop-color="#facc15" />
-                      <stop offset="30%" stop-color="#22c55e" />
-                      <stop offset="65%" stop-color="#3b82f6" />
-                      <stop offset="100%" stop-color="#ef4444" />
-                    </linearGradient>
+                    <filter id="gemini_f0" x="-19.824" y="13.152" width="39.274" height="43.217" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="2.46"/></filter>
+                    <filter id="gemini_f1" x="-15.001" y="-40.257" width="84.868" height="85.688" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="11.891"/></filter>
+                    <filter id="gemini_f2" x="-20.776" y="11.927" width="79.454" height="90.916" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="10.109"/></filter>
+                    <filter id="gemini_f3" x="-20.776" y="11.927" width="79.454" height="90.916" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="10.109"/></filter>
+                    <filter id="gemini_f4" x="-19.845" y="15.459" width="79.731" height="81.505" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="10.109"/></filter>
+                    <filter id="gemini_f5" x="29.832" y="-11.552" width="75.117" height="73.758" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="9.606"/></filter>
+                    <filter id="gemini_f6" x="-38.583" y="-16.253" width="78.135" height="78.758" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="8.706"/></filter>
+                    <filter id="gemini_f7" x="8.107" y="-5.966" width="78.877" height="77.539" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="7.775"/></filter>
+                    <filter id="gemini_f8" x="13.587" y="-18.488" width="56.272" height="51.81" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="6.957"/></filter>
+                    <filter id="gemini_f9" x="-15.526" y="-31.297" width="70.856" height="69.306" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="5.876"/></filter>
+                    <filter id="gemini_f10" x="-14.168" y="20.964" width="55.501" height="51.571" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur stdDeviation="7.273"/></filter>
+                    <linearGradient id="gemini_linear" x1="18.447" y1="43.42" x2="52.153" y2="15.004" gradientUnits="userSpaceOnUse"><stop stop-color="#4893FC"/><stop offset=".27" stop-color="#4893FC"/><stop offset=".777" stop-color="#969DFF"/><stop offset="1" stop-color="#BD99FE"/></linearGradient>
                   </defs>
-                  <path d="M12 2C12 7.52285 16.4772 12 22 12C16.4772 12 12 16.4772 12 22C12 16.4772 7.52285 12 2 12C7.52285 12 12 7.52285 12 2Z" fill="url(#geminiStarGrad)"/>
                 </svg>
               </div>
               <span class="import-app-name">Gemini</span>
             </a>
+
+            <div class="import-apps-or">OR</div>
 
             <a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer" id="openChatGPTAppBtn" class="import-app-item" title="Open ChatGPT">
               <div class="import-app-squircle">
@@ -816,7 +840,7 @@
         </div>
 
         <div class="import-manual-textarea-wrap">
-          <div class="import-step-title"><span class="import-step-prefix">Step 3 :</span> <span class="import-step-desc">Paste your AI text result in the box</span></div>
+          <div class="import-step-title"><span class="import-step-prefix"><span class="import-step-dot">•</span>Step 3 :</span> <span class="import-step-desc">Paste your AI text result in the box</span></div>
           <textarea id="manualImportTextarea" class="import-manual-textarea" placeholder="Paste your AI texts here or add text manually." rows="5"></textarea>
         </div>
 
@@ -960,17 +984,6 @@
 
     <!-- 6. Branding & Business Profile View -->
     <section id="brandingView" class="branding-view-section" style="display: none;">
-      <div class="branding-header">
-        <svg class="branding-header-icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path>
-          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
-          <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path>
-          <path d="M2 7h20"></path>
-          <path d="M22 7v3a2 2 0 0 1-2 2v0a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 16 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 12 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 8 12a2.7 2.7 0 0 1-1.59-.63.7.7 0 0 0-.82 0A2.7 2.7 0 0 1 4 12v0a2 2 0 0 1-2-2V7"></path>
-        </svg>
-        <h1 class="branding-main-title">Your Business Branding</h1>
-      </div>
-
       <form id="brandingForm" class="branding-form" novalidate>
         <!-- 1. Name of Owner -->
         <div class="form-group branding-form-group">
@@ -1160,27 +1173,27 @@
 
     <!-- 7. QR Code View -->
     <section id="qrCodeView" class="qrcode-view-section" style="display: none;">
-      <div class="qrcode-header">
-        <svg class="qrcode-header-icon" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <rect width="5" height="5" x="3" y="3" rx="1"></rect>
-          <rect width="5" height="5" x="16" y="3" rx="1"></rect>
-          <rect width="5" height="5" x="3" y="16" rx="1"></rect>
-          <path d="M21 16h-3a2 2 0 0 0-2 2v3"></path>
-          <path d="M21 21v.01"></path>
-          <path d="M12 7v3a2 2 0 0 1-2 2H7"></path>
-          <path d="M3 12h.01"></path>
-          <path d="M12 3h.01"></path>
-          <path d="M12 16v.01"></path>
-          <path d="M16 12h1"></path>
-          <path d="M21 12v.01"></path>
-          <path d="M12 21v-1"></path>
-        </svg>
-        <h1 class="qrcode-main-title">Menu QR Code</h1>
-      </div>
-
       <div class="qrcode-body">
-        <div class="qrcode-graphic-wrapper">
-          <div id="qrCodeGraphic" class="qrcode-graphic"></div>
+        <!-- 4:6 Ratio QR Code Stand Mockup Container -->
+        <div class="qr-stand-container">
+          <div class="qr-stand-mockup" id="qrStandMockup">
+            <div class="qr-stand-panel qr-stand-panel-top" id="qrStandPanelTop"></div>
+            <div class="qr-stand-panel qr-stand-panel-bottom" id="qrStandPanelBottom"></div>
+            <div class="qr-stand-acrylic-glare" aria-hidden="true"></div>
+            <div class="qr-stand-content">
+              <div class="qr-stand-header">
+                <h3 class="qr-stand-title">MENU</h3>
+                <p class="qr-stand-subtitle">Scan here to get our menu</p>
+              </div>
+              <div class="qr-stand-qr-box">
+                <div id="qrCodeGraphic" class="qrcode-graphic"></div>
+              </div>
+              <div class="qr-stand-footer">
+                <span class="qr-stand-biz-name" id="qrStandBizName">Royal Food Corner</span>
+              </div>
+            </div>
+          </div>
+          <div class="qr-stand-base" aria-hidden="true"></div>
         </div>
 
         <div class="qrcode-url-container">
@@ -1196,16 +1209,8 @@
         </div>
 
         <div class="qrcode-actions-row">
-          <button type="button" class="btn-primary qrcode-action-btn" id="qrDownloadBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Download QR</span>
-          </button>
           <button type="button" class="btn-secondary qrcode-action-btn" id="qrCopyLinkBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
@@ -1213,10 +1218,22 @@
           </button>
         </div>
       </div>
+
+      <!-- Sticky Bottom Action Bar for QR Code View (Download QR) -->
+      <div class="sticky-bottom-action-bar qr-sticky-action-bar" id="stickyQrActionBar" style="display: none;">
+        <button type="button" class="btn-primary dashboard-sticky-action-btn" id="qrDownloadBtn">
+          <svg class="add-item-plus-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download QR</span>
+        </button>
+      </div>
     </section>
   </main>
 
   <script src="/owner/qrcode.min.js"></script>
-  <script src="/owner/owner.js?v=190"></script>
+  <script src="/owner/owner.js?v=199"></script>
 </body>
 </html>

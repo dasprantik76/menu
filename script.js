@@ -1995,77 +1995,8 @@ function isColorTooLight(hex) {
 }
 
 function updateSplashBranding(restaurant) {
-  if (!restaurant) return;
-  const overlay = document.getElementById("pageLoaderOverlay");
-  if (!overlay || pageRevealed) return;
-
-  const logoEl = document.getElementById("pageLoaderLogo");
-  const titleEl = document.getElementById("pageLoaderTitle");
-  if (!logoEl && !titleEl) return;
-
-  const name = restaurant.name || "";
-  const branding = restaurant.branding || {};
-  const logoUrl = (branding.logoUrl && typeof branding.logoUrl === "string") ? branding.logoUrl.trim() : "";
-  const nameFont = branding.nameFont || "Lobster";
-  const accentColor = branding.accentColor || "#991E2E";
-  const nameTextColor = branding.nameTextColor || "";
-
-  const fontMap = {
-    "Lobster": "'Lobster', cursive, sans-serif",
-    "Bebas Neue": "'Bebas Neue', sans-serif",
-    "Google Sans": "'Google Sans', sans-serif",
-    "Berkshire Swash": "'Berkshire Swash', cursive, serif",
-    "Kaushan Script": "'Kaushan Script', cursive",
-    "DM Serif Display": "'DM Serif Display', serif"
-  };
-  const resolvedFont = fontMap[nameFont] || `'${nameFont}', cursive, sans-serif`;
-
-  let titleColor = accentColor;
-  if (nameTextColor && !isColorTooLight(nameTextColor)) {
-    titleColor = nameTextColor;
-  }
-
-  if (titleEl) {
-    titleEl.textContent = name;
-    titleEl.style.fontFamily = resolvedFont;
-    titleEl.style.color = titleColor;
-  }
-
-  if (logoUrl && logoEl) {
-    logoEl.src = logoUrl;
-    logoEl.alt = name ? `${name} Logo` : "Business Logo";
-    logoEl.style.display = "block";
-    if (titleEl) titleEl.style.display = "none";
-
-    logoEl.onerror = function() {
-      logoEl.style.display = "none";
-      if (titleEl && name) {
-        titleEl.style.display = "block";
-      }
-    };
-  } else {
-    if (logoEl) {
-      logoEl.style.display = "none";
-      logoEl.src = "";
-    }
-    if (titleEl && name) {
-      titleEl.style.display = "block";
-    }
-  }
-
-  // Cache branding in localStorage for instant splash rendering on next page visit
-  try {
-    const slug = getRestaurantSlug();
-    if (slug) {
-      localStorage.setItem("menu_brand_" + slug, JSON.stringify({
-        name: name,
-        logoUrl: logoUrl,
-        nameFont: nameFont,
-        accentColor: accentColor,
-        nameTextColor: nameTextColor
-      }));
-    }
-  } catch (e) {}
+  // Splash screen permanently uses the 'Menu by PixelSetu' branding block
+  return;
 }
 
 function updateRestaurantBranding(restaurant) {

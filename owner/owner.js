@@ -380,6 +380,14 @@ function showView(viewElement) {
   if (stickyActionBar) {
     stickyActionBar.style.display = (viewElement === dashboardView && isInitialMenuDataLoaded) ? "flex" : "none";
   }
+  const stickyQrActionBar = document.getElementById("stickyQrActionBar");
+  if (stickyQrActionBar) {
+    stickyQrActionBar.style.display = isQrCode ? "flex" : "none";
+  }
+  if (isQrCode && typeof updateQrStandPanels === "function") {
+    requestAnimationFrame(updateQrStandPanels);
+    setTimeout(updateQrStandPanels, 60);
+  }
   const addCategoryBtn = document.getElementById("openAddCategoryHeaderBtn");
   const addDishBtn = document.getElementById("openAddDishBtn");
   if (addCategoryBtn) addCategoryBtn.style.display = (currentDashboardView === "category") ? "inline-flex" : "none";
@@ -528,6 +536,42 @@ async function checkSession() {
     if (data.success && data.authenticated && data.user) {
       currentUser = data.user;
       currentBusiness = data.business;
+
+      if (currentBusiness && currentBusiness.branding) {
+        if (currentBusiness.branding.accentColor && typeof normalizeHexColor === "function") {
+          const normTop = normalizeHexColor(currentBusiness.branding.accentColor);
+          if (normTop) {
+            savedTopColor = normTop;
+            currentTopColor = normTop;
+          }
+        }
+        if (currentBusiness.branding.backgroundColor && typeof normalizeHexColor === "function") {
+          const normBg = normalizeHexColor(currentBusiness.branding.backgroundColor);
+          if (normBg) {
+            savedBgColor = normBg;
+            currentBgColor = normBg;
+          }
+        }
+        if (currentBusiness.branding.nameTextColor && typeof normalizeHexColor === "function") {
+          const normName = normalizeHexColor(currentBusiness.branding.nameTextColor);
+          if (normName) {
+            savedNameColor = normName;
+            currentNameColor = normName;
+            isCustomNameColor = true;
+          }
+        }
+        if (currentBusiness.branding.hasNameStroke !== undefined) {
+          savedHasNameStroke = !!currentBusiness.branding.hasNameStroke;
+          currentHasNameStroke = savedHasNameStroke;
+        }
+        if (currentBusiness.branding.nameFont) {
+          savedNameFont = currentBusiness.branding.nameFont;
+          currentNameFont = savedNameFont;
+        }
+      }
+      if (typeof updateQrStandPanels === "function") {
+        updateQrStandPanels();
+      }
 
       // If user is Super Admin, seamlessly route directly to Super Admin Portal
       if (currentUser.role === "admin") {
@@ -5111,6 +5155,85 @@ if (brandingPhoneInput) {
 // ==========================================================================
 let qrCodeInstance = null;
 
+function isColorDark(hex) {
+  if (!hex || typeof hex !== "string") return false;
+  const clean = hex.replace("#", "").trim();
+  if (clean.length !== 6) return false;
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  return yiq < 140;
+}
+
+function updateQrStandPanels() {
+  const mockup = document.getElementById("qrStandMockup");
+  if (!mockup) return;
+  const qrBox = mockup.querySelector(".qr-stand-qr-box");
+  if (qrBox) {
+    const mockupRect = mockup.getBoundingClientRect();
+    const qrRect = qrBox.getBoundingClientRect();
+    if (mockupRect.height > 0 && qrRect.height > 0) {
+      const splitFromBottom = mockupRect.bottom - (qrRect.top + qrRect.height / 2);
+      mockup.style.setProperty("--qr-split-from-bottom", `${splitFromBottom.toFixed(2)}px`);
+      mockup.style.setProperty("--qr-box-half-height", `${(qrRect.height / 2).toFixed(2)}px`);
+    }
+  }
+
+  // Top panel = color of the bg of public menu page
+  const menuBgColor = (currentBgColor || (currentBusiness && currentBusiness.branding && currentBusiness.branding.backgroundColor) || "#FBEFE1");
+  // Bottom panel = color of the top bar of public menu page
+  const topBarColor = (currentTopColor || (currentBusiness && currentBusiness.branding && currentBusiness.branding.accentColor) || "#991E2E");
+
+  mockup.style.setProperty("--qr-top-panel-bg", menuBgColor);
+  mockup.style.setProperty("--qr-bottom-panel-bg", topBarColor);
+
+  const topPanel = document.getElementById("qrStandPanelTop");
+  if (topPanel) topPanel.style.backgroundColor = menuBgColor;
+
+  const botPanel = document.getElementById("qrStandPanelBottom");
+  if (botPanel) botPanel.style.backgroundColor = topBarColor;
+
+  // Auto contrast for header text based on top panel color
+  const isDarkTop = isColorDark(menuBgColor);
+  const titleColor = isDarkTop ? "#ffffff" : "#0f172a";
+  const subtitleColor = isDarkTop ? "rgba(255, 255, 255, 0.82)" : "#475569";
+  mockup.style.setProperty("--qr-header-title-color", titleColor);
+  mockup.style.setProperty("--qr-header-subtitle-color", subtitleColor);
+
+  // Business Name below QR code styled as per selected theme
+  const bizName = (currentBusiness && currentBusiness.name) ? currentBusiness.name : "Royal Food Corner";
+  const fontObj = (typeof THEME_FONTS !== "undefined" ? THEME_FONTS.find(f => f.id === currentNameFont) : null) || { family: "'Lobster', cursive, sans-serif" };
+  const nameFontFamily = fontObj ? fontObj.family : "'Lobster', cursive, sans-serif";
+  const nameColor = currentNameColor || "#63141E";
+  const hasStroke = (typeof currentHasNameStroke !== "undefined") ? currentHasNameStroke : true;
+  let strokeVal = "0px transparent";
+  if (hasStroke) {
+    const strokeWidth = (currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans" || currentNameFont === "DM Serif Display") ? "1.8px" : "2.2px";
+    strokeVal = `${strokeWidth} ${menuBgColor}`;
+  }
+
+  mockup.style.setProperty("--qr-biz-name-font", nameFontFamily);
+  mockup.style.setProperty("--qr-biz-name-color", nameColor);
+  mockup.style.setProperty("--qr-biz-name-stroke", strokeVal);
+
+  const qrBizName = document.getElementById("qrStandBizName");
+  if (qrBizName) {
+    qrBizName.textContent = bizName;
+    qrBizName.style.setProperty("font-family", nameFontFamily, "important");
+    qrBizName.style.setProperty("color", nameColor, "important");
+    qrBizName.style.setProperty("-webkit-text-stroke", strokeVal, "important");
+    qrBizName.style.setProperty("paint-order", "stroke fill", "important");
+    qrBizName.style.setProperty("font-weight", (currentNameFont === "Google Sans") ? "700" : "400");
+  }
+}
+
+window.addEventListener("resize", () => {
+  if (qrCodeView && qrCodeView.style.display !== "none") {
+    updateQrStandPanels();
+  }
+});
+
 function renderQrCodeView() {
   if (!qrCodeGraphic) return;
   const slug = (currentBusiness && currentBusiness.slug) ? currentBusiness.slug : "";
@@ -5142,6 +5265,8 @@ function renderQrCodeView() {
   } else {
     qrCodeGraphic.innerHTML = '<p class="qrcode-loading-text">Generating QR Code...</p>';
   }
+  requestAnimationFrame(updateQrStandPanels);
+  setTimeout(updateQrStandPanels, 60);
 }
 
 function downloadQrCode() {
@@ -5485,6 +5610,10 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
   if (themeResetBtn) {
     themeResetBtn.disabled = isDefaultTheme;
   }
+
+  if (typeof updateQrStandPanels === "function") {
+    updateQrStandPanels();
+  }
 }
 
 function renderThemeSwatches() {
@@ -5667,6 +5796,9 @@ async function saveThemeColors() {
     savedNameColor = nameToSave;
     savedHasNameStroke = currentHasNameStroke;
     savedNameFont = currentNameFont;
+    if (typeof updateQrStandPanels === "function") {
+      updateQrStandPanels();
+    }
     if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Applied";
     setTimeout(() => {
       if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Apply Theme";
@@ -5992,24 +6124,29 @@ Return ONLY the menu in the required format.`;
 const copyPromptBtn = document.getElementById("copyPromptBtn");
 const importPromptBox = document.getElementById("importPromptBox");
 
-function copyPromptToClipboard() {
+let copyPromptTimer = null;
+
+function copyPromptToClipboard(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
   const textToCopy = AI_IMPORT_PROMPT;
   const btn = document.getElementById("copyPromptBtn");
   const copyTextEl = btn ? btn.querySelector(".copy-btn-text") : null;
   const copyIconEl = btn ? btn.querySelector(".copy-icon") : null;
 
   const showCopiedState = () => {
+    if (copyPromptTimer) clearTimeout(copyPromptTimer);
     if (btn) btn.classList.add("copied");
     if (copyTextEl) copyTextEl.textContent = "Copied!";
     if (copyIconEl) {
       copyIconEl.innerHTML = `<polyline points="20 6 9 17 4 12"></polyline>`;
     }
-    setTimeout(() => {
+    copyPromptTimer = setTimeout(() => {
       if (btn) btn.classList.remove("copied");
       if (copyTextEl) copyTextEl.textContent = "Copy";
       if (copyIconEl) {
         copyIconEl.innerHTML = `<rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>`;
       }
+      copyPromptTimer = null;
     }, 2000);
   };
 
@@ -6777,10 +6914,14 @@ if (importClearBtn) {
     if (confirm("Discard extracted items and reset?")) {
       extractedCategories = [];
       importSelectedFiles = [];
+      if (manualImportTextarea) {
+        manualImportTextarea.value = "";
+      }
       renderSelectedPhotosUI();
       if (importExtractedCard) importExtractedCard.style.display = "none";
       if (importMenuView) importMenuView.classList.remove("preview-active");
       hideImportStatus();
+      hideManualStatus();
     }
   });
 }
@@ -6831,10 +6972,14 @@ if (importConfirmBtn) {
       // Reset import state
       extractedCategories = [];
       importSelectedFiles = [];
+      if (manualImportTextarea) {
+        manualImportTextarea.value = "";
+      }
       renderSelectedPhotosUI();
       if (importExtractedCard) importExtractedCard.style.display = "none";
       if (importMenuView) importMenuView.classList.remove("preview-active");
       hideImportStatus();
+      hideManualStatus();
 
       // Refresh dashboard menu editor so user sees dishes immediately
       renderDashboardView();

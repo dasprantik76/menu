@@ -5177,6 +5177,26 @@ function getBusinessLogoUrl() {
   return (typeof rawLogo === "string") ? rawLogo.trim() : "";
 }
 
+function blendBlackOverlay(hexColor, blackOpacity = 0.25) {
+  if (!hexColor || typeof hexColor !== "string") return "#821A27";
+  let hex = hexColor.replace("#", "").trim();
+  if (hex.length === 3) {
+    hex = hex.split("").map(c => c + c).join("");
+  }
+  if (hex.length !== 6) return hexColor;
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return hexColor;
+
+  const factor = 1 - blackOpacity;
+  const newR = Math.min(255, Math.max(0, Math.round(r * factor)));
+  const newG = Math.min(255, Math.max(0, Math.round(g * factor)));
+  const newB = Math.min(255, Math.max(0, Math.round(b * factor)));
+
+  return `#${newR.toString(16).padStart(2, "0")}${newG.toString(16).padStart(2, "0")}${newB.toString(16).padStart(2, "0")}`;
+}
+
 function updateQrStandPanels() {
   const mockup = document.getElementById("qrStandMockup");
   if (!mockup) return;
@@ -5264,10 +5284,11 @@ function updateQrStandPanels() {
     }
   }
 
-  // Keep QR code color synchronized with the bottom panel color
+  // Keep QR code color synchronized with the bottom panel color (with 25% black overlay on colored modules)
+  const qrBarcodeColor = blendBlackOverlay(topBarColor, 0.25);
   if (qrCodeGraphic && currentBusiness && currentBusiness.slug) {
-    if (qrCodeGraphic._currentColor !== topBarColor) {
-      qrCodeGraphic._currentColor = topBarColor;
+    if (qrCodeGraphic._currentColor !== qrBarcodeColor) {
+      qrCodeGraphic._currentColor = qrBarcodeColor;
       const fullUrl = `${window.location.origin}/r/${currentBusiness.slug}`;
       qrCodeGraphic.innerHTML = "";
       if (typeof QRCode !== "undefined") {
@@ -5275,7 +5296,7 @@ function updateQrStandPanels() {
           text: fullUrl,
           width: 260,
           height: 260,
-          colorDark: topBarColor,
+          colorDark: qrBarcodeColor,
           colorLight: "#ffffff",
           correctLevel: QRCode.CorrectLevel.H
         });
@@ -5313,6 +5334,7 @@ function renderQrCodeView() {
   }
 
   const topBarColor = (currentTopColor || (currentBusiness && currentBusiness.branding && currentBusiness.branding.accentColor) || "#991E2E");
+  const qrBarcodeColor = blendBlackOverlay(topBarColor, 0.25);
 
   qrCodeGraphic.innerHTML = "";
   if (typeof QRCode !== "undefined") {
@@ -5320,11 +5342,11 @@ function renderQrCodeView() {
       text: fullUrl,
       width: 260,
       height: 260,
-      colorDark: topBarColor,
+      colorDark: qrBarcodeColor,
       colorLight: "#ffffff",
       correctLevel: QRCode.CorrectLevel.H
     });
-    qrCodeGraphic._currentColor = topBarColor;
+    qrCodeGraphic._currentColor = qrBarcodeColor;
   } else {
     qrCodeGraphic.innerHTML = '<p class="qrcode-loading-text">Generating QR Code...</p>';
   }
@@ -5514,12 +5536,13 @@ async function downloadQrCode() {
     document.body.appendChild(tempDiv);
 
     try {
+      const qrBarcodeColor = blendBlackOverlay(topBarColor, 0.25);
       if (typeof QRCode !== "undefined") {
         new QRCode(tempDiv, {
           text: fullUrl,
           width: qrDimension,
           height: qrDimension,
-          colorDark: topBarColor,
+          colorDark: qrBarcodeColor,
           colorLight: "#ffffff",
           correctLevel: QRCode.CorrectLevel.H
         });
@@ -5586,9 +5609,9 @@ async function downloadQrCode() {
           }
 
           if (canExport) {
-            const maxLogoW = Math.round(cardW * 0.74);
-            const footerAvailH = Math.max(60, cardH - qrBoxBottom - 56);
-            const maxLogoH = Math.round(footerAvailH * 0.68);
+            const maxLogoW = Math.round(cardW * 0.72);
+            const footerAvailH = Math.max(60, cardH - qrBoxBottom - 64);
+            const maxLogoH = Math.round(footerAvailH * 0.64);
 
             const fitRatio = Math.min(maxLogoW / loadedImg.naturalWidth, maxLogoH / loadedImg.naturalHeight);
             const drawW = Math.round(loadedImg.naturalWidth * fitRatio);

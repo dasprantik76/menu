@@ -5235,6 +5235,10 @@ window.addEventListener("resize", () => {
 });
 
 function renderQrCodeView() {
+  const stickyQrActionBar = document.getElementById("stickyQrActionBar");
+  if (stickyQrActionBar) {
+    stickyQrActionBar.style.display = "flex";
+  }
   if (!qrCodeGraphic) return;
   const slug = (currentBusiness && currentBusiness.slug) ? currentBusiness.slug : "";
   if (!slug) {
@@ -5269,72 +5273,269 @@ function renderQrCodeView() {
   setTimeout(updateQrStandPanels, 60);
 }
 
-function downloadQrCode() {
+function drawCanvasRoundRect(ctx, x, y, width, height, radii) {
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, radii);
+    return;
+  }
+  let r = radii;
+  let tl = 0, tr = 0, br = 0, bl = 0;
+  if (typeof r === "number") {
+    tl = tr = br = bl = r;
+  } else if (Array.isArray(r)) {
+    tl = r[0] || 0;
+    tr = r[1] || tl;
+    br = r[2] || tl;
+    bl = r[3] || tr;
+  }
+  ctx.beginPath();
+  ctx.moveTo(x + tl, y);
+  ctx.lineTo(x + width - tr, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + tr);
+  ctx.lineTo(x + width, y + height - br);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - br, y + height);
+  ctx.lineTo(x + bl, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - bl);
+  ctx.lineTo(x, y + tl);
+  ctx.quadraticCurveTo(x, y, x + tl, y);
+  ctx.closePath();
+}
+
+async function downloadQrCode() {
   const slug = (currentBusiness && currentBusiness.slug) ? currentBusiness.slug : "";
   if (!slug) return;
   const fullUrl = `${window.location.origin}/r/${slug}`;
 
-  const exportCanvas = document.createElement("canvas");
-  const size = 1000;
-  exportCanvas.width = size;
-  exportCanvas.height = size;
-  const ctx = exportCanvas.getContext("2d");
-
-  // Pure white background
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, size, size);
-
-  const margin = 60;
-  const qrDimension = size - (margin * 2); // 880x880 with 60px quiet margin
-
-  // Generate dedicated high-res QR code for 1000x1000 export
-  const tempDiv = document.createElement("div");
-  tempDiv.style.position = "fixed";
-  tempDiv.style.left = "-99999px";
-  tempDiv.style.top = "-99999px";
-  document.body.appendChild(tempDiv);
+  const btn = document.getElementById("qrDownloadBtn");
+  if (btn) {
+    btn.style.pointerEvents = "none";
+    btn.style.opacity = "0.75";
+  }
 
   try {
-    if (typeof QRCode !== "undefined") {
-      new QRCode(tempDiv, {
-        text: fullUrl,
-        width: qrDimension,
-        height: qrDimension,
-        colorDark: "#111827",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-      });
+    // Ensure all web fonts are loaded into memory before rendering
+    if (document.fonts && document.fonts.ready) {
+      try {
+        await document.fonts.ready;
+      } catch (e) {}
     }
 
-    const canvas = tempDiv.querySelector("canvas");
-    const img = tempDiv.querySelector("img");
-    const source = canvas || img;
+    const mockup = document.getElementById("qrStandMockup");
+    const titleEl = mockup ? mockup.querySelector(".qr-stand-title") : null;
+    const subtitleEl = mockup ? mockup.querySelector(".qr-stand-subtitle") : null;
+    const bizNameEl = mockup ? document.getElementById("qrStandBizName") : null;
+    const qrBoxEl = mockup ? mockup.querySelector(".qr-stand-qr-box") : null;
+    const qrGraphicEl = document.getElementById("qrCodeGraphic");
 
-    if (source) {
-      ctx.drawImage(source, margin, margin, qrDimension, qrDimension);
-    } else if (qrCodeGraphic) {
-      const screenSource = qrCodeGraphic.querySelector("canvas") || qrCodeGraphic.querySelector("img");
-      if (screenSource) {
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(screenSource, margin, margin, qrDimension, qrDimension);
+    // Exact 4:6 card print resolution (1200 x 1800 px)
+    const cardW = 1200;
+    const cardH = 1800;
+
+    // Determine scale directly from live on-screen card width
+    const mockupRect = mockup ? mockup.getBoundingClientRect() : null;
+    const screenW = (mockupRect && mockupRect.width > 0) ? mockupRect.width : 320;
+    const scale = cardW / screenW;
+
+    // Exact proportional font sizes from DOM computed styles
+    const computedTitleSize = titleEl ? parseFloat(window.getComputedStyle(titleEl).fontSize) : 49.6;
+    const computedSubtitleSize = subtitleEl ? parseFloat(window.getComputedStyle(subtitleEl).fontSize) : 18.4;
+    const computedBizSize = bizNameEl ? parseFloat(window.getComputedStyle(bizNameEl).fontSize) : 24.8;
+
+    const titleFontSize = Math.round(computedTitleSize * scale); // ~186px
+    const subtitleFontSize = Math.round(computedSubtitleSize * scale); // ~69px
+    let bizFontSize = Math.round(computedBizSize * scale); // ~93px
+
+    // Exact split position from live card
+    let splitY = 986;
+    if (mockupRect && qrBoxEl) {
+      const qrBoxRect = qrBoxEl.getBoundingClientRect();
+      if (qrBoxRect.height > 0) {
+        splitY = Math.round(((qrBoxRect.top + qrBoxRect.height / 2) - mockupRect.top) * scale);
+      }
+    }
+    const topH = splitY;
+    const botH = cardH - splitY;
+
+    // Themed colors
+    const menuBgColor = (currentBgColor || (currentBusiness && currentBusiness.branding && currentBusiness.branding.backgroundColor) || "#FBEFE1");
+    const topBarColor = (currentTopColor || (currentBusiness && currentBusiness.branding && currentBusiness.branding.accentColor) || "#991E2E");
+    const isDarkTop = isColorDark(menuBgColor);
+    const titleColor = (titleEl && window.getComputedStyle(titleEl).color) || (isDarkTop ? "#ffffff" : "#0f172a");
+    const subtitleColor = (subtitleEl && window.getComputedStyle(subtitleEl).color) || (isDarkTop ? "rgba(255, 255, 255, 0.85)" : "#475569");
+
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = cardW;
+    exportCanvas.height = cardH;
+    const ctx = exportCanvas.getContext("2d");
+
+    // 1. Top Panel Background
+    ctx.fillStyle = menuBgColor;
+    ctx.fillRect(0, 0, cardW, topH + 1);
+
+    // 2. Bottom Panel Background
+    ctx.fillStyle = topBarColor;
+    ctx.fillRect(0, splitY, cardW, botH);
+
+    // 3. Header Text Positions
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    let titleY = Math.round(topH * 0.30);
+    let subtitleY = Math.round(topH * 0.44);
+    if (mockupRect && titleEl && subtitleEl) {
+      const tRect = titleEl.getBoundingClientRect();
+      const sRect = subtitleEl.getBoundingClientRect();
+      if (tRect.height > 0) titleY = Math.round(((tRect.top + tRect.height / 2) - mockupRect.top) * scale);
+      if (sRect.height > 0) subtitleY = Math.round(((sRect.top + sRect.height / 2) - mockupRect.top) * scale);
+    }
+
+    // "MENU"
+    ctx.font = `900 ${titleFontSize}px 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.fillStyle = titleColor;
+    if ("letterSpacing" in ctx) {
+      ctx.letterSpacing = `${(0.04 * titleFontSize).toFixed(1)}px`;
+    }
+    ctx.fillText("MENU", cardW / 2, titleY);
+
+    // "Scan here to get our menu"
+    ctx.font = `400 ${subtitleFontSize}px 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.fillStyle = subtitleColor;
+    if ("letterSpacing" in ctx) {
+      ctx.letterSpacing = "0px";
+    }
+    ctx.fillText("Scan here to get our menu", cardW / 2, subtitleY);
+
+    // 4. QR Box Card (White rounded card matching screen box)
+    let qrBoxW = Math.round(220 * scale); // ~825px
+    let qrBoxH = qrBoxW;
+    let qrBoxX = (cardW - qrBoxW) / 2;
+    let qrBoxY = splitY - (qrBoxH / 2);
+    let qrBoxRadius = Math.round(14 * scale); // ~52px
+
+    if (mockupRect && qrBoxEl) {
+      const qRect = qrBoxEl.getBoundingClientRect();
+      if (qRect.width > 0 && qRect.height > 0) {
+        qrBoxW = Math.round(qRect.width * scale);
+        qrBoxH = Math.round(qRect.height * scale);
+        qrBoxX = (cardW - qrBoxW) / 2;
+        qrBoxY = Math.round((qRect.top - mockupRect.top) * scale);
+        const computedR = parseFloat(window.getComputedStyle(qrBoxEl).borderRadius || "14");
+        qrBoxRadius = Math.round(computedR * scale);
       }
     }
 
-    const dataUrl = exportCanvas.toDataURL("image/png");
+    // QR Box Soft Drop Shadow
+    ctx.save();
+    ctx.shadowColor = "rgba(0, 0, 0, 0.10)";
+    ctx.shadowBlur = Math.round(10 * scale);
+    ctx.shadowOffsetY = Math.round(4 * scale);
+    drawCanvasRoundRect(ctx, qrBoxX, qrBoxY, qrBoxW, qrBoxH, qrBoxRadius);
+    ctx.fillStyle = "#ffffff";
+    ctx.fill();
+    ctx.restore();
+
+    // QR Box Border
+    drawCanvasRoundRect(ctx, qrBoxX, qrBoxY, qrBoxW, qrBoxH, qrBoxRadius);
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.06)";
+    ctx.lineWidth = Math.max(2, Math.round(1 * scale));
+    ctx.stroke();
+
+    // 5. Render Crisp High-Resolution QR Barcode
+    const qrPadding = Math.round(12 * scale);
+    const qrDimension = qrBoxW - (qrPadding * 2);
+    const qrX = qrBoxX + qrPadding;
+    const qrY = qrBoxY + qrPadding;
+
+    const tempDiv = document.createElement("div");
+    tempDiv.style.position = "fixed";
+    tempDiv.style.left = "-99999px";
+    tempDiv.style.top = "-99999px";
+    document.body.appendChild(tempDiv);
+
+    try {
+      if (typeof QRCode !== "undefined") {
+        new QRCode(tempDiv, {
+          text: fullUrl,
+          width: qrDimension,
+          height: qrDimension,
+          colorDark: "#111827",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      }
+
+      const qrSource = tempDiv.querySelector("canvas") || tempDiv.querySelector("img") || (qrCodeGraphic && (qrCodeGraphic.querySelector("canvas") || qrCodeGraphic.querySelector("img")));
+      if (qrSource) {
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(qrSource, qrX, qrY, qrDimension, qrDimension);
+        ctx.restore();
+      }
+    } finally {
+      if (tempDiv.parentNode) {
+        tempDiv.parentNode.removeChild(tempDiv);
+      }
+    }
+
+    // 6. Footer: Business Name
+    const bizName = (currentBusiness && currentBusiness.name) ? currentBusiness.name : "Royal Food Corner";
+    const fontObj = (typeof THEME_FONTS !== "undefined" ? THEME_FONTS.find(f => f.id === currentNameFont) : null) || { family: "'Lobster', cursive, sans-serif" };
+    const nameFontFamily = fontObj ? fontObj.family : "'Lobster', cursive, sans-serif";
+    const nameColor = currentNameColor || "#63141E";
+    const hasStroke = (typeof currentHasNameStroke !== "undefined") ? currentHasNameStroke : true;
+
+    let bizCenterY = splitY + (qrBoxH / 2) + Math.round((cardH - (splitY + (qrBoxH / 2))) / 2);
+    if (mockupRect && bizNameEl) {
+      const bRect = bizNameEl.getBoundingClientRect();
+      if (bRect.height > 0) {
+        bizCenterY = Math.round(((bRect.top + bRect.height / 2) - mockupRect.top) * scale);
+      }
+    }
+
+    ctx.font = `${(currentNameFont === "Google Sans") ? "700" : "400"} ${bizFontSize}px ${nameFontFamily}`;
+    const bizMeasure = ctx.measureText(bizName).width;
+    if (bizMeasure > (cardW - 140)) {
+      bizFontSize = Math.floor(bizFontSize * ((cardW - 140) / bizMeasure));
+      ctx.font = `${(currentNameFont === "Google Sans") ? "700" : "400"} ${bizFontSize}px ${nameFontFamily}`;
+    }
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    if ("letterSpacing" in ctx) {
+      ctx.letterSpacing = `${(0.5 * scale).toFixed(1)}px`;
+    }
+
+    if (hasStroke) {
+      const strokeWidth = ((currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans" || currentNameFont === "DM Serif Display") ? 1.8 : 2.2) * scale;
+      ctx.strokeStyle = menuBgColor;
+      ctx.lineWidth = strokeWidth;
+      ctx.lineJoin = "round";
+      ctx.miterLimit = 2;
+      ctx.strokeText(bizName, cardW / 2, bizCenterY);
+    }
+    ctx.fillStyle = nameColor;
+    ctx.fillText(bizName, cardW / 2, bizCenterY);
+
+    // 7. Export High-Quality JPG
+    const dataUrl = exportCanvas.toDataURL("image/jpeg", 0.96);
     const a = document.createElement("a");
-    a.download = `${slug}-qr-code.png`;
+    a.download = `${slug}-qr-card.jpg`;
     a.href = dataUrl;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   } finally {
-    if (tempDiv.parentNode) {
-      tempDiv.parentNode.removeChild(tempDiv);
+    if (btn) {
+      btn.style.pointerEvents = "";
+      btn.style.opacity = "";
     }
   }
 }
 
-function copyQrLink() {
+function copyQrLink(e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  if (e && e.preventDefault) e.preventDefault();
   const slug = (currentBusiness && currentBusiness.slug) ? currentBusiness.slug : "";
   if (!slug) return;
   const fullUrl = `${window.location.origin}/r/${slug}`;
@@ -5345,6 +5546,14 @@ function copyQrLink() {
       qrCopyBtnText.textContent = "Copied!";
       setTimeout(() => {
         qrCopyBtnText.textContent = orig;
+      }, 2000);
+    }
+    if (qrCopyLinkBtn) {
+      qrCopyLinkBtn.classList.add("is-copied");
+      qrCopyLinkBtn.setAttribute("title", "Copied!");
+      setTimeout(() => {
+        qrCopyLinkBtn.classList.remove("is-copied");
+        qrCopyLinkBtn.setAttribute("title", "Copy Link");
       }, 2000);
     }
   };

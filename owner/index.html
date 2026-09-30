@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Roboto:wght@400;500;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=424">
+  <link rel="stylesheet" href="/owner/owner.css?v=425">
   <script>
     (function() {
       try {
@@ -34,9 +34,9 @@
 
         if (isRegister) {
           document.documentElement.className = "register-mode";
-          document.write('<style id="preRouteStyle">html,body{background-color:#f7f3ea!important}body::before,html body::before,#authView::before,#registerView::before{display:none!important;content:none!important;background:none!important;background-image:none!important}#authView{display:none!important}#registerView{display:flex!important}.owner-header{display:none!important}</style>');
+          document.write('<style id="preRouteStyle">html,body{background-color:#f8f6f2!important}body::before,html body::before,#authView::before,#registerView::before{display:none!important;content:none!important;background:none!important;background-image:none!important}#authView{display:none!important}#registerView{display:flex!important}.owner-header{display:none!important}</style>');
           var metaEl = document.querySelector('meta[name="theme-color"]');
-          if (metaEl) metaEl.setAttribute("content", "#f7f3ea");
+          if (metaEl) metaEl.setAttribute("content", "#f8f6f2");
         } else if (isPending) {
           document.documentElement.className = "pending-mode";
           document.write('<style id="preRouteStyle">body::before,html body::before,#authView::before{display:none!important;content:none!important;background:none!important}#authView{display:none!important}.owner-header{justify-content:center!important}.header-left-group{margin:0 auto!important;justify-content:center!important;gap:0!important}.brand-area{justify-content:center!important}.hamburger-btn,.header-right-group,.brand-tag{display:none!important}</style>');
@@ -46,7 +46,7 @@
         } else {
           document.documentElement.className = "auth-mode";
           var metaEl = document.querySelector('meta[name="theme-color"]');
-          if (metaEl) metaEl.setAttribute("content", "#f7f3ea");
+          if (metaEl) metaEl.setAttribute("content", "#f8f6f2");
         }
 
         // Immediately disable right-click & text selection across owner portal

@@ -206,7 +206,7 @@ html {
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #f7f3ea;
+  background-color: #f8f6f2;
   color: #1e293b;
   min-height: 100vh;
   display: flex;
@@ -700,7 +700,7 @@ html.theme-mode .main-container,
 /* Standalone Auth Screen (No Top Bar, Design Mockup 1:1 Match, Non-Scrollable) */
 html.auth-mode,
 body.auth-mode {
-  background-color: #f7f3ea;
+  background-color: #fbf9f6;
   height: 100% !important;
   height: 100vh !important;
   height: 100dvh !important;
@@ -2751,7 +2751,7 @@ body.dashboard-initial-loading .sticky-add-dish-bar {
   position: sticky;
   top: 82px;
   z-index: 95;
-  background: #f7f3ea;
+  background: #f8f6f2;
   margin-top: -32px;
   padding-top: 24px;
   padding-bottom: 24px;

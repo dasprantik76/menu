@@ -352,7 +352,7 @@ function showView(viewElement) {
   const isQrCode = (viewElement === qrCodeView);
   const header = document.querySelector(".owner-header");
 
-  const themeColor = (isAuth || isRegister) ? "#f7f3ea" : "#991e2e";
+  const themeColor = (isAuth || isRegister) ? "#f8f6f2" : "#991e2e";
   updateMetaThemeColor(themeColor);
 
   if (header) {

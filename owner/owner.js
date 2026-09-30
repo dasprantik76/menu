@@ -352,7 +352,7 @@ function showView(viewElement) {
   const isQrCode = (viewElement === qrCodeView);
   const header = document.querySelector(".owner-header");
 
-  const themeColor = (isAuth || isRegister) ? "#f8f6f2" : "#991e2e";
+  const themeColor = (isAuth || isRegister) ? "#f7f3ea" : "#991e2e";
   updateMetaThemeColor(themeColor);
 
   if (header) {
@@ -6006,6 +6006,16 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
   if (typeof updateQrStandPanels === "function") {
     updateQrStandPanels();
   }
+
+  // Update Live Preview / Live Now status label
+  updateThemePreviewHeaderLabel(isChanged);
+}
+
+function updateThemePreviewHeaderLabel(isChanged) {
+  const label = document.getElementById("themePreviewHeaderLabel");
+  if (!label) return;
+  label.classList.toggle("is-live", !isChanged);
+  label.classList.toggle("is-preview", isChanged);
 }
 
 function renderThemeSwatches() {
@@ -6250,6 +6260,7 @@ async function saveThemeColors() {
     if (typeof updateQrStandPanels === "function") {
       updateQrStandPanels();
     }
+    updateThemePreviewHeaderLabel(false);
     if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Applied";
     setTimeout(() => {
       if (themeSaveBtnLabel) themeSaveBtnLabel.textContent = "Apply Theme";

@@ -6223,6 +6223,7 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
   }
 
   const darkenedTop = applyBlackOverlay(currentTopColor, 0.25);
+  const browseBtnColor = applyBlackOverlay(currentTopColor, 0.15);
   const fontObj = THEME_FONTS.find(f => f.id === currentNameFont) || THEME_FONTS[0];
 
   // Live preview mockup updates
@@ -6248,7 +6249,7 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     }
   }
   if (themeMockupPrice) themeMockupPrice.style.color = currentPriceColor;
-  if (themeMockupBtn) themeMockupBtn.style.backgroundColor = darkenedTop;
+  if (themeMockupBtn) themeMockupBtn.style.backgroundColor = browseBtnColor;
   if (themeMockupWrapper) themeMockupWrapper.style.backgroundColor = "transparent";
   if (themeMockupCatHeading) {
     themeMockupCatHeading.style.color = currentCategoryColor;

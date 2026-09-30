@@ -1331,7 +1331,7 @@ function populateCategoryBlock(block, index) {
         <div class="menu-row-main">
           <span class="row-selector" aria-hidden="true">
             <svg viewBox="0 0 16 16" fill="none" class="check-icon">
-              <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="var(--menu-bg-color, #fbefe1)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </span>
           <span class="dish-name">${mainNameHtml}</span>
@@ -1762,8 +1762,8 @@ function setupCategorySheet() {
     const item = document.createElement("div");
     item.className = `sheet-item ${idx === activeCategoryIndex ? 'active' : ''} ${isSpecial ? 'today-special-sheet-item' : ''}`;
     item.innerHTML = `
-      <span>${isSpecial ? '⭐ ' : ''}${cat.category}</span>
-      <span style="font-size:0.8rem; color:#888;">${cat.items.length} items</span>
+      <span class="sheet-item-name">${isSpecial ? '⭐ ' : ''}${cat.category}</span>
+      <span class="sheet-item-count">${cat.items.length} items</span>
     `;
     item.addEventListener("click", () => {
       if (activeCategoryIndex === idx) {
@@ -2087,12 +2087,14 @@ function updateRestaurantBranding(restaurant) {
       document.documentElement.style.setProperty("--brand-color", brandColor);
       const darkenedBrand = applyBlackOverlay(brandColor, 0.25);
       document.documentElement.style.setProperty("--theme-darkened-brand", darkenedBrand);
+      const browseBtnBg = applyBlackOverlay(brandColor, 0.15);
+      document.documentElement.style.setProperty("--theme-browse-btn-bg", browseBtnBg);
       if (stickyHeader) {
         stickyHeader.style.backgroundColor = brandColor;
       }
       const browseBtn = document.getElementById("browseBtn");
       if (browseBtn) {
-        browseBtn.style.backgroundColor = darkenedBrand;
+        browseBtn.style.backgroundColor = browseBtnBg;
       }
       updateMetaThemeColor(brandColor);
       try {
@@ -2101,6 +2103,12 @@ function updateRestaurantBranding(restaurant) {
       } catch(e) {}
     } else {
       updateMetaThemeColor("#991e2e");
+      const defaultBrowseBtnBg = applyBlackOverlay("#991e2e", 0.15);
+      document.documentElement.style.setProperty("--theme-browse-btn-bg", defaultBrowseBtnBg);
+      const browseBtn = document.getElementById("browseBtn");
+      if (browseBtn) {
+        browseBtn.style.backgroundColor = defaultBrowseBtnBg;
+      }
       try {
         const slug = getRestaurantSlug();
         if (slug) localStorage.setItem("mc_theme_" + slug, "#991e2e");
@@ -2114,7 +2122,7 @@ function updateRestaurantBranding(restaurant) {
       const nameColor = restaurant.branding.nameTextColor;
       document.documentElement.style.setProperty("--name-text-color", nameColor);
     } else {
-      document.documentElement.style.removeProperty("--name-text-color");
+      document.documentElement.style.setProperty("--name-text-color", "#ffffff");
     }
     if (restaurant.branding.itemTextColor) {
       document.documentElement.style.setProperty("--item-text-color", restaurant.branding.itemTextColor);

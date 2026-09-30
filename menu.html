@@ -3,9 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#991e2e">
+  <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <script>
+    (function() {
+      try {
+        var path = window.location.pathname || "";
+        var match = path.match(/\/r\/([^\/]+)/);
+        var slug = match ? match[1] : "";
+        if (slug) {
+          var cached = localStorage.getItem("mc_theme_" + slug);
+          if (cached) {
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute("content", cached);
+          }
+        }
+      } catch(e) {}
+    })();
+  </script>
   <title>Menu</title>
   <base href="/">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -170,6 +186,6 @@
     </div>
   </div>
 
-  <script src="/script.js?v=74"></script>
+  <script src="/script.js?v=75"></script>
 </body>
 </html>

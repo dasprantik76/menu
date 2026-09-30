@@ -2095,8 +2095,16 @@ function updateRestaurantBranding(restaurant) {
         browseBtn.style.backgroundColor = darkenedBrand;
       }
       updateMetaThemeColor(brandColor);
+      try {
+        const slug = getRestaurantSlug();
+        if (slug) localStorage.setItem("mc_theme_" + slug, brandColor);
+      } catch(e) {}
     } else {
       updateMetaThemeColor("#991e2e");
+      try {
+        const slug = getRestaurantSlug();
+        if (slug) localStorage.setItem("mc_theme_" + slug, "#991e2e");
+      } catch(e) {}
     }
     if (restaurant.branding.backgroundColor) {
       const bgColor = restaurant.branding.backgroundColor;
@@ -2282,6 +2290,8 @@ function revealPage() {
         overlay.style.display = "none";
       }, 400);
     }
+    const brandColor = (document.documentElement.style.getPropertyValue("--brand-color") || "").trim() || "#991e2e";
+    updateMetaThemeColor(brandColor);
   });
 }
 

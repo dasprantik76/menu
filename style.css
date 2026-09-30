@@ -194,7 +194,7 @@ body {
   padding: max(20px, env(safe-area-inset-top, 20px)) 20px 20px;
   text-align: center;
   border: none;
-  overflow: visible;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -217,7 +217,7 @@ body {
   paint-order: stroke fill;
   text-transform: none;
   margin: 0 auto;
-  padding: 0 54px;
+  padding: 0;
   line-height: 1.2;
   white-space: nowrap;
   overflow: visible;
@@ -742,11 +742,11 @@ body {
   z-index: 90;
   flex-shrink: 0;
   margin-top: 0;
-  padding: 16px 16px max(34px, env(safe-area-inset-bottom, 34px));
+  padding: 16px 0 max(34px, env(safe-area-inset-bottom, 34px));
   background-color: var(--menu-bg-color, #fbefe1);
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: center;
   border: none !important;
   border-top: none !important;
   outline: none !important;
@@ -758,6 +758,8 @@ body {
 }
 
 .browse-btn {
+  grid-column: 2;
+  justify-self: center;
   max-width: 290px;
   height: 46px;
   background-color: var(--theme-browse-btn-bg, #821927);
@@ -801,58 +803,70 @@ body {
   box-shadow: none;
 }
 
-/* Platter Button with Embedded Live Count (Positioned at top right corner of sticky header) */
+/* Platter Button with Embedded Live Count (Simple White Circle) */
 .platter-btn {
-  position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  flex-shrink: 0;
-  background: transparent;
+  grid-column: 3;
+  justify-self: center;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  border-radius: 50%;
+  background-color: #ffffff;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-  box-shadow: none;
-  transition: transform 0.15s ease;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 0;
+  opacity: 0;
+  transform: scale(0.5);
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+              visibility 0.35s,
+              filter 0.15s ease;
 }
 
-.platter-btn:active {
-  transform: translateY(-50%) scale(0.92);
+.platter-btn.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.platter-btn.visible:hover {
+  filter: brightness(0.97);
+}
+
+.platter-btn.visible:active {
+  transform: scale(0.92);
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 .platter-icon-wrapper {
   position: relative;
-  width: 42px;
-  height: 42px;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .platter-icon-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
+  display: none !important;
 }
 
 /* Live Selection Count Digit Inside the Center of the Platter */
 .platter-count {
-  position: absolute;
-  top: 50%;
-  left: 49%;
-  transform: translate(-50%, -50%);
+  position: static;
+  transform: none;
   font-family: 'Google Sans', sans-serif;
-  font-weight: 800;
-  font-size: 0.88rem;
-  color: var(--theme-darkened-brand, #731723);
+  font-weight: 700;
+  font-size: 1.15rem;
+  color: var(--brand-color, #991e2e);
   line-height: 1;
   pointer-events: none;
   user-select: none;
@@ -860,7 +874,7 @@ body {
 }
 
 .platter-btn.bounce .platter-count {
-  transform: translate(-50%, -50%) scale(1.4);
+  transform: scale(1.35);
 }
 
 /* 5. MINIMAL CATEGORIES MODAL (Consistent with Parchment & Crimson Theme) */

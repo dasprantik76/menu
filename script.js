@@ -1567,6 +1567,12 @@ function updatePlatterCountBadge() {
   const count = selectedDishes.size;
   platterCount.textContent = count;
 
+  if (count > 0) {
+    platterBtn.classList.add("visible");
+  } else {
+    platterBtn.classList.remove("visible");
+  }
+
   // Pop bounce animation on counter digit
   platterBtn.classList.remove("bounce");
   void platterBtn.offsetWidth; // Force reflow

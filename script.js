@@ -1979,6 +1979,17 @@ function applyBlackOverlay(hex, opacity = 0.25) {
   return "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
 }
 
+function updateMetaThemeColor(color) {
+  if (!color) return;
+  let metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (!metaTheme) {
+    metaTheme = document.createElement("meta");
+    metaTheme.name = "theme-color";
+    document.head.appendChild(metaTheme);
+  }
+  metaTheme.setAttribute("content", color);
+}
+
 function isColorTooLight(hex) {
   if (!hex || typeof hex !== "string") return false;
   let clean = hex.replace("#", "").trim();
@@ -2083,6 +2094,9 @@ function updateRestaurantBranding(restaurant) {
       if (browseBtn) {
         browseBtn.style.backgroundColor = darkenedBrand;
       }
+      updateMetaThemeColor(brandColor);
+    } else {
+      updateMetaThemeColor("#991e2e");
     }
     if (restaurant.branding.backgroundColor) {
       const bgColor = restaurant.branding.backgroundColor;
@@ -2131,6 +2145,7 @@ function handleMenuLoadError(slug, status, errorMsg) {
   if (brandLogo) {
     brandLogo.style.display = "none";
   }
+  updateMetaThemeColor("#991e2e");
 
   const readableName = slug && slug !== "royal-food-corner"
     ? slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")

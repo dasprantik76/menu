@@ -324,6 +324,17 @@ function revealPage() {
 // Safety fallback timer to ensure page dissolves even on slow networks
 setTimeout(revealPage, 2200);
 
+function updateMetaThemeColor(color) {
+  if (!color) return;
+  let metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (!metaTheme) {
+    metaTheme = document.createElement("meta");
+    metaTheme.name = "theme-color";
+    document.head.appendChild(metaTheme);
+  }
+  metaTheme.setAttribute("content", color);
+}
+
 /**
  * View switcher
  */
@@ -340,6 +351,9 @@ function showView(viewElement) {
   const isThemeColors = (viewElement === themeColorsView);
   const isQrCode = (viewElement === qrCodeView);
   const header = document.querySelector(".owner-header");
+
+  const themeColor = (isAuth || isRegister) ? "#f8f6f2" : "#991e2e";
+  updateMetaThemeColor(themeColor);
 
   if (header) {
     header.style.display = (isAuth || isRegister) ? "none" : "flex";
@@ -5831,6 +5845,19 @@ function applyBlackOverlay(hex, opacity = 0.25) {
   return "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
 }
 
+function isLightColorHex(hex) {
+  if (!hex || typeof hex !== "string") return false;
+  let clean = hex.replace("#", "").trim();
+  if (clean.length === 3) clean = clean.split("").map(c => c + c).join("");
+  if (!/^[0-9A-Fa-f]{6}$/.test(clean)) return false;
+  const num = parseInt(clean, 16);
+  const r = (num >> 16) & 255;
+  const g = (num >> 8) & 255;
+  const b = num & 255;
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  return yiq >= 160;
+}
+
 function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = "all") {
   if (typeof strokeVal === "string" && source === "all") {
     source = strokeVal;
@@ -5892,6 +5919,11 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
   if (themeMockupBtn) themeMockupBtn.style.backgroundColor = darkenedTop;
   if (themeMockupWrapper) themeMockupWrapper.style.backgroundColor = currentBgColor;
   if (themeMockupBody) themeMockupBody.style.backgroundColor = currentBgColor;
+
+  const phoneMockupStatusbar = document.getElementById("phoneMockupStatusbar");
+  if (phoneMockupStatusbar) {
+    phoneMockupStatusbar.style.color = isLightColorHex(currentTopColor) ? "#0f172a" : "#ffffff";
+  }
 
   // Top Bar color picker inputs
   if (themeTopColorIndicator) themeTopColorIndicator.style.backgroundColor = currentTopColor;

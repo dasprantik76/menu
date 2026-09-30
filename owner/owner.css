@@ -5985,13 +5985,14 @@ input:checked + .slider:before {
   gap: 22px;
 }
 
-/* Public Menu Mockup Preview */
+/* Public Menu Mockup Preview (Half Screen Phone Mockup) */
 .theme-preview-card {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 18px;
   border: 1px solid #e2e8f0;
-  padding: 16px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  padding: 16px 20px 0 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
 }
 
 .theme-preview-header-label {
@@ -6000,29 +6001,163 @@ input:checked + .slider:before {
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: #64748b;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   text-align: center;
+}
+
+/* Half Screen Phone Mockup Chassis */
+.theme-phone-mockup {
+  position: relative;
+  width: 100%;
+  max-width: 310px;
+  margin: 0 auto;
+  background: #181d26;
+  border-radius: 38px 38px 0 0;
+  padding: 7px 7px 0 7px;
+  box-shadow: 
+    0 -4px 18px rgba(0, 0, 0, 0.08), 
+    0 0 0 1px #2d3748,
+    0 16px 32px -4px rgba(15, 23, 42, 0.16);
+  box-sizing: border-box;
+}
+
+/* Physical side buttons on phone chassis */
+.phone-btn {
+  position: absolute;
+  width: 3px;
+  background: #374151;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 2px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.phone-btn-left {
+  left: -3px;
+  border-radius: 2px 0 0 2px;
+}
+
+.phone-btn-right {
+  right: -3px;
+  border-radius: 0 2px 2px 0;
+}
+
+.phone-btn-action {
+  top: 54px;
+  height: 13px;
+}
+
+.phone-btn-vol-up {
+  top: 76px;
+  height: 28px;
+}
+
+.phone-btn-vol-down {
+  top: 112px;
+  height: 28px;
+}
+
+.phone-btn-power {
+  top: 72px;
+  height: 44px;
 }
 
 .theme-mockup-wrapper {
   background: #fbefe1;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border-radius: 31px 31px 0 0;
   overflow: hidden;
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
   transition: background-color 0.22s ease;
+  position: relative;
 }
 
 .theme-mockup-topbar {
   position: relative;
   overflow: hidden;
   background-color: #991e2e;
-  padding: 12px 16px;
-  color: #ffffff;
+  padding: 8px 12px 14px 12px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   transition: background-color 0.22s ease;
+}
+
+/* Phone Status Bar (Integrated into top of phone screen) */
+.phone-mockup-statusbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 10;
+  color: #ffffff;
+  transition: color 0.22s ease;
+  padding: 0 4px;
+  box-sizing: border-box;
+}
+
+.phone-status-time {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Google Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  line-height: 1;
+  user-select: none;
+}
+
+.phone-dynamic-island {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -1px;
+  width: 68px;
+  height: 18px;
+  background: #000000;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 7px;
+  box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  user-select: none;
+}
+
+.phone-island-camera {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #0d1527;
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 1px rgba(0, 0, 0, 0.8);
+}
+
+.phone-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+}
+
+.phone-status-icon {
+  display: block;
+  opacity: 0.95;
+}
+
+.phone-status-battery {
+  position: relative;
+  top: 0.5px;
+}
+
+.theme-mockup-header-content {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
 }
 
 .theme-mockup-restaurant-name {
@@ -6037,16 +6172,16 @@ input:checked + .slider:before {
   text-align: center;
   white-space: nowrap;
   overflow: visible;
-  padding: 2px 10px;
+  padding: 2px 8px;
   box-sizing: border-box;
   max-width: 95%;
 }
 
 .theme-mockup-topbar .header-corner-ornament {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  height: 100%;
+  right: -6px;
+  bottom: -10px;
+  height: 48px;
   width: auto;
   pointer-events: none;
   user-select: none;
@@ -6057,7 +6192,7 @@ input:checked + .slider:before {
 }
 
 .theme-mockup-body {
-  padding: 14px 16px;
+  padding: 12px 14px 18px 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;

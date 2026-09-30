@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600&family=Kaushan+Script&family=Lobster&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600&family=Kaushan+Script&family=Lobster&family=Rye&family=Sacramento&display=swap');
 
 /* ==========================================================================
    ROYAL FOOD CORNER - Minimalist Clean Menu
@@ -225,20 +225,6 @@ body {
   text-align: center;
 }
 
-.header-corner-ornament {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  height: 100%;
-  width: auto;
-  pointer-events: none;
-  user-select: none;
-  z-index: 1;
-  object-fit: contain;
-  object-position: right bottom;
-  opacity: 0.1;
-}
-
 .brand-accent {
   color: inherit;
   font-family: inherit;
@@ -292,7 +278,7 @@ body {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background-color: var(--theme-darkened-brand, #731723);
+  background-color: var(--scroll-points-color, var(--theme-darkened-brand, #731723));
   opacity: 0.28;
   transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   cursor: pointer;
@@ -327,7 +313,7 @@ body {
   width: 4px;
   height: 14px;
   border-radius: 999px;
-  background-color: var(--theme-darkened-brand, #731723);
+  background-color: var(--scroll-points-color, var(--theme-darkened-brand, #731723));
   opacity: 0.65;
   box-shadow: none !important;
   filter: none !important;
@@ -371,7 +357,7 @@ body {
 /* Category Title - Compact outline box with reduced vertical padding */
 .category-heading {
   font-family: 'Righteous', cursive, sans-serif;
-  color: #d05a00;
+  color: var(--category-color, #d05a00);
   text-transform: uppercase;
   letter-spacing: 1.1px;
   text-align: center;
@@ -383,7 +369,7 @@ body {
   height: 32px;
   box-sizing: border-box;
   padding: 0 13px;
-  border: 1.5px solid #d05a00; /* Rounded-cornered rectangular outline box */
+  border: 1.5px solid var(--category-color, #d05a00); /* Rounded-cornered rectangular outline box */
   border-radius: 6px; /* Rounded corners */
   line-height: 1;
   box-shadow: none;
@@ -394,12 +380,12 @@ body {
 }
 
 .category-heading:hover {
-  background-color: rgba(208, 90, 0, 0.05);
+  background-color: color-mix(in srgb, var(--category-color, #d05a00) 8%, transparent);
 }
 
 .category-heading:active {
   transform: scale(0.97);
-  background-color: rgba(208, 90, 0, 0.1);
+  background-color: color-mix(in srgb, var(--category-color, #d05a00) 15%, transparent);
 }
 
 /* Golden Highlight for Today's Special Category Heading (Clean, No Glow) */
@@ -648,7 +634,7 @@ body {
 }
 
 .dish-name {
-  color: #000000; /* Menu text color black */
+  color: var(--item-text-color, #000000); /* Custom or default black menu text color */
   font-family: 'Google Sans', sans-serif !important;
   font-size: 1.15rem;
   font-weight: 500; /* Matching selected text font weight */
@@ -671,7 +657,8 @@ body {
 .dish-note {
   font-family: 'Google Sans', sans-serif !important;
   font-size: 0.84em;
-  color: #555555; /* Subtle dark gray for bracketed text */
+  color: var(--item-text-color, #555555);
+  opacity: 0.65;
   font-weight: 400;
   margin-left: 3px;
   align-self: center;
@@ -681,7 +668,8 @@ body {
   display: block;
   font-family: 'Google Sans', sans-serif !important;
   font-size: 0.84em;
-  color: #555555;
+  color: var(--item-text-color, #555555);
+  opacity: 0.65;
   font-weight: 400;
   line-height: 1.25;
   margin-top: -1px;
@@ -700,7 +688,8 @@ body {
 /* Dotted Leader Line - Positioned precisely in the vertical middle along Y-axis */
 .dot-leader {
   flex: 1 1 auto;
-  border-bottom: 2px dotted rgba(0, 0, 0, 0.28); /* Dotted leader for light parchment bg */
+  border-bottom: 2px dotted var(--item-text-color, #000000);
+  opacity: 0.5;
   margin: 0 6px;
   min-width: 10px;
   flex-shrink: 0;
@@ -709,7 +698,7 @@ body {
 }
 
 .dish-price {
-  color: var(--theme-darkened-brand, #731723);
+  color: var(--price-color, var(--theme-darkened-brand, #731723));
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', sans-serif !important;
   font-weight: 700;
   white-space: nowrap;

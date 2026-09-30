@@ -2116,6 +2116,26 @@ function updateRestaurantBranding(restaurant) {
     } else {
       document.documentElement.style.removeProperty("--name-text-color");
     }
+    if (restaurant.branding.itemTextColor) {
+      document.documentElement.style.setProperty("--item-text-color", restaurant.branding.itemTextColor);
+    } else {
+      document.documentElement.style.removeProperty("--item-text-color");
+    }
+    if (restaurant.branding.priceColor) {
+      document.documentElement.style.setProperty("--price-color", restaurant.branding.priceColor);
+    } else {
+      document.documentElement.style.removeProperty("--price-color");
+    }
+    if (restaurant.branding.categoryColor) {
+      document.documentElement.style.setProperty("--category-color", restaurant.branding.categoryColor);
+    } else {
+      document.documentElement.style.removeProperty("--category-color");
+    }
+    if (restaurant.branding.scrollPointsColor) {
+      document.documentElement.style.setProperty("--scroll-points-color", restaurant.branding.scrollPointsColor);
+    } else {
+      document.documentElement.style.removeProperty("--scroll-points-color");
+    }
     if (restaurant.branding.hasNameStroke === false) {
       document.documentElement.style.setProperty("--name-stroke", "0px transparent");
     } else {
@@ -2128,7 +2148,9 @@ function updateRestaurantBranding(restaurant) {
         "Google Sans": "'Google Sans', sans-serif",
         "Berkshire Swash": "'Berkshire Swash', cursive, serif",
         "Kaushan Script": "'Kaushan Script', cursive",
-        "DM Serif Display": "'DM Serif Display', serif"
+        "DM Serif Display": "'DM Serif Display', serif",
+        "Rye": "'Rye', cursive, serif",
+        "Sacramento": "'Sacramento', cursive"
       };
       const resolvedFont = fontMap[restaurant.branding.nameFont] || `'${restaurant.branding.nameFont}', cursive, sans-serif`;
       document.documentElement.style.setProperty("--name-font", resolvedFont);

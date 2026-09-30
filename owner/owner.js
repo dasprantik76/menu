@@ -5765,6 +5765,8 @@ const themeMockupBizName = document.getElementById("themeMockupBizName");
 const themeMockupBody = document.getElementById("themeMockupBody");
 const themeMockupPrice = document.getElementById("themeMockupPrice");
 const themeMockupBtn = document.getElementById("themeMockupBtn");
+const themeMockupCatHeading = document.getElementById("themeMockupCatHeading");
+const themeMockupDots = document.getElementById("themeMockupDots");
 const themeSwatchesGrid = document.getElementById("themeSwatchesGrid");
 
 // Custom Top Bar color elements
@@ -5783,21 +5785,259 @@ const themeNameColorIndicator = document.getElementById("themeNameColorIndicator
 const themeNameHexInput = document.getElementById("themeNameHexInput");
 const themeNameStrokeCheckbox = document.getElementById("themeNameStrokeCheckbox");
 
+// Custom Menu Items Text color elements
+const themeItemColorNativeInput = document.getElementById("themeItemColorNativeInput");
+const themeItemColorIndicator = document.getElementById("themeItemColorIndicator");
+const themeItemHexInput = document.getElementById("themeItemHexInput");
+
+// Custom Price color elements
+const themePriceColorNativeInput = document.getElementById("themePriceColorNativeInput");
+const themePriceColorIndicator = document.getElementById("themePriceColorIndicator");
+const themePriceHexInput = document.getElementById("themePriceHexInput");
+
+// Custom Category Title color elements
+const themeCategoryColorNativeInput = document.getElementById("themeCategoryColorNativeInput");
+const themeCategoryColorIndicator = document.getElementById("themeCategoryColorIndicator");
+const themeCategoryHexInput = document.getElementById("themeCategoryHexInput");
+
+// Custom Scroll Points color elements
+const themeScrollPointsColorNativeInput = document.getElementById("themeScrollPointsColorNativeInput");
+const themeScrollPointsColorIndicator = document.getElementById("themeScrollPointsColorIndicator");
+const themeScrollPointsHexInput = document.getElementById("themeScrollPointsHexInput");
+
 const themeSaveBtn = document.getElementById("themeSaveBtn");
 const themeSaveBtnLabel = document.getElementById("themeSaveBtnLabel");
 const themeSaveSpinner = document.getElementById("themeSaveSpinner");
 const themeResetBtn = document.getElementById("themeResetBtn");
 
+// Save Preset Action elements
+const themeSavePresetBtn = document.getElementById("themeSavePresetBtn");
+const themeSavePresetBtnLabel = document.getElementById("themeSavePresetBtnLabel");
+const themePaletteSlotsStatus = document.getElementById("themePaletteSlotsStatus");
+
+let savedCustomPresets = [];
+
+function loadCustomPresetsFromBusiness() {
+  savedCustomPresets = [];
+  if (currentBusiness && currentBusiness.branding && Array.isArray(currentBusiness.branding.customPresets)) {
+    currentBusiness.branding.customPresets.forEach((p, idx) => {
+      const slot = (typeof p.slotIndex === "number" && p.slotIndex >= 0 && p.slotIndex < 10) ? p.slotIndex : idx;
+      if (slot < 10) savedCustomPresets[slot] = p;
+    });
+  } else {
+    try {
+      const cacheKey = "menucard_custom_presets_" + (currentBusiness && currentBusiness._id ? currentBusiness._id : "default");
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((p, idx) => {
+            if (p && idx < 10) savedCustomPresets[idx] = p;
+          });
+        }
+      }
+    } catch(e) {}
+  }
+}
+
+async function persistCustomPresets() {
+  const cleanList = [];
+  for (let i = 0; i < 10; i++) {
+    if (savedCustomPresets[i]) {
+      cleanList.push(savedCustomPresets[i]);
+    }
+  }
+
+  try {
+    const cacheKey = "menucard_custom_presets_" + (currentBusiness && currentBusiness._id ? currentBusiness._id : "default");
+    localStorage.setItem(cacheKey, JSON.stringify(savedCustomPresets));
+  } catch(e) {}
+
+  if (currentBusiness && currentBusiness._id) {
+    if (!currentBusiness.branding) currentBusiness.branding = {};
+    currentBusiness.branding.customPresets = cleanList;
+    try {
+      fetch("/api/owner/business", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customPresets: cleanList })
+      }).catch(err => console.error("Error saving custom presets:", err));
+    } catch(e) {}
+  }
+  updatePaletteSlotsStatus();
+}
+
+function updatePaletteSlotsStatus() {
+  if (!themePaletteSlotsStatus) return;
+  let count = 0;
+  for (let i = 0; i < 10; i++) {
+    if (savedCustomPresets[i]) count++;
+  }
+  themePaletteSlotsStatus.textContent = `${count} of 10 slots saved`;
+}
+
+function saveCurrentPresetToSlot(slotIdx) {
+  if (slotIdx === undefined || slotIdx === null || slotIdx < 0) {
+    let found = -1;
+    for (let i = 0; i < 10; i++) {
+      if (!savedCustomPresets[i]) {
+        found = i;
+        break;
+      }
+    }
+    if (found === -1) {
+      if (typeof showToast === "function") {
+        showToast("All 10 preset slots are full. Delete a preset to free up a slot.", "warning");
+      } else {
+        alert("All 10 preset slots are full. Delete a preset to free up a slot.");
+      }
+      return;
+    }
+    slotIdx = found;
+  }
+
+  const newPreset = {
+    slotIndex: slotIdx,
+    label: `Custom Preset ${slotIdx + 1}`,
+    top: currentTopColor,
+    bg: currentBgColor,
+    name: currentNameColor,
+    item: currentItemTextColor,
+    price: currentPriceColor,
+    category: currentCategoryColor,
+    scroll: currentScrollPointsColor,
+    hasStroke: currentHasNameStroke,
+    font: currentNameFont
+  };
+
+  savedCustomPresets[slotIdx] = newPreset;
+  persistCustomPresets();
+  renderThemeSwatches();
+
+  if (themeSavePresetBtnLabel) {
+    const orig = themeSavePresetBtnLabel.textContent;
+    themeSavePresetBtnLabel.textContent = `Saved to Slot ${slotIdx + 1}!`;
+    setTimeout(() => { themeSavePresetBtnLabel.textContent = orig; }, 1500);
+  }
+  if (typeof showToast === "function") {
+    showToast(`Preset saved to Slot ${slotIdx + 1}!`, "success");
+  }
+}
+
+function deleteCustomPreset(slotIdx) {
+  delete savedCustomPresets[slotIdx];
+  persistCustomPresets();
+  renderThemeSwatches();
+  if (typeof showToast === "function") {
+    showToast(`Preset deleted from Slot ${slotIdx + 1}`, "info");
+  }
+}
+
 const THEME_PALETTES = [
-  { top: "#C4122F", bg: "#FFF8F0", name: "#111111" }, // KFC (Deep Crimson, Biscuit Cream, Bold Black)
-  { top: "#006491", bg: "#F0F5FA", name: "#E31837" }, // Domino's (Royal Navy, Ice White, Domino Red)
-  { top: "#006241", bg: "#F7F5F0", name: "#1E3932" }, // Starbucks (House Forest Green, Warm Ivory, Deep Forest)
-  { top: "#702082", bg: "#FAF2FC", name: "#FFB81C" }, // Taco Bell (Vibrant Purple, Soft Lilac, Bell Gold)
-  { top: "#DA1884", bg: "#FDF2F7", name: "#004F9F" }, // Baskin-Robbins (Ice Cream Pink, Strawberry Cream, BR Blue)
-  { top: "#008C15", bg: "#FFFBE6", name: "#FFC600" }, // Subway (Fresh Green, Toasted Gold, Subway Yellow)
-  { top: "#EE3124", bg: "#FFF6EA", name: "#231F20" }, // Pizza Hut (Pizzeria Red, Pan Crust Cream, Classic Black)
-  { top: "#46166B", bg: "#F6EFFC", name: "#FED141" }, // Cadbury (Royal Purple, Silky Violet Cream, Script Gold)
-  { top: "#008B47", bg: "#F2FAF0", name: "#FFDE00" }  // Sprite (Citrus Green, Frost Lemon Fizz, Spark Yellow)
+  // 5 Normal (Light / Gourmet / Artisan) Palettes
+  {
+    label: "Parisian Bistro (Ruby & Linen)",
+    top: "#8B1528", // Deep Bordeaux Ruby
+    bg: "#FFFBF5",  // Warm Ivory Linen
+    name: "#FFFFFF", // Crisp White on Ruby Topbar
+    item: "#18181B", // Deep Obsidian Black
+    price: "#991B1B", // Rich Crimson Garnet
+    category: "#991B1B",
+    scroll: "#8B1528"
+  },
+  {
+    label: "Kyoto Matcha (Botanical Jade)",
+    top: "#134E3F", // Deep Imperial Jade
+    bg: "#F5FBF7",  // Morning Dew Mint
+    name: "#FFFFFF", // Crisp White on Jade Topbar
+    item: "#0F2922", // Deep Pine Charcoal
+    price: "#C25E00", // Warm Caramel Amber
+    category: "#134E3F",
+    scroll: "#C25E00"
+  },
+  {
+    label: "Amalfi Trattoria (Terracotta & Cream)",
+    top: "#C2410C", // Sun-Drenched Terracotta
+    bg: "#FFF8F0",  // Baked Biscuit Cream
+    name: "#FFFFFF", // Crisp White on Terracotta Topbar
+    item: "#1C1412", // Dark Roasted Espresso
+    price: "#9A3412", // Deep Roasted Clay
+    category: "#C2410C",
+    scroll: "#9A3412"
+  },
+  {
+    label: "Nordic Coast (Marine Navy & Ice)",
+    top: "#0C4A6E", // Deep Marine Ocean
+    bg: "#F0F9FF",  // Sea Salt Ice Mist
+    name: "#FFFFFF", // Crisp White on Navy Topbar
+    item: "#082F49", // Deep Midnight Slate
+    price: "#BE123C", // Nordic Lingonberry Coral
+    category: "#0C4A6E",
+    scroll: "#BE123C"
+  },
+  {
+    label: "Vintage Saloon (Bourbon & Rye)",
+    top: "#451A03", // Aged Bourbon Mahogany
+    bg: "#FAF3E0",  // Antique Warm Parchment
+    name: "#F59E0B", // Burnished Amber Gold
+    item: "#1F130B", // Charred Smoked Basalt
+    price: "#991B1B", // Vintage Crimson Seal
+    category: "#991B1B",
+    scroll: "#451A03",
+    font: "Rye"     // Curated Vintage Font
+  },
+
+  // 5 Dark (Luxury Noir / Midnight / Lounge) Palettes
+  {
+    label: "Caviar & Gold (Michelin Noir)",
+    top: "#18181B", // Polished Obsidian Slate
+    bg: "#09090B",  // Deep Caviar Noir
+    name: "#F59E0B", // Luminous 24K Gold
+    item: "#F4F4F5", // High-Contrast Platinum White
+    price: "#FBBF24", // Gleaming Gold Leaf
+    category: "#F59E0B",
+    scroll: "#FBBF24"
+  },
+  {
+    label: "Tokyo Cyber (Neon Plum & Coral)",
+    top: "#4C0519", // Deep Midnight Plum
+    bg: "#0A0608",  // Shadow Noir
+    name: "#FDA4AF", // Electric Cherry Blossom
+    item: "#FFF1F2", // Pure Soft White
+    price: "#FB7185", // Vivid Neon Coral
+    category: "#FB7185",
+    scroll: "#FDA4AF"
+  },
+  {
+    label: "Emerald Speakeasy (Velvet & Brass)",
+    top: "#022C22", // Midnight Forest Velvet
+    bg: "#03140F",  // Abyssal Pine Night
+    name: "#34D399", // Luminous Mint Jade
+    item: "#F0FDF4", // Mint Dew White
+    price: "#FBBF24", // Burnished Brass Amber
+    category: "#34D399",
+    scroll: "#FBBF24"
+  },
+  {
+    label: "Royal Amethyst (Violet & Berry)",
+    top: "#3B0764", // Imperial Midnight Violet
+    bg: "#0A0410",  // Dark Blackberry Velvet
+    name: "#D8B4FE", // Radiant Lilac Glow
+    item: "#FAF5FF", // Silky Moonlit White
+    price: "#F472B6", // Electric Neon Berry
+    category: "#D8B4FE",
+    scroll: "#F472B6"
+  },
+  {
+    label: "Smoked Cast Iron (Ember Flame)",
+    top: "#1C1917", // Smoked Cast Iron
+    bg: "#0C0A09",  // Charred Charcoal Hearth
+    name: "#FB923C", // Glowing Hearth Flame
+    item: "#F5F5F4", // Bright Silver Smoke
+    price: "#F97316", // Blazing Hot Ember
+    category: "#FB923C",
+    scroll: "#F97316"
+  }
 ];
 
 const THEME_FONTS = [
@@ -5806,7 +6046,9 @@ const THEME_FONTS = [
   { id: "Google Sans", name: "Google Sans", family: "'Google Sans', sans-serif" },
   { id: "Berkshire Swash", name: "Berkshire Swash", family: "'Berkshire Swash', cursive, serif" },
   { id: "Kaushan Script", name: "Kaushan Script", family: "'Kaushan Script', cursive" },
-  { id: "DM Serif Display", name: "DM Serif Display", family: "'DM Serif Display', serif" }
+  { id: "DM Serif Display", name: "DM Serif Display", family: "'DM Serif Display', serif" },
+  { id: "Rye", name: "Rye", family: "'Rye', cursive, serif" },
+  { id: "Sacramento", name: "Sacramento", family: "'Sacramento', cursive" }
 ];
 
 let currentTopColor = "#991E2E";
@@ -5816,6 +6058,18 @@ let savedBgColor = "#FBEFE1";
 let currentNameColor = "#63141E";
 let savedNameColor = "#63141E";
 let isCustomNameColor = false;
+let currentItemTextColor = "#000000";
+let savedItemTextColor = "#000000";
+let isCustomItemTextColor = false;
+let currentPriceColor = "#731723";
+let savedPriceColor = "#731723";
+let isCustomPriceColor = false;
+let currentCategoryColor = "#D05A00";
+let savedCategoryColor = "#D05A00";
+let isCustomCategoryColor = false;
+let currentScrollPointsColor = "#731723";
+let savedScrollPointsColor = "#731723";
+let isCustomScrollPointsColor = false;
 let currentHasNameStroke = true;
 let savedHasNameStroke = true;
 let currentNameFont = "Lobster";
@@ -5860,7 +6114,7 @@ function isLightColorHex(hex) {
   return yiq >= 160;
 }
 
-function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = "all") {
+function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = "all", itemHex = null, priceHex = null, categoryHex = null, scrollPointsHex = null) {
   if (typeof strokeVal === "string" && source === "all") {
     source = strokeVal;
     strokeVal = null;
@@ -5869,6 +6123,10 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
   const normTop = normalizeHexColor(topHex);
   const normBg = normalizeHexColor(bgHex);
   const normName = normalizeHexColor(nameHex);
+  const normItem = normalizeHexColor(itemHex);
+  const normPrice = normalizeHexColor(priceHex);
+  const normCategory = normalizeHexColor(categoryHex);
+  const normScroll = normalizeHexColor(scrollPointsHex);
 
   if (normTop) currentTopColor = normTop;
   if (normBg) currentBgColor = normBg;
@@ -5877,18 +6135,90 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
   if (source === "swatch") {
     isCustomNameColor = true;
     currentNameColor = normName || applyBlackOverlay(currentTopColor, 0.25);
+    if (normItem) {
+      currentItemTextColor = normItem;
+      isCustomItemTextColor = true;
+    } else {
+      currentItemTextColor = isLightColorHex(currentBgColor) ? "#000000" : "#FFFFFF";
+      isCustomItemTextColor = false;
+    }
+    if (normPrice) {
+      currentPriceColor = normPrice;
+      isCustomPriceColor = true;
+    } else {
+      currentPriceColor = applyBlackOverlay(currentTopColor, 0.25);
+      isCustomPriceColor = false;
+    }
+    if (normCategory) {
+      currentCategoryColor = normCategory;
+      isCustomCategoryColor = true;
+    } else {
+      currentCategoryColor = "#D05A00";
+      isCustomCategoryColor = false;
+    }
+    if (normScroll) {
+      currentScrollPointsColor = normScroll;
+      isCustomScrollPointsColor = true;
+    } else {
+      currentScrollPointsColor = currentPriceColor || applyBlackOverlay(currentTopColor, 0.25);
+      isCustomScrollPointsColor = false;
+    }
   } else if (source === "nameNative" || source === "nameHex") {
     if (normName) {
       currentNameColor = normName;
       isCustomNameColor = true;
     }
-  } else if (!isCustomNameColor && (source === "topNative" || source === "topHex")) {
-    currentNameColor = applyBlackOverlay(currentTopColor, 0.25);
+  } else if (source === "itemNative" || source === "itemHex") {
+    if (normItem) {
+      currentItemTextColor = normItem;
+      isCustomItemTextColor = true;
+    }
+  } else if (source === "priceNative" || source === "priceHex") {
+    if (normPrice) {
+      currentPriceColor = normPrice;
+      isCustomPriceColor = true;
+    }
+  } else if (source === "categoryNative" || source === "categoryHex") {
+    if (normCategory) {
+      currentCategoryColor = normCategory;
+      isCustomCategoryColor = true;
+    }
+  } else if (source === "scrollNative" || source === "scrollHex") {
+    if (normScroll) {
+      currentScrollPointsColor = normScroll;
+      isCustomScrollPointsColor = true;
+    }
+  } else if (source === "topNative" || source === "topHex") {
+    if (!isCustomNameColor) {
+      currentNameColor = applyBlackOverlay(currentTopColor, 0.25);
+    }
+    if (!isCustomPriceColor) {
+      currentPriceColor = applyBlackOverlay(currentTopColor, 0.25);
+    }
+    if (!isCustomScrollPointsColor) {
+      currentScrollPointsColor = applyBlackOverlay(currentTopColor, 0.25);
+    }
   } else if (source === "all") {
     if (normName) {
       currentNameColor = normName;
     } else if (!isCustomNameColor) {
       currentNameColor = applyBlackOverlay(currentTopColor, 0.25);
+    }
+    if (normItem) {
+      currentItemTextColor = normItem;
+    }
+    if (normPrice) {
+      currentPriceColor = normPrice;
+    } else if (!isCustomPriceColor) {
+      currentPriceColor = applyBlackOverlay(currentTopColor, 0.25);
+    }
+    if (normCategory) {
+      currentCategoryColor = normCategory;
+    }
+    if (normScroll) {
+      currentScrollPointsColor = normScroll;
+    } else if (!isCustomScrollPointsColor) {
+      currentScrollPointsColor = currentPriceColor || applyBlackOverlay(currentTopColor, 0.25);
     }
   }
 
@@ -5904,7 +6234,7 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     themeMockupBizName.style.setProperty("--preview-name-color", currentNameColor);
 
     if (currentHasNameStroke) {
-      const strokeWidth = (currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans" || currentNameFont === "DM Serif Display") ? "1.8px" : "2.2px";
+      const strokeWidth = (currentNameFont === "Sacramento") ? "1.4px" : ((currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans" || currentNameFont === "DM Serif Display" || currentNameFont === "Rye") ? "1.8px" : "2.2px");
       const strokeVal = `${strokeWidth} ${currentBgColor}`;
       themeMockupBizName.style.setProperty("-webkit-text-stroke", strokeVal, "important");
       themeMockupBizName.style.setProperty("-webkit-text-stroke-width", strokeWidth, "important");
@@ -5917,10 +6247,32 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
       themeMockupBizName.style.setProperty("--preview-name-stroke", "0px transparent");
     }
   }
-  if (themeMockupPrice) themeMockupPrice.style.color = darkenedTop;
+  if (themeMockupPrice) themeMockupPrice.style.color = currentPriceColor;
   if (themeMockupBtn) themeMockupBtn.style.backgroundColor = darkenedTop;
-  if (themeMockupWrapper) themeMockupWrapper.style.backgroundColor = currentBgColor;
-  if (themeMockupBody) themeMockupBody.style.backgroundColor = currentBgColor;
+  if (themeMockupWrapper) themeMockupWrapper.style.backgroundColor = "transparent";
+  if (themeMockupCatHeading) {
+    themeMockupCatHeading.style.color = currentCategoryColor;
+    themeMockupCatHeading.style.borderColor = currentCategoryColor;
+  }
+  if (themeMockupBody) {
+    themeMockupBody.style.backgroundColor = currentBgColor;
+    themeMockupBody.style.setProperty("--preview-price-color", currentPriceColor);
+    themeMockupBody.style.setProperty("--preview-item-color", currentItemTextColor);
+    themeMockupBody.style.setProperty("--preview-category-color", currentCategoryColor);
+    themeMockupBody.style.setProperty("--preview-scroll-points-color", currentScrollPointsColor);
+  }
+  document.querySelectorAll(".theme-mockup-dish-name").forEach(el => {
+    el.style.color = currentItemTextColor;
+  });
+  document.querySelectorAll(".theme-mockup-dish-price").forEach(el => {
+    el.style.color = currentPriceColor;
+  });
+  document.querySelectorAll(".theme-mockup-dot-leader").forEach(el => {
+    el.style.borderBottomColor = currentItemTextColor;
+  });
+  document.querySelectorAll(".theme-mockup-dot").forEach(dot => {
+    dot.style.backgroundColor = currentScrollPointsColor;
+  });
 
   const phoneMockupStatusbar = document.getElementById("phoneMockupStatusbar");
   if (phoneMockupStatusbar) {
@@ -5954,6 +6306,42 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     themeNameHexInput.value = currentNameColor.replace("#", "");
   }
 
+  // Menu Items Text color picker inputs
+  if (themeItemColorIndicator) themeItemColorIndicator.style.backgroundColor = currentItemTextColor;
+  if (source !== "itemNative" && themeItemColorNativeInput) {
+    themeItemColorNativeInput.value = currentItemTextColor;
+  }
+  if (source !== "itemHex" && themeItemHexInput) {
+    themeItemHexInput.value = currentItemTextColor.replace("#", "");
+  }
+
+  // Price color picker inputs
+  if (themePriceColorIndicator) themePriceColorIndicator.style.backgroundColor = currentPriceColor;
+  if (source !== "priceNative" && themePriceColorNativeInput) {
+    themePriceColorNativeInput.value = currentPriceColor;
+  }
+  if (source !== "priceHex" && themePriceHexInput) {
+    themePriceHexInput.value = currentPriceColor.replace("#", "");
+  }
+
+  // Category Title color picker inputs
+  if (themeCategoryColorIndicator) themeCategoryColorIndicator.style.backgroundColor = currentCategoryColor;
+  if (source !== "categoryNative" && themeCategoryColorNativeInput) {
+    themeCategoryColorNativeInput.value = currentCategoryColor;
+  }
+  if (source !== "categoryHex" && themeCategoryHexInput) {
+    themeCategoryHexInput.value = currentCategoryColor.replace("#", "");
+  }
+
+  // Scroll Points color picker inputs
+  if (themeScrollPointsColorIndicator) themeScrollPointsColorIndicator.style.backgroundColor = currentScrollPointsColor;
+  if (source !== "scrollNative" && themeScrollPointsColorNativeInput) {
+    themeScrollPointsColorNativeInput.value = currentScrollPointsColor;
+  }
+  if (source !== "scrollHex" && themeScrollPointsHexInput) {
+    themeScrollPointsHexInput.value = currentScrollPointsColor.replace("#", "");
+  }
+
   // Stroke checkbox state
   if (source !== "strokeCheckbox" && themeNameStrokeCheckbox) {
     themeNameStrokeCheckbox.checked = currentHasNameStroke;
@@ -5966,12 +6354,27 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
       const swTop = swatch.getAttribute("data-top");
       const swBg = swatch.getAttribute("data-bg");
       const swName = swatch.getAttribute("data-name");
-      if (
+      const swItem = swatch.getAttribute("data-item");
+      const swPrice = swatch.getAttribute("data-price");
+      const swCat = swatch.getAttribute("data-category");
+      const swScroll = swatch.getAttribute("data-scroll");
+      const swFont = swatch.getAttribute("data-font");
+      const matchesMain = (
         swTop && swBg && swName &&
         swTop.toUpperCase() === currentTopColor.toUpperCase() &&
         swBg.toUpperCase() === currentBgColor.toUpperCase() &&
         swName.toUpperCase() === currentNameColor.toUpperCase()
-      ) {
+      );
+      const matchesItemPrice = (
+        (!swItem || swItem.toUpperCase() === currentItemTextColor.toUpperCase()) &&
+        (!swPrice || swPrice.toUpperCase() === currentPriceColor.toUpperCase())
+      );
+      const matchesCatScroll = (
+        (!swCat || swCat.toUpperCase() === currentCategoryColor.toUpperCase()) &&
+        (!swScroll || swScroll.toUpperCase() === currentScrollPointsColor.toUpperCase())
+      );
+      const matchesFont = (!swFont || swFont === currentNameFont);
+      if (matchesMain && matchesItemPrice && matchesCatScroll && matchesFont) {
         swatch.classList.add("active");
       } else {
         swatch.classList.remove("active");
@@ -5984,6 +6387,10 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     currentTopColor.toUpperCase() !== savedTopColor.toUpperCase() ||
     currentBgColor.toUpperCase() !== savedBgColor.toUpperCase() ||
     currentNameColor.toUpperCase() !== savedNameColor.toUpperCase() ||
+    currentItemTextColor.toUpperCase() !== savedItemTextColor.toUpperCase() ||
+    currentPriceColor.toUpperCase() !== savedPriceColor.toUpperCase() ||
+    currentCategoryColor.toUpperCase() !== savedCategoryColor.toUpperCase() ||
+    currentScrollPointsColor.toUpperCase() !== savedScrollPointsColor.toUpperCase() ||
     currentHasNameStroke !== savedHasNameStroke ||
     currentNameFont !== savedNameFont
   );
@@ -5996,6 +6403,10 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     currentTopColor.toUpperCase() === "#991E2E" &&
     currentBgColor.toUpperCase() === "#FBEFE1" &&
     currentNameColor.toUpperCase() === "#63141E" &&
+    currentItemTextColor.toUpperCase() === "#000000" &&
+    currentPriceColor.toUpperCase() === "#731723" &&
+    currentCategoryColor.toUpperCase() === "#D05A00" &&
+    currentScrollPointsColor.toUpperCase() === "#731723" &&
     currentHasNameStroke === true &&
     currentNameFont === "Lobster"
   );
@@ -6029,29 +6440,179 @@ function renderThemeSwatches() {
     card.setAttribute("data-top", palette.top);
     card.setAttribute("data-bg", palette.bg);
     card.setAttribute("data-name", palette.name);
-    card.setAttribute("aria-label", `Color Palette Preset ${idx + 1}`);
+    if (palette.item) card.setAttribute("data-item", palette.item);
+    if (palette.price) card.setAttribute("data-price", palette.price);
+    if (palette.category) card.setAttribute("data-category", palette.category);
+    if (palette.scroll) card.setAttribute("data-scroll", palette.scroll);
+    if (palette.font) card.setAttribute("data-font", palette.font);
+    card.setAttribute("aria-label", palette.label || `Color Palette Preset ${idx + 1}`);
+    card.setAttribute("title", palette.label || `Theme ${idx + 1}`);
 
     const isMatch = (
       palette.top.toUpperCase() === currentTopColor.toUpperCase() &&
       palette.bg.toUpperCase() === currentBgColor.toUpperCase() &&
-      palette.name.toUpperCase() === currentNameColor.toUpperCase()
+      palette.name.toUpperCase() === currentNameColor.toUpperCase() &&
+      (!palette.item || palette.item.toUpperCase() === currentItemTextColor.toUpperCase()) &&
+      (!palette.price || palette.price.toUpperCase() === currentPriceColor.toUpperCase()) &&
+      (!palette.category || palette.category.toUpperCase() === currentCategoryColor.toUpperCase()) &&
+      (!palette.scroll || palette.scroll.toUpperCase() === currentScrollPointsColor.toUpperCase()) &&
+      (!palette.font || palette.font === currentNameFont)
     );
     if (isMatch) {
       card.classList.add("active");
     }
 
-    const circle = document.createElement("span");
-    circle.className = "theme-swatch-circle";
-    circle.style.background = `conic-gradient(from -60deg, ${palette.top} 0deg 120deg, ${palette.bg} 120deg 240deg, ${palette.name} 240deg 360deg)`;
+    const barsContainer = document.createElement("span");
+    barsContainer.className = "theme-swatch-bars";
+    barsContainer.style.background = `linear-gradient(to bottom, ${palette.top} 0% 20%, ${palette.bg} 20% 40%, ${palette.name} 40% 60%, ${palette.item || '#000000'} 60% 80%, ${palette.price || '#731723'} 80% 100%)`;
 
-    card.appendChild(circle);
+    const colors = [
+      palette.top,
+      palette.bg,
+      palette.name,
+      palette.item || "#000000",
+      palette.price || "#731723"
+    ];
+    colors.forEach(col => {
+      const row = document.createElement("span");
+      row.className = "theme-swatch-row";
+      row.style.backgroundColor = col;
+      barsContainer.appendChild(row);
+    });
+
+    card.appendChild(barsContainer);
 
     card.addEventListener("click", () => {
-      updateThemeColorsUI(palette.top, palette.bg, palette.name, null, "swatch");
+      if (palette.font) {
+        currentNameFont = palette.font;
+        const fontObj = THEME_FONTS.find(f => f.id === palette.font) || THEME_FONTS[0];
+        const displaySpan = document.getElementById("themeFontSelectedName");
+        if (displaySpan) {
+          displaySpan.textContent = fontObj.name;
+          displaySpan.style.fontFamily = fontObj.family;
+        }
+        const menu = document.getElementById("themeFontDropdownMenu");
+        if (menu) {
+          menu.querySelectorAll(".theme-font-item").forEach(item => {
+            const isSel = (item.getAttribute("data-font") === palette.font);
+            item.classList.toggle("is-selected", isSel);
+            item.setAttribute("aria-selected", isSel ? "true" : "false");
+          });
+        }
+        const select = document.getElementById("themeFontSelectDropdown");
+        if (select) {
+          select.value = palette.font;
+        }
+      }
+      updateThemeColorsUI(palette.top, palette.bg, palette.name, null, "swatch", palette.item, palette.price, palette.category, palette.scroll);
     });
 
     themeSwatchesGrid.appendChild(card);
   });
+
+  // 10 Custom Preset Slots (2 rows of 5)
+  for (let slotIdx = 0; slotIdx < 10; slotIdx++) {
+    const customPreset = savedCustomPresets[slotIdx] || null;
+    const card = document.createElement("button");
+    card.type = "button";
+    card.setAttribute("data-slot", slotIdx);
+
+    if (customPreset) {
+      card.className = "theme-swatch-card theme-swatch-custom";
+      card.setAttribute("data-top", customPreset.top);
+      card.setAttribute("data-bg", customPreset.bg);
+      card.setAttribute("data-name", customPreset.name);
+      if (customPreset.item) card.setAttribute("data-item", customPreset.item);
+      if (customPreset.price) card.setAttribute("data-price", customPreset.price);
+      if (customPreset.category) card.setAttribute("data-category", customPreset.category);
+      if (customPreset.scroll) card.setAttribute("data-scroll", customPreset.scroll);
+      if (customPreset.font) card.setAttribute("data-font", customPreset.font);
+      card.setAttribute("aria-label", customPreset.label || `Custom Preset ${slotIdx + 1}`);
+      card.setAttribute("title", `${customPreset.label || `Custom Preset ${slotIdx + 1}`} (Click to apply)`);
+
+      const isMatch = (
+        customPreset.top.toUpperCase() === currentTopColor.toUpperCase() &&
+        customPreset.bg.toUpperCase() === currentBgColor.toUpperCase() &&
+        customPreset.name.toUpperCase() === currentNameColor.toUpperCase() &&
+        (!customPreset.item || customPreset.item.toUpperCase() === currentItemTextColor.toUpperCase()) &&
+        (!customPreset.price || customPreset.price.toUpperCase() === currentPriceColor.toUpperCase()) &&
+        (!customPreset.category || customPreset.category.toUpperCase() === currentCategoryColor.toUpperCase()) &&
+        (!customPreset.scroll || customPreset.scroll.toUpperCase() === currentScrollPointsColor.toUpperCase()) &&
+        (!customPreset.font || customPreset.font === currentNameFont)
+      );
+      if (isMatch) {
+        card.classList.add("active");
+      }
+
+      const barsContainer = document.createElement("span");
+      barsContainer.className = "theme-swatch-bars";
+      barsContainer.style.background = `linear-gradient(to bottom, ${customPreset.top} 0% 20%, ${customPreset.bg} 20% 40%, ${customPreset.name} 40% 60%, ${customPreset.item || '#000000'} 60% 80%, ${customPreset.price || '#731723'} 80% 100%)`;
+
+      const colors = [
+        customPreset.top,
+        customPreset.bg,
+        customPreset.name,
+        customPreset.item || "#000000",
+        customPreset.price || "#731723"
+      ];
+      colors.forEach(col => {
+        const row = document.createElement("span");
+        row.className = "theme-swatch-row";
+        row.style.backgroundColor = col;
+        barsContainer.appendChild(row);
+      });
+      card.appendChild(barsContainer);
+
+      // Delete custom preset button
+      const delBtn = document.createElement("span");
+      delBtn.className = "theme-swatch-delete-btn";
+      delBtn.title = "Delete this custom preset";
+      delBtn.setAttribute("role", "button");
+      delBtn.setAttribute("aria-label", "Delete preset");
+      delBtn.innerHTML = `&times;`;
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteCustomPreset(slotIdx);
+      });
+      card.appendChild(delBtn);
+
+      card.addEventListener("click", () => {
+        if (customPreset.font) {
+          selectThemeFont(customPreset.font);
+        }
+        updateThemeColorsUI(
+          customPreset.top,
+          customPreset.bg,
+          customPreset.name,
+          customPreset.hasStroke !== undefined ? customPreset.hasStroke : null,
+          "swatch",
+          customPreset.item,
+          customPreset.price,
+          customPreset.category,
+          customPreset.scroll
+        );
+      });
+    } else {
+      // Empty slot
+      card.className = "theme-swatch-card theme-swatch-empty";
+      card.setAttribute("aria-label", `Empty Preset Slot ${slotIdx + 1}`);
+      card.setAttribute("title", `Slot ${slotIdx + 1} (Empty - Click to save current colors)`);
+      card.innerHTML = `
+        <svg class="theme-swatch-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        <span class="theme-swatch-empty-label">Slot ${slotIdx + 1}</span>
+      `;
+      card.addEventListener("click", () => {
+        saveCurrentPresetToSlot(slotIdx);
+      });
+    }
+
+    themeSwatchesGrid.appendChild(card);
+  }
+
+  updatePaletteSlotsStatus();
 }
 
 function renderThemeFonts() {
@@ -6159,6 +6720,28 @@ function closeThemeFontDropdown() {
 
 function renderThemeColorsView() {
   const bizName = (currentBusiness && currentBusiness.name) ? currentBusiness.name : "Your Restaurant";
+  const logoUrl = (currentBusiness && currentBusiness.branding && currentBusiness.branding.logoUrl) 
+    ? currentBusiness.branding.logoUrl 
+    : "";
+  const themeMockupLogo = document.getElementById("themeMockupLogo");
+  if (themeMockupLogo) {
+    if (logoUrl) {
+      themeMockupLogo.src = logoUrl;
+      themeMockupLogo.alt = `${bizName} Logo`;
+      themeMockupLogo.style.display = "block";
+      themeMockupLogo.onerror = function() {
+        themeMockupLogo.style.display = "none";
+        if (themeMockupBizName) themeMockupBizName.style.display = "block";
+      };
+      if (themeMockupBizName) themeMockupBizName.style.display = "none";
+    } else {
+      themeMockupLogo.style.display = "none";
+      themeMockupLogo.src = "";
+      if (themeMockupBizName) themeMockupBizName.style.display = "block";
+    }
+  } else if (themeMockupBizName) {
+    themeMockupBizName.style.display = "block";
+  }
   if (themeMockupBizName) {
     themeMockupBizName.textContent = bizName;
   }
@@ -6171,6 +6754,18 @@ function renderThemeColorsView() {
     : "#FBEFE1";
   const existingName = (currentBusiness && currentBusiness.branding && currentBusiness.branding.nameTextColor) 
     ? normalizeHexColor(currentBusiness.branding.nameTextColor) 
+    : "";
+  const existingItem = (currentBusiness && currentBusiness.branding && currentBusiness.branding.itemTextColor)
+    ? normalizeHexColor(currentBusiness.branding.itemTextColor)
+    : "";
+  const existingPrice = (currentBusiness && currentBusiness.branding && currentBusiness.branding.priceColor)
+    ? normalizeHexColor(currentBusiness.branding.priceColor)
+    : "";
+  const existingCategory = (currentBusiness && currentBusiness.branding && currentBusiness.branding.categoryColor)
+    ? normalizeHexColor(currentBusiness.branding.categoryColor)
+    : "";
+  const existingScrollPoints = (currentBusiness && currentBusiness.branding && currentBusiness.branding.scrollPointsColor)
+    ? normalizeHexColor(currentBusiness.branding.scrollPointsColor)
     : "";
   const existingStroke = (currentBusiness && currentBusiness.branding && currentBusiness.branding.hasNameStroke !== undefined)
     ? !!currentBusiness.branding.hasNameStroke
@@ -6201,9 +6796,46 @@ function renderThemeColorsView() {
   }
   currentNameColor = savedNameColor;
 
+  if (existingItem) {
+    savedItemTextColor = existingItem;
+    isCustomItemTextColor = true;
+  } else {
+    savedItemTextColor = "#000000";
+    isCustomItemTextColor = false;
+  }
+  currentItemTextColor = savedItemTextColor;
+
+  if (existingPrice) {
+    savedPriceColor = existingPrice;
+    isCustomPriceColor = true;
+  } else {
+    savedPriceColor = applyBlackOverlay(savedTopColor, 0.25);
+    isCustomPriceColor = false;
+  }
+  currentPriceColor = savedPriceColor;
+
+  if (existingCategory) {
+    savedCategoryColor = existingCategory;
+    isCustomCategoryColor = true;
+  } else {
+    savedCategoryColor = "#D05A00";
+    isCustomCategoryColor = false;
+  }
+  currentCategoryColor = savedCategoryColor;
+
+  if (existingScrollPoints) {
+    savedScrollPointsColor = existingScrollPoints;
+    isCustomScrollPointsColor = true;
+  } else {
+    savedScrollPointsColor = savedPriceColor || applyBlackOverlay(savedTopColor, 0.25) || "#731723";
+    isCustomScrollPointsColor = false;
+  }
+  currentScrollPointsColor = savedScrollPointsColor;
+
+  loadCustomPresetsFromBusiness();
   renderThemeFonts();
   renderThemeSwatches();
-  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "all");
+  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "all", currentItemTextColor, currentPriceColor, currentCategoryColor, currentScrollPointsColor);
 
   if (themeSaveBtn) {
     themeSaveBtn.disabled = true;
@@ -6215,6 +6847,10 @@ async function saveThemeColors() {
   const topToSave = normalizeHexColor(currentTopColor);
   const bgToSave = normalizeHexColor(currentBgColor);
   const nameToSave = normalizeHexColor(currentNameColor);
+  const itemToSave = normalizeHexColor(currentItemTextColor) || "#000000";
+  const priceToSave = normalizeHexColor(currentPriceColor) || applyBlackOverlay(topToSave, 0.25);
+  const categoryToSave = normalizeHexColor(currentCategoryColor) || "#D05A00";
+  const scrollPointsToSave = normalizeHexColor(currentScrollPointsColor) || priceToSave;
   if (!topToSave || !bgToSave || !nameToSave) return;
 
   themeSaveBtn.disabled = true;
@@ -6230,6 +6866,10 @@ async function saveThemeColors() {
         accentColor: topToSave,
         backgroundColor: bgToSave,
         nameTextColor: nameToSave,
+        itemTextColor: itemToSave,
+        priceColor: priceToSave,
+        categoryColor: categoryToSave,
+        scrollPointsColor: scrollPointsToSave,
         hasNameStroke: currentHasNameStroke,
         nameFont: currentNameFont
       })
@@ -6248,6 +6888,10 @@ async function saveThemeColors() {
       currentBusiness.branding.accentColor = topToSave;
       currentBusiness.branding.backgroundColor = bgToSave;
       currentBusiness.branding.nameTextColor = nameToSave;
+      currentBusiness.branding.itemTextColor = itemToSave;
+      currentBusiness.branding.priceColor = priceToSave;
+      currentBusiness.branding.categoryColor = categoryToSave;
+      currentBusiness.branding.scrollPointsColor = scrollPointsToSave;
       currentBusiness.branding.hasNameStroke = currentHasNameStroke;
       currentBusiness.branding.nameFont = currentNameFont;
     }
@@ -6255,6 +6899,10 @@ async function saveThemeColors() {
     savedTopColor = topToSave;
     savedBgColor = bgToSave;
     savedNameColor = nameToSave;
+    savedItemTextColor = itemToSave;
+    savedPriceColor = priceToSave;
+    savedCategoryColor = categoryToSave;
+    savedScrollPointsColor = scrollPointsToSave;
     savedHasNameStroke = currentHasNameStroke;
     savedNameFont = currentNameFont;
     if (typeof updateQrStandPanels === "function") {
@@ -6268,6 +6916,10 @@ async function saveThemeColors() {
         currentTopColor.toUpperCase() !== savedTopColor.toUpperCase() ||
         currentBgColor.toUpperCase() !== savedBgColor.toUpperCase() ||
         currentNameColor.toUpperCase() !== savedNameColor.toUpperCase() ||
+        currentItemTextColor.toUpperCase() !== savedItemTextColor.toUpperCase() ||
+        currentPriceColor.toUpperCase() !== savedPriceColor.toUpperCase() ||
+        currentCategoryColor.toUpperCase() !== savedCategoryColor.toUpperCase() ||
+        currentScrollPointsColor.toUpperCase() !== savedScrollPointsColor.toUpperCase() ||
         currentHasNameStroke !== savedHasNameStroke ||
         currentNameFont !== savedNameFont
       );
@@ -6283,6 +6935,10 @@ async function saveThemeColors() {
       currentTopColor.toUpperCase() === "#991E2E" &&
       currentBgColor.toUpperCase() === "#FBEFE1" &&
       currentNameColor.toUpperCase() === "#63141E" &&
+      currentItemTextColor.toUpperCase() === "#000000" &&
+      currentPriceColor.toUpperCase() === "#731723" &&
+      currentCategoryColor.toUpperCase() === "#D05A00" &&
+      currentScrollPointsColor.toUpperCase() === "#731723" &&
       currentHasNameStroke === true &&
       currentNameFont === "Lobster"
     );
@@ -6359,6 +7015,98 @@ if (themeNameHexInput) {
   });
 }
 
+// Menu Items Text color picker listeners
+if (themeItemColorNativeInput) {
+  themeItemColorNativeInput.addEventListener("input", (e) => {
+    updateThemeColorsUI(null, null, null, null, "itemNative", e.target.value, null);
+  });
+}
+
+if (themeItemHexInput) {
+  themeItemHexInput.addEventListener("input", (e) => {
+    const raw = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6);
+    e.target.value = raw.toUpperCase();
+    if (raw.length === 6) {
+      updateThemeColorsUI(null, null, null, null, "itemHex", "#" + raw, null);
+    } else {
+      if (themeSaveBtn) themeSaveBtn.disabled = true;
+    }
+  });
+
+  themeItemHexInput.addEventListener("blur", () => {
+    themeItemHexInput.value = currentItemTextColor.replace("#", "");
+  });
+}
+
+// Price color picker listeners
+if (themePriceColorNativeInput) {
+  themePriceColorNativeInput.addEventListener("input", (e) => {
+    updateThemeColorsUI(null, null, null, null, "priceNative", null, e.target.value);
+  });
+}
+
+if (themePriceHexInput) {
+  themePriceHexInput.addEventListener("input", (e) => {
+    const raw = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6);
+    e.target.value = raw.toUpperCase();
+    if (raw.length === 6) {
+      updateThemeColorsUI(null, null, null, null, "priceHex", null, "#" + raw);
+    } else {
+      if (themeSaveBtn) themeSaveBtn.disabled = true;
+    }
+  });
+
+  themePriceHexInput.addEventListener("blur", () => {
+    themePriceHexInput.value = currentPriceColor.replace("#", "");
+  });
+}
+
+// Category Title color picker listeners
+if (themeCategoryColorNativeInput) {
+  themeCategoryColorNativeInput.addEventListener("input", (e) => {
+    updateThemeColorsUI(null, null, null, null, "categoryNative", null, null, e.target.value, null);
+  });
+}
+
+if (themeCategoryHexInput) {
+  themeCategoryHexInput.addEventListener("input", (e) => {
+    const raw = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6);
+    e.target.value = raw.toUpperCase();
+    if (raw.length === 6) {
+      updateThemeColorsUI(null, null, null, null, "categoryHex", null, null, "#" + raw, null);
+    } else {
+      if (themeSaveBtn) themeSaveBtn.disabled = true;
+    }
+  });
+
+  themeCategoryHexInput.addEventListener("blur", () => {
+    themeCategoryHexInput.value = currentCategoryColor.replace("#", "");
+  });
+}
+
+// Scroll Points color picker listeners
+if (themeScrollPointsColorNativeInput) {
+  themeScrollPointsColorNativeInput.addEventListener("input", (e) => {
+    updateThemeColorsUI(null, null, null, null, "scrollNative", null, null, null, e.target.value);
+  });
+}
+
+if (themeScrollPointsHexInput) {
+  themeScrollPointsHexInput.addEventListener("input", (e) => {
+    const raw = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6);
+    e.target.value = raw.toUpperCase();
+    if (raw.length === 6) {
+      updateThemeColorsUI(null, null, null, null, "scrollHex", null, null, null, "#" + raw);
+    } else {
+      if (themeSaveBtn) themeSaveBtn.disabled = true;
+    }
+  });
+
+  themeScrollPointsHexInput.addEventListener("blur", () => {
+    themeScrollPointsHexInput.value = currentScrollPointsColor.replace("#", "");
+  });
+}
+
 // Business Name Stroke checkbox listener
 if (themeNameStrokeCheckbox) {
   themeNameStrokeCheckbox.addEventListener("change", (e) => {
@@ -6369,6 +7117,12 @@ if (themeNameStrokeCheckbox) {
 
 if (themeSaveBtn) {
   themeSaveBtn.addEventListener("click", saveThemeColors);
+}
+
+if (themeSavePresetBtn) {
+  themeSavePresetBtn.addEventListener("click", () => {
+    saveCurrentPresetToSlot();
+  });
 }
 
 // Business Name Font Dropdown event listeners
@@ -6408,12 +7162,20 @@ function resetThemeColors() {
   currentBgColor = "#FBEFE1";
   currentNameColor = "#63141E";
   isCustomNameColor = false;
+  currentItemTextColor = "#000000";
+  isCustomItemTextColor = false;
+  currentPriceColor = "#731723";
+  isCustomPriceColor = false;
+  currentCategoryColor = "#D05A00";
+  isCustomCategoryColor = false;
+  currentScrollPointsColor = "#731723";
+  isCustomScrollPointsColor = false;
   currentHasNameStroke = true;
   currentNameFont = "Lobster";
 
   renderThemeFonts();
   renderThemeSwatches();
-  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "all");
+  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "all", currentItemTextColor, currentPriceColor, currentCategoryColor, currentScrollPointsColor);
 }
 
 if (themeResetBtn) {

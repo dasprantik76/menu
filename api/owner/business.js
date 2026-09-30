@@ -281,6 +281,62 @@ module.exports = async function handler(req, res) {
         safeUpdates.branding.nameTextColor = nameColorVal.trim();
       }
 
+      const itemColorVal = body.itemTextColor !== undefined ? body.itemTextColor : (body.branding && body.branding.itemTextColor !== undefined ? body.branding.itemTextColor : null);
+      if (itemColorVal !== null) {
+        if (!safeUpdates.branding) {
+          safeUpdates.branding = {
+            ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
+          };
+        }
+        if (typeof itemColorVal === "string" && /^#[0-9a-fA-F]{3,8}$/.test(itemColorVal.trim())) {
+          safeUpdates.branding.itemTextColor = itemColorVal.trim();
+        } else if (itemColorVal === "") {
+          safeUpdates.branding.itemTextColor = "";
+        }
+      }
+
+      const priceColorVal = body.priceColor !== undefined ? body.priceColor : (body.branding && body.branding.priceColor !== undefined ? body.branding.priceColor : null);
+      if (priceColorVal !== null) {
+        if (!safeUpdates.branding) {
+          safeUpdates.branding = {
+            ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
+          };
+        }
+        if (typeof priceColorVal === "string" && /^#[0-9a-fA-F]{3,8}$/.test(priceColorVal.trim())) {
+          safeUpdates.branding.priceColor = priceColorVal.trim();
+        } else if (priceColorVal === "") {
+          safeUpdates.branding.priceColor = "";
+        }
+      }
+
+      const categoryColorVal = body.categoryColor !== undefined ? body.categoryColor : (body.branding && body.branding.categoryColor !== undefined ? body.branding.categoryColor : null);
+      if (categoryColorVal !== null) {
+        if (!safeUpdates.branding) {
+          safeUpdates.branding = {
+            ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
+          };
+        }
+        if (typeof categoryColorVal === "string" && /^#[0-9a-fA-F]{3,8}$/.test(categoryColorVal.trim())) {
+          safeUpdates.branding.categoryColor = categoryColorVal.trim();
+        } else if (categoryColorVal === "") {
+          safeUpdates.branding.categoryColor = "";
+        }
+      }
+
+      const scrollPointsColorVal = body.scrollPointsColor !== undefined ? body.scrollPointsColor : (body.branding && body.branding.scrollPointsColor !== undefined ? body.branding.scrollPointsColor : null);
+      if (scrollPointsColorVal !== null) {
+        if (!safeUpdates.branding) {
+          safeUpdates.branding = {
+            ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
+          };
+        }
+        if (typeof scrollPointsColorVal === "string" && /^#[0-9a-fA-F]{3,8}$/.test(scrollPointsColorVal.trim())) {
+          safeUpdates.branding.scrollPointsColor = scrollPointsColorVal.trim();
+        } else if (scrollPointsColorVal === "") {
+          safeUpdates.branding.scrollPointsColor = "";
+        }
+      }
+
       const hasStrokeVal = body.hasNameStroke !== undefined
         ? body.hasNameStroke
         : (body.nameStroke !== undefined
@@ -295,7 +351,7 @@ module.exports = async function handler(req, res) {
         safeUpdates.branding.hasNameStroke = hasStrokeVal;
       }
 
-      const ALLOWED_FONTS = ["Bebas Neue", "Lobster", "Google Sans", "Berkshire Swash", "Kaushan Script", "DM Serif Display"];
+      const ALLOWED_FONTS = ["Bebas Neue", "Lobster", "Google Sans", "Berkshire Swash", "Kaushan Script", "DM Serif Display", "Rye", "Sacramento"];
       const fontVal = body.nameFont || (body.branding && body.branding.nameFont) || body.fontFamily || (body.branding && body.branding.fontFamily);
       if (fontVal && typeof fontVal === "string" && ALLOWED_FONTS.includes(fontVal.trim())) {
         if (!safeUpdates.branding) {
@@ -304,6 +360,28 @@ module.exports = async function handler(req, res) {
           };
         }
         safeUpdates.branding.nameFont = fontVal.trim();
+      }
+
+      const customPresetsVal = body.customPresets !== undefined ? body.customPresets : (body.branding && body.branding.customPresets !== undefined ? body.branding.customPresets : null);
+      if (customPresetsVal !== null && Array.isArray(customPresetsVal)) {
+        if (!safeUpdates.branding) {
+          safeUpdates.branding = {
+            ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
+          };
+        }
+        safeUpdates.branding.customPresets = customPresetsVal.slice(0, 10).map((p, idx) => ({
+          slotIndex: typeof p.slotIndex === "number" ? p.slotIndex : idx,
+          label: String(p.label || `Custom Preset ${idx + 1}`).slice(0, 50),
+          top: String(p.top || "#991E2E").trim(),
+          bg: String(p.bg || "#FBEFE1").trim(),
+          name: String(p.name || "#63141E").trim(),
+          item: String(p.item || "#000000").trim(),
+          price: String(p.price || "#731723").trim(),
+          category: String(p.category || "#D05A00").trim(),
+          scroll: String(p.scroll || "#731723").trim(),
+          font: String(p.font || "Lobster").trim(),
+          hasStroke: p.hasStroke !== undefined ? !!p.hasStroke : true
+        }));
       }
 
       if (logoVal !== null) {

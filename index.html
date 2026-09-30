@@ -9,9 +9,9 @@
   <title>Business Owner Portal - Menu by PixelSetu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Roboto:wght@400;500;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Righteous&family=Roboto:wght@400;500;700&family=Rye&family=Sacramento&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=425">
+  <link rel="stylesheet" href="/owner/owner.css?v=446">
   <script>
     (function() {
       try {
@@ -1095,20 +1095,32 @@
               </div>
               <!-- Restaurant Header Content -->
               <div class="theme-mockup-header-content">
+                <img id="themeMockupLogo" class="theme-mockup-logo" src="" alt="Business Logo" style="display: none;">
                 <span class="theme-mockup-restaurant-name" id="themeMockupBizName">Restaurant Name</span>
-                <img src="/assets/header-lotus-ornament.svg" class="header-corner-ornament" alt="" aria-hidden="true">
               </div>
             </div>
             <div class="theme-mockup-body" id="themeMockupBody">
-              <div class="theme-mockup-item">
-                <div class="theme-mockup-item-info">
-                  <div class="theme-mockup-line title"></div>
-                  <div class="theme-mockup-line sub"></div>
+              <div class="theme-mockup-cat-panel">
+                <div class="theme-mockup-cat-heading" id="themeMockupCatHeading">
+                  <span class="cat-heading-text">MAIN COURSE</span>
                 </div>
-                <div class="theme-mockup-price" id="themeMockupPrice">&#8377;240</div>
               </div>
-              <div class="theme-mockup-button-row">
-                <div class="theme-mockup-btn" id="themeMockupBtn">Browse Menu</div>
+              <div class="theme-mockup-dishes">
+                <div class="theme-mockup-dish-row">
+                  <span class="theme-mockup-dish-name">Chicken Hakka Noodles</span>
+                  <span class="theme-mockup-dot-leader" aria-hidden="true"></span>
+                  <span class="theme-mockup-dish-price"><span class="theme-mockup-rupee">&#8377;</span> 79</span>
+                </div>
+                <div class="theme-mockup-dish-row">
+                  <span class="theme-mockup-dish-name">Egg Chicken Hakka Noodles</span>
+                  <span class="theme-mockup-dot-leader" aria-hidden="true"></span>
+                  <span class="theme-mockup-dish-price"><span class="theme-mockup-rupee">&#8377;</span> 99</span>
+                </div>
+              </div>
+              <div class="theme-mockup-dots" id="themeMockupDots" aria-hidden="true">
+                <span class="theme-mockup-dot active"></span>
+                <span class="theme-mockup-dot"></span>
+                <span class="theme-mockup-dot"></span>
               </div>
             </div>
           </div>
@@ -1137,9 +1149,20 @@
 
         <!-- Curated Color Swatches -->
         <div class="theme-section-block">
-          <div class="theme-section-title">Curated Palettes (Top Bar, Background & Name)</div>
+          <div class="theme-section-title">Color Palettes & Presets</div>
           <div class="theme-swatches-grid" id="themeSwatchesGrid">
-            <!-- Rendered via JS -->
+            <!-- Rendered via JS: 10 Curated Presets + 10 Custom Preset Slots -->
+          </div>
+          <div class="theme-palette-actions">
+            <button type="button" class="theme-save-preset-btn" id="themeSavePresetBtn" title="Save current colors into an empty preset slot">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span id="themeSavePresetBtnLabel">Save Preset</span>
+            </button>
+            <span class="theme-palette-slots-status" id="themePaletteSlotsStatus"></span>
           </div>
         </div>
 
@@ -1188,6 +1211,66 @@
                 <div class="theme-hex-input-wrapper">
                   <span class="theme-hex-prefix">#</span>
                   <input type="text" id="themeNameHexInput" class="theme-hex-input" maxlength="6" placeholder="63141E" spellcheck="false" autocomplete="off" aria-label="Business Name Hex">
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Menu Items Text Color -->
+            <div class="theme-custom-card">
+              <span class="theme-picker-field-label">Menu Items Text Color</span>
+              <div class="theme-custom-picker-row">
+                <div class="theme-color-input-wrapper" title="Choose Menu Items Text Color">
+                  <input type="color" id="themeItemColorNativeInput" class="theme-color-native-input" value="#000000" aria-label="Menu Items Text Color">
+                  <span class="theme-color-indicator" id="themeItemColorIndicator"></span>
+                </div>
+                <div class="theme-hex-input-wrapper">
+                  <span class="theme-hex-prefix">#</span>
+                  <input type="text" id="themeItemHexInput" class="theme-hex-input" maxlength="6" placeholder="000000" spellcheck="false" autocomplete="off" aria-label="Menu Items Text Hex">
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Price Color -->
+            <div class="theme-custom-card">
+              <span class="theme-picker-field-label">Price Color</span>
+              <div class="theme-custom-picker-row">
+                <div class="theme-color-input-wrapper" title="Choose Price Color">
+                  <input type="color" id="themePriceColorNativeInput" class="theme-color-native-input" value="#731723" aria-label="Price Color">
+                  <span class="theme-color-indicator" id="themePriceColorIndicator"></span>
+                </div>
+                <div class="theme-hex-input-wrapper">
+                  <span class="theme-hex-prefix">#</span>
+                  <input type="text" id="themePriceHexInput" class="theme-hex-input" maxlength="6" placeholder="731723" spellcheck="false" autocomplete="off" aria-label="Price Hex">
+                </div>
+              </div>
+            </div>
+
+            <!-- 6. Category Title Color -->
+            <div class="theme-custom-card">
+              <span class="theme-picker-field-label">Category Title Color</span>
+              <div class="theme-custom-picker-row">
+                <div class="theme-color-input-wrapper" title="Choose Category Title Color">
+                  <input type="color" id="themeCategoryColorNativeInput" class="theme-color-native-input" value="#d05a00" aria-label="Category Title Color">
+                  <span class="theme-color-indicator" id="themeCategoryColorIndicator"></span>
+                </div>
+                <div class="theme-hex-input-wrapper">
+                  <span class="theme-hex-prefix">#</span>
+                  <input type="text" id="themeCategoryHexInput" class="theme-hex-input" maxlength="6" placeholder="D05A00" spellcheck="false" autocomplete="off" aria-label="Category Title Hex">
+                </div>
+              </div>
+            </div>
+
+            <!-- 7. Scroll Points Color -->
+            <div class="theme-custom-card">
+              <span class="theme-picker-field-label">Scroll Points Color</span>
+              <div class="theme-custom-picker-row">
+                <div class="theme-color-input-wrapper" title="Choose Scroll Points Color">
+                  <input type="color" id="themeScrollPointsColorNativeInput" class="theme-color-native-input" value="#731723" aria-label="Scroll Points Color">
+                  <span class="theme-color-indicator" id="themeScrollPointsColorIndicator"></span>
+                </div>
+                <div class="theme-hex-input-wrapper">
+                  <span class="theme-hex-prefix">#</span>
+                  <input type="text" id="themeScrollPointsHexInput" class="theme-hex-input" maxlength="6" placeholder="731723" spellcheck="false" autocomplete="off" aria-label="Scroll Points Hex">
                 </div>
               </div>
             </div>
@@ -1284,6 +1367,6 @@
   </main>
 
   <script src="/owner/qrcode.min.js"></script>
-  <script src="/owner/owner.js?v=224"></script>
+  <script src="/owner/owner.js?v=234"></script>
 </body>
 </html>

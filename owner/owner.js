@@ -373,6 +373,8 @@ function showView(viewElement) {
   document.documentElement.classList.toggle("register-mode", isRegister);
   document.body.classList.toggle("pending-mode", isPending);
   document.documentElement.classList.toggle("pending-mode", isPending);
+  document.body.classList.toggle("theme-mode", isThemeColors);
+  document.documentElement.classList.toggle("theme-mode", isThemeColors);
 
   [loadingView, authView, registerView, pendingView, dashboardView, importMenuView, brandingView, themeColorsView, qrCodeView].forEach(v => {
     if (v) {
@@ -6043,47 +6045,106 @@ function renderThemeSwatches() {
 }
 
 function renderThemeFonts() {
-  const container = document.getElementById("themeFontsGrid");
-  if (!container) return;
-  container.innerHTML = "";
+  const menu = document.getElementById("themeFontDropdownMenu");
+  const select = document.getElementById("themeFontSelectDropdown");
+  const displaySpan = document.getElementById("themeFontSelectedName");
 
-  THEME_FONTS.forEach(font => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "theme-font-card" + (font.id === currentNameFont ? " active" : "");
-    btn.setAttribute("data-font", font.id);
-    btn.setAttribute("aria-label", `Font: ${font.name}`);
+  const currentFontObj = THEME_FONTS.find(f => f.id === currentNameFont) || THEME_FONTS[0];
+  if (displaySpan) {
+    displaySpan.textContent = currentFontObj.name;
+    displaySpan.style.fontFamily = currentFontObj.family;
+  }
 
-    const label = document.createElement("span");
-    label.className = "theme-font-preview";
-    label.style.fontFamily = font.family;
-    label.textContent = font.name;
-
-    const check = document.createElement("span");
-    check.className = "theme-font-check";
-    check.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-
-    btn.appendChild(label);
-    btn.appendChild(check);
-
-    btn.addEventListener("click", () => {
-      selectThemeFont(font.id);
+  if (select) {
+    select.innerHTML = "";
+    THEME_FONTS.forEach(font => {
+      const opt = document.createElement("option");
+      opt.value = font.id;
+      opt.textContent = font.name;
+      opt.selected = (font.id === currentNameFont);
+      select.appendChild(opt);
     });
+  }
 
-    container.appendChild(btn);
-  });
+  if (menu) {
+    menu.innerHTML = "";
+    THEME_FONTS.forEach(font => {
+      const isSelected = (font.id === currentNameFont);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `theme-font-item${isSelected ? " is-selected" : ""}`;
+      btn.setAttribute("role", "option");
+      btn.setAttribute("aria-selected", isSelected ? "true" : "false");
+      btn.setAttribute("data-font", font.id);
+
+      const label = document.createElement("span");
+      label.className = "theme-font-preview";
+      label.style.fontFamily = font.family;
+      label.textContent = font.name;
+
+      const check = document.createElement("span");
+      check.className = "theme-font-check";
+      check.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
+      btn.appendChild(label);
+      btn.appendChild(check);
+
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        selectThemeFont(font.id);
+        closeThemeFontDropdown();
+      });
+
+      menu.appendChild(btn);
+    });
+  }
 }
 
 function selectThemeFont(fontId) {
   if (currentNameFont === fontId) return;
   currentNameFont = fontId;
-  const container = document.getElementById("themeFontsGrid");
-  if (container) {
-    container.querySelectorAll(".theme-font-card").forEach(c => {
-      c.classList.toggle("active", c.getAttribute("data-font") === fontId);
+
+  const fontObj = THEME_FONTS.find(f => f.id === fontId) || THEME_FONTS[0];
+  const displaySpan = document.getElementById("themeFontSelectedName");
+  if (displaySpan) {
+    displaySpan.textContent = fontObj.name;
+    displaySpan.style.fontFamily = fontObj.family;
+  }
+
+  const menu = document.getElementById("themeFontDropdownMenu");
+  if (menu) {
+    menu.querySelectorAll(".theme-font-item").forEach(item => {
+      const isSel = (item.getAttribute("data-font") === fontId);
+      item.classList.toggle("is-selected", isSel);
+      item.setAttribute("aria-selected", isSel ? "true" : "false");
     });
   }
+
+  const select = document.getElementById("themeFontSelectDropdown");
+  if (select) {
+    select.value = fontId;
+  }
+
   updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "fontSelect");
+}
+
+function toggleThemeFontDropdown(e) {
+  if (e) e.stopPropagation();
+  const wrapper = document.getElementById("themeFontDropdownWrapper");
+  if (!wrapper) return;
+  const isOpen = wrapper.classList.toggle("is-open");
+  wrapper.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  if (!isOpen) {
+    wrapper.blur();
+  }
+}
+
+function closeThemeFontDropdown() {
+  const wrapper = document.getElementById("themeFontDropdownWrapper");
+  if (!wrapper) return;
+  wrapper.classList.remove("is-open");
+  wrapper.setAttribute("aria-expanded", "false");
+  wrapper.blur();
 }
 
 function renderThemeColorsView() {
@@ -6297,6 +6358,38 @@ if (themeNameStrokeCheckbox) {
 
 if (themeSaveBtn) {
   themeSaveBtn.addEventListener("click", saveThemeColors);
+}
+
+// Business Name Font Dropdown event listeners
+const themeFontDropdownWrapper = document.getElementById("themeFontDropdownWrapper");
+if (themeFontDropdownWrapper) {
+  themeFontDropdownWrapper.addEventListener("click", toggleThemeFontDropdown);
+  themeFontDropdownWrapper.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleThemeFontDropdown(e);
+    }
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const wrapper = document.getElementById("themeFontDropdownWrapper");
+  if (wrapper && !wrapper.contains(e.target)) {
+    closeThemeFontDropdown();
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeThemeFontDropdown();
+  }
+});
+
+const themeFontSelectDropdown = document.getElementById("themeFontSelectDropdown");
+if (themeFontSelectDropdown) {
+  themeFontSelectDropdown.addEventListener("change", (e) => {
+    selectThemeFont(e.target.value);
+  });
 }
 
 function resetThemeColors() {

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Roboto:wght@400;500;700&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=407">
+  <link rel="stylesheet" href="/owner/owner.css?v=417">
   <script>
     (function() {
       try {
@@ -1053,63 +1053,82 @@
 
     <!-- 8. Theme Colors / Look & Feel View -->
     <section id="themeColorsView" class="theme-view-section" style="display: none;">
-      <div class="theme-content">
-        <!-- Live Public Menu Mockup Preview (Half Screen Phone Mockup) -->
-        <div class="theme-preview-card">
-          <div class="theme-preview-header-label">Live Preview on Public Menu</div>
-          <div class="theme-phone-mockup" id="themePhoneMockup">
-            <!-- Physical Side Buttons -->
-            <div class="phone-btn phone-btn-left phone-btn-action" aria-hidden="true"></div>
-            <div class="phone-btn phone-btn-left phone-btn-vol-up" aria-hidden="true"></div>
-            <div class="phone-btn phone-btn-left phone-btn-vol-down" aria-hidden="true"></div>
-            <div class="phone-btn phone-btn-right phone-btn-power" aria-hidden="true"></div>
+      <!-- Live Public Menu Mockup Preview (Separate Section) -->
+      <div class="theme-preview-section theme-preview-card">
+        <div class="theme-preview-header-label">Live Preview on Public Menu</div>
+        <div class="theme-phone-mockup" id="themePhoneMockup">
+          <!-- Physical Side Buttons -->
+          <div class="phone-btn phone-btn-left phone-btn-action" aria-hidden="true"></div>
+          <div class="phone-btn phone-btn-left phone-btn-vol-up" aria-hidden="true"></div>
+          <div class="phone-btn phone-btn-left phone-btn-vol-down" aria-hidden="true"></div>
+          <div class="phone-btn phone-btn-right phone-btn-power" aria-hidden="true"></div>
 
-            <div class="theme-mockup-wrapper" id="themeMockupWrapper">
-              <div class="theme-mockup-topbar" id="themeMockupTopbar">
-                <!-- Phone Status Bar -->
-                <div class="phone-mockup-statusbar" id="phoneMockupStatusbar">
-                  <span class="phone-status-time">9:41</span>
-                  <div class="phone-dynamic-island" aria-hidden="true">
-                    <div class="phone-island-camera"></div>
-                  </div>
-                  <div class="phone-status-icons" aria-hidden="true">
-                    <svg class="phone-status-icon phone-status-signal" viewBox="0 0 17 11" width="14" height="9" fill="currentColor">
-                      <rect x="0.5" y="7.5" width="2.5" height="3.5" rx="0.6" />
-                      <rect x="4.5" y="5" width="2.5" height="6" rx="0.6" />
-                      <rect x="8.5" y="2.5" width="2.5" height="8.5" rx="0.6" />
-                      <rect x="12.5" y="0" width="2.5" height="11" rx="0.6" />
-                    </svg>
-                    <svg class="phone-status-icon phone-status-wifi" viewBox="0 0 16 12" width="14" height="10" fill="none" stroke="currentColor" stroke-linecap="round">
-                      <path d="M1.5 3.5 C5.1 0.7 10.9 0.7 14.5 3.5" stroke-width="1.6" />
-                      <path d="M4.2 6.5 C6.3 4.8 9.7 4.8 11.8 6.5" stroke-width="1.6" />
-                      <circle cx="8" cy="10" r="1.25" fill="currentColor" stroke="none" />
-                    </svg>
-                    <svg class="phone-status-icon phone-status-battery" viewBox="0 0 24 11" width="18" height="9" fill="currentColor">
-                      <rect x="0.5" y="0.5" width="20" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" />
-                      <rect x="2.5" y="2.5" width="12" height="6" rx="1.5" fill="currentColor" />
-                      <path d="M22 3.75v3.5a1 1 0 0 0 1-1v-1.5a1 1 0 0 0-1-1z" />
-                    </svg>
-                  </div>
+          <div class="theme-mockup-wrapper" id="themeMockupWrapper">
+            <div class="theme-mockup-topbar" id="themeMockupTopbar">
+              <!-- Phone Status Bar -->
+              <div class="phone-mockup-statusbar" id="phoneMockupStatusbar">
+                <span class="phone-status-time">9:41</span>
+                <div class="phone-dynamic-island" aria-hidden="true">
+                  <div class="phone-island-camera"></div>
                 </div>
-                <!-- Restaurant Header Content -->
-                <div class="theme-mockup-header-content">
-                  <span class="theme-mockup-restaurant-name" id="themeMockupBizName">Restaurant Name</span>
-                  <img src="/assets/header-lotus-ornament.svg" class="header-corner-ornament" alt="" aria-hidden="true">
+                <div class="phone-status-icons" aria-hidden="true">
+                  <svg class="phone-status-icon phone-status-signal" viewBox="0 0 17 11" width="14" height="9" fill="currentColor">
+                    <rect x="0.5" y="7.5" width="2.5" height="3.5" rx="0.6" />
+                    <rect x="4.5" y="5" width="2.5" height="6" rx="0.6" />
+                    <rect x="8.5" y="2.5" width="2.5" height="8.5" rx="0.6" />
+                    <rect x="12.5" y="0" width="2.5" height="11" rx="0.6" />
+                  </svg>
+                  <svg class="phone-status-icon phone-status-wifi" viewBox="0 0 16 12" width="14" height="10" fill="none" stroke="currentColor" stroke-linecap="round">
+                    <path d="M1.5 3.5 C5.1 0.7 10.9 0.7 14.5 3.5" stroke-width="1.6" />
+                    <path d="M4.2 6.5 C6.3 4.8 9.7 4.8 11.8 6.5" stroke-width="1.6" />
+                    <circle cx="8" cy="10" r="1.25" fill="currentColor" stroke="none" />
+                  </svg>
+                  <svg class="phone-status-icon phone-status-battery" viewBox="0 0 24 11" width="18" height="9" fill="currentColor">
+                    <rect x="0.5" y="0.5" width="20" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" />
+                    <rect x="2.5" y="2.5" width="12" height="6" rx="1.5" fill="currentColor" />
+                    <path d="M22 3.75v3.5a1 1 0 0 0 1-1v-1.5a1 1 0 0 0-1-1z" />
+                  </svg>
                 </div>
               </div>
-              <div class="theme-mockup-body" id="themeMockupBody">
-                <div class="theme-mockup-item">
-                  <div class="theme-mockup-item-info">
-                    <div class="theme-mockup-line title"></div>
-                    <div class="theme-mockup-line sub"></div>
-                  </div>
-                  <div class="theme-mockup-price" id="themeMockupPrice">&#8377;240</div>
-                </div>
-                <div class="theme-mockup-button-row">
-                  <div class="theme-mockup-btn" id="themeMockupBtn">Browse Menu</div>
-                </div>
+              <!-- Restaurant Header Content -->
+              <div class="theme-mockup-header-content">
+                <span class="theme-mockup-restaurant-name" id="themeMockupBizName">Restaurant Name</span>
+                <img src="/assets/header-lotus-ornament.svg" class="header-corner-ornament" alt="" aria-hidden="true">
               </div>
             </div>
+            <div class="theme-mockup-body" id="themeMockupBody">
+              <div class="theme-mockup-item">
+                <div class="theme-mockup-item-info">
+                  <div class="theme-mockup-line title"></div>
+                  <div class="theme-mockup-line sub"></div>
+                </div>
+                <div class="theme-mockup-price" id="themeMockupPrice">&#8377;240</div>
+              </div>
+              <div class="theme-mockup-button-row">
+                <div class="theme-mockup-btn" id="themeMockupBtn">Browse Menu</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="theme-content">
+        <!-- Business Name Font -->
+        <div class="theme-section-block">
+          <div class="theme-section-title">Business Name Font</div>
+          <div class="theme-font-dropdown-wrapper" id="themeFontDropdownWrapper" role="combobox" aria-expanded="false" aria-haspopup="listbox" tabindex="0">
+            <div id="themeFontDropdownDisplay" class="theme-font-dropdown-display">
+              <span id="themeFontSelectedName" class="theme-font-selected-name" style="font-family: 'Lobster', cursive, sans-serif;">Lobster</span>
+              <svg class="theme-font-dropdown-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            <div id="themeFontDropdownMenu" class="theme-font-dropdown-menu" role="listbox">
+              <!-- Rendered via JS -->
+            </div>
+            <select id="themeFontSelectDropdown" class="theme-font-select" aria-label="Select Business Name Font" style="display: none;" tabindex="-1">
+              <!-- Rendered via JS -->
+            </select>
           </div>
         </div>
 
@@ -1182,14 +1201,6 @@
               </span>
               <span class="theme-checkbox-text">Add stroke to the name</span>
             </label>
-          </div>
-        </div>
-
-        <!-- Business Name Font -->
-        <div class="theme-section-block">
-          <div class="theme-section-title">Business Name Font</div>
-          <div class="theme-fonts-grid" id="themeFontsGrid">
-            <!-- Rendered via JS -->
           </div>
         </div>
 

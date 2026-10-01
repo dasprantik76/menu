@@ -380,7 +380,7 @@ module.exports = async function handler(req, res) {
             ...(business.branding || { accentColor: "#991e2e", backgroundColor: "#fbefe1", logoUrl: "" })
           };
         }
-        safeUpdates.branding.customPresets = customPresetsVal.slice(0, 10).map((p, idx) => ({
+        safeUpdates.branding.customPresets = customPresetsVal.slice(0, 5).map((p, idx) => ({
           slotIndex: typeof p.slotIndex === "number" ? p.slotIndex : idx,
           label: String(p.label || `Custom Preset ${idx + 1}`).slice(0, 50),
           top: String(p.top || "#991E2E").trim(),

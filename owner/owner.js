@@ -698,9 +698,11 @@ async function checkSession() {
     } else {
       currentUser = null;
       currentBusiness = null;
+      savedCustomPresets = [];
       try {
         sessionStorage.removeItem("menucard_view");
         localStorage.removeItem("menucard_view");
+        localStorage.removeItem("menucard_custom_presets_default");
       } catch (e) {}
       userProfileArea.style.display = "none";
       const drawerRestaurantCard = document.getElementById("drawerRestaurantCard");
@@ -1381,6 +1383,10 @@ async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     currentUser = null;
     currentBusiness = null;
+    savedCustomPresets = [];
+    try {
+      localStorage.removeItem("menucard_custom_presets_default");
+    } catch (e) {}
     window.history.replaceState({}, document.title, window.location.pathname);
     await checkSession();
   } catch (err) {
@@ -5857,14 +5863,21 @@ let savedCustomPresets = [];
 
 function loadCustomPresetsFromBusiness() {
   savedCustomPresets = [];
+  const bizId = currentBusiness && (currentBusiness.id || currentBusiness._id);
+
+  // Clear any legacy default cache from past testing so it never leaks presets to new accounts
+  try {
+    localStorage.removeItem("menucard_custom_presets_default");
+  } catch(e) {}
+
   if (currentBusiness && currentBusiness.branding && Array.isArray(currentBusiness.branding.customPresets)) {
     currentBusiness.branding.customPresets.forEach((p, idx) => {
       const slot = (typeof p.slotIndex === "number" && p.slotIndex >= 0 && p.slotIndex < MAX_CUSTOM_PRESET_SLOTS) ? p.slotIndex : idx;
       if (slot < MAX_CUSTOM_PRESET_SLOTS) savedCustomPresets[slot] = p;
     });
-  } else {
+  } else if (bizId) {
     try {
-      const cacheKey = "menucard_custom_presets_" + (currentBusiness && currentBusiness._id ? currentBusiness._id : "default");
+      const cacheKey = "menucard_custom_presets_" + bizId;
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
         const parsed = JSON.parse(cached);
@@ -5886,12 +5899,13 @@ async function persistCustomPresets() {
     }
   }
 
-  try {
-    const cacheKey = "menucard_custom_presets_" + (currentBusiness && currentBusiness._id ? currentBusiness._id : "default");
-    localStorage.setItem(cacheKey, JSON.stringify(savedCustomPresets));
-  } catch(e) {}
+  const bizId = currentBusiness && (currentBusiness.id || currentBusiness._id);
+  if (bizId) {
+    try {
+      const cacheKey = "menucard_custom_presets_" + bizId;
+      localStorage.setItem(cacheKey, JSON.stringify(savedCustomPresets));
+    } catch(e) {}
 
-  if (currentBusiness && currentBusiness._id) {
     if (!currentBusiness.branding) currentBusiness.branding = {};
     currentBusiness.branding.customPresets = cleanList;
     try {

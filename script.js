@@ -2150,11 +2150,7 @@ function updateRestaurantBranding(restaurant) {
     } else {
       document.documentElement.style.removeProperty("--scroll-points-color");
     }
-    if (restaurant.branding.hasNameStroke === false) {
-      document.documentElement.style.setProperty("--name-stroke", "0px transparent");
-    } else {
-      document.documentElement.style.removeProperty("--name-stroke");
-    }
+    document.documentElement.style.setProperty("--name-stroke", "0px transparent");
     if (restaurant.branding.nameFont) {
       const fontMap = {
         "Lobster": "'Lobster', cursive, sans-serif",

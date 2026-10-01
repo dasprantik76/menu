@@ -403,7 +403,7 @@ function showView(viewElement) {
 
   [loadingView, authView, registerView, pendingView, dashboardView, importMenuView, brandingView, themeColorsView, qrCodeView].forEach(v => {
     if (v) {
-      v.style.display = "none";
+      v.style.setProperty("display", "none", "important");
       v.classList.remove("fade-in-active");
     }
   });
@@ -411,7 +411,8 @@ function showView(viewElement) {
     closeCustomColorPicker();
   }
   if (viewElement) {
-    viewElement.style.display = (viewElement === authView || viewElement === registerView || viewElement === pendingView) ? "flex" : "block";
+    viewElement.style.removeProperty("display");
+    viewElement.style.display = (viewElement === authView || viewElement === registerView || viewElement === pendingView || viewElement === qrCodeView) ? "flex" : "block";
     viewElement.classList.remove("fade-in-active");
     void viewElement.offsetWidth;
     viewElement.classList.add("fade-in-active");
@@ -609,10 +610,6 @@ async function checkSession() {
             currentNameColor = normName;
             isCustomNameColor = true;
           }
-        }
-        if (currentBusiness.branding.hasNameStroke !== undefined) {
-          savedHasNameStroke = !!currentBusiness.branding.hasNameStroke;
-          currentHasNameStroke = savedHasNameStroke;
         }
         if (currentBusiness.branding.nameFont) {
           savedNameFont = currentBusiness.branding.nameFont;
@@ -5293,24 +5290,17 @@ function updateQrStandPanels() {
   const fontObj = (typeof THEME_FONTS !== "undefined" ? THEME_FONTS.find(f => f.id === currentNameFont) : null) || { family: "'Lobster', cursive, sans-serif" };
   const nameFontFamily = fontObj ? fontObj.family : "'Lobster', cursive, sans-serif";
   const nameColor = currentNameColor || "#63141E";
-  const hasStroke = (typeof currentHasNameStroke !== "undefined") ? currentHasNameStroke : true;
-  let strokeVal = "0px transparent";
-  if (hasStroke) {
-    const strokeWidth = (currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans" || currentNameFont === "DM Serif Display") ? "1.8px" : "2.2px";
-    strokeVal = `${strokeWidth} ${menuBgColor}`;
-  }
-
   mockup.style.setProperty("--qr-biz-name-font", nameFontFamily);
   mockup.style.setProperty("--qr-biz-name-color", nameColor);
-  mockup.style.setProperty("--qr-biz-name-stroke", strokeVal);
+  mockup.style.setProperty("--qr-biz-name-stroke", "none");
 
   const qrBizName = document.getElementById("qrStandBizName");
   if (qrBizName) {
     qrBizName.textContent = bizName;
     qrBizName.style.setProperty("font-family", nameFontFamily, "important");
     qrBizName.style.setProperty("color", nameColor, "important");
-    qrBizName.style.setProperty("-webkit-text-stroke", strokeVal, "important");
-    qrBizName.style.setProperty("paint-order", "stroke fill", "important");
+    qrBizName.style.setProperty("-webkit-text-stroke", "none", "important");
+    qrBizName.style.setProperty("paint-order", "normal", "important");
     qrBizName.style.setProperty("font-weight", (currentNameFont === "Google Sans") ? "700" : "400");
   }
 
@@ -5706,7 +5696,6 @@ async function downloadQrCode() {
       const fontObj = (typeof THEME_FONTS !== "undefined" ? THEME_FONTS.find(f => f.id === currentNameFont) : null) || { family: "'Lobster', cursive, sans-serif" };
       const nameFontFamily = fontObj ? fontObj.family : "'Lobster', cursive, sans-serif";
       const nameColor = currentNameColor || "#63141E";
-      const hasStroke = (typeof currentHasNameStroke !== "undefined") ? currentHasNameStroke : true;
 
       ctx.font = `${(currentNameFont === "Google Sans") ? "700" : "400"} ${bizFontSize}px ${nameFontFamily}`;
       const bizMeasure = ctx.measureText(bizName).width;
@@ -5722,14 +5711,6 @@ async function downloadQrCode() {
         ctx.letterSpacing = `${(0.5 * scale).toFixed(1)}px`;
       }
 
-      if (hasStroke) {
-        const strokeWidth = ((currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans" || currentNameFont === "DM Serif Display") ? 1.8 : 2.2) * scale;
-        ctx.strokeStyle = menuBgColor;
-        ctx.lineWidth = strokeWidth;
-        ctx.lineJoin = "round";
-        ctx.miterLimit = 2;
-        ctx.strokeText(bizName, cardW / 2, footerCenterY);
-      }
       ctx.fillStyle = nameColor;
       ctx.fillText(bizName, cardW / 2, footerCenterY);
     }
@@ -5835,7 +5816,6 @@ const themeBgHexInput = document.getElementById("themeBgHexInput");
 const themeNameColorNativeInput = document.getElementById("themeNameColorNativeInput");
 const themeNameColorIndicator = document.getElementById("themeNameColorIndicator");
 const themeNameHexInput = document.getElementById("themeNameHexInput");
-const themeNameStrokeCheckbox = document.getElementById("themeNameStrokeCheckbox");
 
 // Custom Menu Items Text color elements
 const themeItemColorNativeInput = document.getElementById("themeItemColorNativeInput");
@@ -5996,7 +5976,6 @@ function saveCurrentPresetToSlot(slotIdx) {
     price: currentPriceColor,
     category: currentCategoryColor,
     scroll: currentScrollPointsColor,
-    hasStroke: currentHasNameStroke,
     font: currentNameFont
   };
 
@@ -6033,8 +6012,7 @@ const THEME_PALETTES = [
     price: "#FFA200",
     category: "#FFFFFF",
     scroll: "#FFFFFF",
-    font: "Berkshire Swash",
-    hasStroke: false
+    font: "Berkshire Swash"
   },
   {
     label: "Vintage Bourbon (Sand & Amber)",
@@ -6045,8 +6023,7 @@ const THEME_PALETTES = [
     price: "#8A3305",
     category: "#945624",
     scroll: "#6F481B",
-    font: "Rye",
-    hasStroke: false
+    font: "Rye"
   },
   {
     label: "Emerald Grove (Teal & Parchment)",
@@ -6057,8 +6034,7 @@ const THEME_PALETTES = [
     price: "#9F2B01",
     category: "#E66300",
     scroll: "#6F481B",
-    font: "DM Serif Display",
-    hasStroke: false
+    font: "DM Serif Display"
   },
   {
     label: "Royal Purple (Violet & Gold)",
@@ -6069,8 +6045,7 @@ const THEME_PALETTES = [
     price: "#642991",
     category: "#EA7F00",
     scroll: "#4C0983",
-    font: "Kaushan Script",
-    hasStroke: false
+    font: "Kaushan Script"
   },
   {
     label: "Botanical Forest (Pine & Lime)",
@@ -6081,8 +6056,7 @@ const THEME_PALETTES = [
     price: "#006118",
     category: "#737F15",
     scroll: "#206030",
-    font: "Bebas Neue",
-    hasStroke: false
+    font: "Bebas Neue"
   },
   {
     label: "Midnight Charcoal (Neon Tangerine)",
@@ -6093,8 +6067,7 @@ const THEME_PALETTES = [
     price: "#FFA552",
     category: "#E8D611",
     scroll: "#A6A6A6",
-    font: "Sacramento",
-    hasStroke: false
+    font: "Sacramento"
   },
   {
     label: "Ocean Azure (Marine & Ice)",
@@ -6105,8 +6078,7 @@ const THEME_PALETTES = [
     price: "#6BCEFF",
     category: "#FFC64D",
     scroll: "#6F99B3",
-    font: "Google Sans",
-    hasStroke: false
+    font: "Google Sans"
   },
   {
     label: "Velvet Rose (Berry & Plum)",
@@ -6117,8 +6089,7 @@ const THEME_PALETTES = [
     price: "#F99FBF",
     category: "#FF9747",
     scroll: "#BB778F",
-    font: "DM Serif Display",
-    hasStroke: false
+    font: "DM Serif Display"
   },
   {
     label: "Fiesta Spice (Chili & Saffron)",
@@ -6129,8 +6100,7 @@ const THEME_PALETTES = [
     price: "#931017",
     category: "#B81F28",
     scroll: "#907E6A",
-    font: "Lobster",
-    hasStroke: false
+    font: "Lobster"
   },
   {
     label: "Emerald Speakeasy (Velvet & Brass)",
@@ -6141,8 +6111,7 @@ const THEME_PALETTES = [
     price: "#FBBF24",
     category: "#34D399",
     scroll: "#FBBF24",
-    font: "Rye",
-    hasStroke: false
+    font: "Rye"
   }
 ];
 
@@ -6176,8 +6145,6 @@ let isCustomCategoryColor = false;
 let currentScrollPointsColor = "#731723";
 let savedScrollPointsColor = "#731723";
 let isCustomScrollPointsColor = false;
-let currentHasNameStroke = true;
-let savedHasNameStroke = true;
 let currentNameFont = "Lobster";
 let savedNameFont = "Lobster";
 
@@ -6236,7 +6203,6 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
 
   if (normTop) currentTopColor = normTop;
   if (normBg) currentBgColor = normBg;
-  if (typeof strokeVal === "boolean") currentHasNameStroke = strokeVal;
 
   if (source === "swatch") {
     isCustomNameColor = true;
@@ -6344,19 +6310,11 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     themeMockupBizName.style.setProperty("color", currentNameColor, "important");
     themeMockupBizName.style.setProperty("--preview-name-color", currentNameColor);
 
-    if (currentHasNameStroke) {
-      const strokeWidth = (currentNameFont === "Sacramento") ? "1.4px" : ((currentNameFont === "Bebas Neue" || currentNameFont === "Google Sans" || currentNameFont === "DM Serif Display" || currentNameFont === "Rye") ? "1.8px" : "2.2px");
-      const strokeVal = `${strokeWidth} ${currentBgColor}`;
-      themeMockupBizName.style.setProperty("-webkit-text-stroke", strokeVal, "important");
-      themeMockupBizName.style.setProperty("-webkit-text-stroke-width", strokeWidth, "important");
-      themeMockupBizName.style.setProperty("-webkit-text-stroke-color", currentBgColor, "important");
-      themeMockupBizName.style.setProperty("--preview-name-stroke", strokeVal);
-    } else {
-      themeMockupBizName.style.setProperty("-webkit-text-stroke", "0px transparent", "important");
-      themeMockupBizName.style.setProperty("-webkit-text-stroke-width", "0px", "important");
-      themeMockupBizName.style.setProperty("-webkit-text-stroke-color", "transparent", "important");
-      themeMockupBizName.style.setProperty("--preview-name-stroke", "0px transparent");
-    }
+    themeMockupBizName.style.setProperty("-webkit-text-stroke", "none", "important");
+    themeMockupBizName.style.setProperty("-webkit-text-stroke-width", "0px", "important");
+    themeMockupBizName.style.setProperty("-webkit-text-stroke-color", "transparent", "important");
+    themeMockupBizName.style.setProperty("paint-order", "normal", "important");
+    themeMockupBizName.style.removeProperty("--preview-name-stroke");
   }
   if (themeMockupPrice) themeMockupPrice.style.color = currentPriceColor;
   if (themeMockupBtn) themeMockupBtn.style.backgroundColor = browseBtnColor;
@@ -6453,11 +6411,6 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     themeScrollPointsHexInput.value = currentScrollPointsColor.replace("#", "");
   }
 
-  // Stroke checkbox state
-  if (source !== "strokeCheckbox" && themeNameStrokeCheckbox) {
-    themeNameStrokeCheckbox.checked = currentHasNameStroke;
-  }
-
   // Update active swatch state
   if (themeSwatchesGrid) {
     const swatches = themeSwatchesGrid.querySelectorAll(".theme-swatch-card");
@@ -6470,7 +6423,6 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
       const swCat = swatch.getAttribute("data-category");
       const swScroll = swatch.getAttribute("data-scroll");
       const swFont = swatch.getAttribute("data-font");
-      const swStroke = swatch.getAttribute("data-has-stroke");
       const matchesMain = (
         swTop && swBg && swName &&
         swTop.toUpperCase() === currentTopColor.toUpperCase() &&
@@ -6486,8 +6438,7 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
         (!swScroll || swScroll.toUpperCase() === currentScrollPointsColor.toUpperCase())
       );
       const matchesFont = (!swFont || swFont === currentNameFont);
-      const matchesStroke = (swStroke === null || (swStroke === "true") === currentHasNameStroke);
-      if (matchesMain && matchesItemPrice && matchesCatScroll && matchesFont && matchesStroke) {
+      if (matchesMain && matchesItemPrice && matchesCatScroll && matchesFont) {
         swatch.classList.add("active");
       } else {
         swatch.classList.remove("active");
@@ -6504,7 +6455,6 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     currentPriceColor.toUpperCase() !== savedPriceColor.toUpperCase() ||
     currentCategoryColor.toUpperCase() !== savedCategoryColor.toUpperCase() ||
     currentScrollPointsColor.toUpperCase() !== savedScrollPointsColor.toUpperCase() ||
-    currentHasNameStroke !== savedHasNameStroke ||
     currentNameFont !== savedNameFont
   );
   if (themeSaveBtn) {
@@ -6520,7 +6470,6 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     currentPriceColor.toUpperCase() === "#731723" &&
     currentCategoryColor.toUpperCase() === "#D05A00" &&
     currentScrollPointsColor.toUpperCase() === "#731723" &&
-    currentHasNameStroke === true &&
     currentNameFont === "Lobster"
   );
   if (themeResetBtn) {
@@ -6558,7 +6507,6 @@ function renderThemeSwatches() {
     if (palette.category) card.setAttribute("data-category", palette.category);
     if (palette.scroll) card.setAttribute("data-scroll", palette.scroll);
     if (palette.font) card.setAttribute("data-font", palette.font);
-    if (palette.hasStroke !== undefined) card.setAttribute("data-has-stroke", palette.hasStroke);
     card.setAttribute("aria-label", palette.label || `Color Palette Preset ${idx + 1}`);
     card.setAttribute("title", palette.label || `Theme ${idx + 1}`);
 
@@ -6570,8 +6518,7 @@ function renderThemeSwatches() {
       (!palette.price || palette.price.toUpperCase() === currentPriceColor.toUpperCase()) &&
       (!palette.category || palette.category.toUpperCase() === currentCategoryColor.toUpperCase()) &&
       (!palette.scroll || palette.scroll.toUpperCase() === currentScrollPointsColor.toUpperCase()) &&
-      (!palette.font || palette.font === currentNameFont) &&
-      (palette.hasStroke === undefined || palette.hasStroke === currentHasNameStroke)
+      (!palette.font || palette.font === currentNameFont)
     );
     if (isMatch) {
       card.classList.add("active");
@@ -6598,15 +6545,11 @@ function renderThemeSwatches() {
       if (palette.font) {
         selectThemeFont(palette.font);
       }
-      if (palette.hasStroke !== undefined) {
-        currentHasNameStroke = !!palette.hasStroke;
-        if (themeNameStrokeCheckbox) themeNameStrokeCheckbox.checked = currentHasNameStroke;
-      }
       updateThemeColorsUI(
         palette.top,
         palette.bg,
         palette.name,
-        palette.hasStroke !== undefined ? palette.hasStroke : null,
+        null,
         "swatch",
         palette.item,
         palette.price,
@@ -6635,7 +6578,6 @@ function renderThemeSwatches() {
       if (customPreset.category) card.setAttribute("data-category", customPreset.category);
       if (customPreset.scroll) card.setAttribute("data-scroll", customPreset.scroll);
       if (customPreset.font) card.setAttribute("data-font", customPreset.font);
-      if (customPreset.hasStroke !== undefined) card.setAttribute("data-has-stroke", customPreset.hasStroke);
       card.setAttribute("aria-label", customPreset.label || `Custom Preset ${slotIdx + 1}`);
       card.setAttribute("title", `${customPreset.label || `Custom Preset ${slotIdx + 1}`} (Click to apply)`);
 
@@ -6647,8 +6589,7 @@ function renderThemeSwatches() {
         (!customPreset.price || customPreset.price.toUpperCase() === currentPriceColor.toUpperCase()) &&
         (!customPreset.category || customPreset.category.toUpperCase() === currentCategoryColor.toUpperCase()) &&
         (!customPreset.scroll || customPreset.scroll.toUpperCase() === currentScrollPointsColor.toUpperCase()) &&
-        (!customPreset.font || customPreset.font === currentNameFont) &&
-        (customPreset.hasStroke === undefined || customPreset.hasStroke === currentHasNameStroke)
+        (!customPreset.font || customPreset.font === currentNameFont)
       );
       if (isMatch) {
         card.classList.add("active");
@@ -6691,7 +6632,7 @@ function renderThemeSwatches() {
           customPreset.top,
           customPreset.bg,
           customPreset.name,
-          customPreset.hasStroke !== undefined ? customPreset.hasStroke : null,
+          null,
           "swatch",
           customPreset.item,
           customPreset.price,
@@ -6806,7 +6747,7 @@ function selectThemeFont(fontId) {
     select.value = fontId;
   }
 
-  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "fontSelect");
+  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, null, "fontSelect");
 }
 
 function toggleThemeFontDropdown(e) {
@@ -6891,9 +6832,6 @@ function renderThemeColorsView() {
   const existingScrollPoints = (currentBusiness && currentBusiness.branding && currentBusiness.branding.scrollPointsColor)
     ? normalizeHexColor(currentBusiness.branding.scrollPointsColor)
     : "";
-  const existingStroke = (currentBusiness && currentBusiness.branding && currentBusiness.branding.hasNameStroke !== undefined)
-    ? !!currentBusiness.branding.hasNameStroke
-    : true;
   const existingFont = (currentBusiness && currentBusiness.branding && currentBusiness.branding.nameFont)
     ? currentBusiness.branding.nameFont
     : "Lobster";
@@ -6902,14 +6840,8 @@ function renderThemeColorsView() {
   currentTopColor = savedTopColor;
   savedBgColor = existingBg || "#FBEFE1";
   currentBgColor = savedBgColor;
-  savedHasNameStroke = existingStroke;
-  currentHasNameStroke = savedHasNameStroke;
   savedNameFont = THEME_FONTS.some(f => f.id === existingFont) ? existingFont : "Lobster";
   currentNameFont = savedNameFont;
-
-  if (themeNameStrokeCheckbox) {
-    themeNameStrokeCheckbox.checked = currentHasNameStroke;
-  }
 
   if (existingName) {
     savedNameColor = existingName;
@@ -6959,7 +6891,7 @@ function renderThemeColorsView() {
   loadCustomPresetsFromBusiness();
   renderThemeFonts();
   renderThemeSwatches();
-  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "all", currentItemTextColor, currentPriceColor, currentCategoryColor, currentScrollPointsColor);
+  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, null, "all", currentItemTextColor, currentPriceColor, currentCategoryColor, currentScrollPointsColor);
 
   if (themeSaveBtn) {
     themeSaveBtn.disabled = true;
@@ -6994,7 +6926,7 @@ async function saveThemeColors() {
         priceColor: priceToSave,
         categoryColor: categoryToSave,
         scrollPointsColor: scrollPointsToSave,
-        hasNameStroke: currentHasNameStroke,
+        hasNameStroke: false,
         nameFont: currentNameFont
       })
     });
@@ -7016,7 +6948,7 @@ async function saveThemeColors() {
       currentBusiness.branding.priceColor = priceToSave;
       currentBusiness.branding.categoryColor = categoryToSave;
       currentBusiness.branding.scrollPointsColor = scrollPointsToSave;
-      currentBusiness.branding.hasNameStroke = currentHasNameStroke;
+      currentBusiness.branding.hasNameStroke = false;
       currentBusiness.branding.nameFont = currentNameFont;
     }
 
@@ -7027,7 +6959,6 @@ async function saveThemeColors() {
     savedPriceColor = priceToSave;
     savedCategoryColor = categoryToSave;
     savedScrollPointsColor = scrollPointsToSave;
-    savedHasNameStroke = currentHasNameStroke;
     savedNameFont = currentNameFont;
     if (typeof updateQrStandPanels === "function") {
       updateQrStandPanels();
@@ -7044,7 +6975,6 @@ async function saveThemeColors() {
         currentPriceColor.toUpperCase() !== savedPriceColor.toUpperCase() ||
         currentCategoryColor.toUpperCase() !== savedCategoryColor.toUpperCase() ||
         currentScrollPointsColor.toUpperCase() !== savedScrollPointsColor.toUpperCase() ||
-        currentHasNameStroke !== savedHasNameStroke ||
         currentNameFont !== savedNameFont
       );
       if (themeSaveBtn) themeSaveBtn.disabled = !stillChanged;
@@ -7063,7 +6993,6 @@ async function saveThemeColors() {
       currentPriceColor.toUpperCase() === "#731723" &&
       currentCategoryColor.toUpperCase() === "#D05A00" &&
       currentScrollPointsColor.toUpperCase() === "#731723" &&
-      currentHasNameStroke === true &&
       currentNameFont === "Lobster"
     );
     if (themeResetBtn) themeResetBtn.disabled = isDef;
@@ -7231,13 +7160,7 @@ if (themeScrollPointsHexInput) {
   });
 }
 
-// Business Name Stroke checkbox listener
-if (themeNameStrokeCheckbox) {
-  themeNameStrokeCheckbox.addEventListener("change", (e) => {
-    currentHasNameStroke = e.target.checked;
-    updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "strokeCheckbox");
-  });
-}
+
 
 if (themeSaveBtn) {
   themeSaveBtn.addEventListener("click", saveThemeColors);
@@ -7294,12 +7217,11 @@ function resetThemeColors() {
   isCustomCategoryColor = false;
   currentScrollPointsColor = "#731723";
   isCustomScrollPointsColor = false;
-  currentHasNameStroke = true;
   currentNameFont = "Lobster";
 
   renderThemeFonts();
   renderThemeSwatches();
-  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, currentHasNameStroke, "all", currentItemTextColor, currentPriceColor, currentCategoryColor, currentScrollPointsColor);
+  updateThemeColorsUI(currentTopColor, currentBgColor, currentNameColor, null, "all", currentItemTextColor, currentPriceColor, currentCategoryColor, currentScrollPointsColor);
 }
 
 if (themeResetBtn) {

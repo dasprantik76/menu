@@ -3895,7 +3895,9 @@ body.pending-mode .sticky-add-dish-bar,
 body.pending-mode #stickyQrActionBar,
 body.pending-mode .qr-sticky-action-bar,
 body.pending-mode .branding-btn-row,
-body.pending-mode .theme-btn-row {
+body.pending-mode .theme-btn-row,
+body:not(.qrcode-mode) #stickyQrActionBar,
+body:not(.qrcode-mode) .qr-sticky-action-bar {
   display: none !important;
 }
 
@@ -5510,15 +5512,26 @@ input:checked + .slider:before {
 .qrcode-view-section {
   width: 100%;
   max-width: 520px;
-  height: 100% !important;
-  max-height: calc(100dvh - 82px) !important;
+  height: 100%;
+  max-height: calc(100dvh - 82px);
   margin: 0 auto;
-  padding: 0 !important;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.qrcode-view-section[style*="display: none"],
+#qrCodeView[style*="display: none"],
+body:not(.qrcode-mode) .qrcode-view-section,
+body:not(.qrcode-mode) #qrCodeView {
+  display: none !important;
+}
+
+body.qrcode-mode .qrcode-view-section,
+body.qrcode-mode #qrCodeView {
   display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
 }
 
 .qrcode-header {
@@ -5535,21 +5548,29 @@ input:checked + .slider:before {
   width: 100% !important;
   height: calc(100% - 76px - env(safe-area-inset-bottom, 0px)) !important;
   max-height: calc(100% - 76px - env(safe-area-inset-bottom, 0px)) !important;
-  padding: 8px 16px 10px 16px !important;
+  padding: 0 !important;
   margin: 0 auto !important;
   margin-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  justify-content: space-evenly !important;
+  justify-content: flex-start !important;
   text-align: center !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
 }
 
-/* QR Code Stand Mockup Container (4:6 Ratio) */
+.qrcode-body::after {
+  content: "";
+  display: block;
+  flex: 1 1 0;
+  min-height: 0;
+  pointer-events: none;
+}
+
+/* QR Code Stand Mockup Container (4:6 Ratio) - Stays centered in the middle of the page */
 .qr-stand-container {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -5562,13 +5583,13 @@ input:checked + .slider:before {
 }
 
 .qr-stand-mockup-title {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #64748b;
   text-align: center;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   flex-shrink: 0;
   line-height: 1;
 }
@@ -5577,10 +5598,10 @@ input:checked + .slider:before {
   position: relative;
   z-index: 1;
   aspect-ratio: 4 / 6;
-  height: clamp(230px, calc(100dvh - 250px - env(safe-area-inset-bottom, 0px)), 440px);
-  max-height: calc(100dvh - 240px - env(safe-area-inset-bottom, 0px));
+  height: clamp(180px, calc(100dvh - 82px - 76px - 170px - env(safe-area-inset-bottom, 0px)), 420px);
+  max-height: calc(100dvh - 300px - env(safe-area-inset-bottom, 0px));
   width: auto;
-  max-width: min(300px, 86vw);
+  max-width: min(290px, 86vw);
   margin: 0 auto;
   --qr-split-from-bottom: 200px;
   --qr-box-half-height: 100px;
@@ -5729,8 +5750,8 @@ input:checked + .slider:before {
   font-weight: 400;
   letter-spacing: 0.5px;
   color: var(--qr-biz-name-color, #63141e);
-  -webkit-text-stroke: var(--qr-biz-name-stroke, 2.2px var(--qr-top-panel-bg, #fbefe1));
-  paint-order: stroke fill;
+  -webkit-text-stroke: none;
+  paint-order: normal;
   text-align: center;
   max-width: 96%;
   white-space: nowrap;
@@ -5813,28 +5834,29 @@ input:checked + .slider:before {
 
 .qrcode-url-container {
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
   background: transparent;
   border: none;
   border-radius: 0;
   box-shadow: none;
   padding: 0;
   box-sizing: border-box;
-  margin: 0 auto 6px auto;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
+  justify-content: center;
+  gap: 8px;
+  flex: 1 1 0;
+  min-height: 76px;
 }
 
 .qrcode-url-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #64748b;
-  line-height: 1;
   text-align: center;
 }
 
@@ -5845,13 +5867,13 @@ input:checked + .slider:before {
   background: #ffffff;
   border: 1.5px solid #cbd5e1;
   border-radius: 9999px;
-  padding: 0 8px 0 14px;
-  height: 42px;
-  min-height: 42px;
+  padding: 0 10px 0 18px;
+  height: 50px;
+  min-height: 50px;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
   box-sizing: border-box;
   width: 100%;
-  max-width: 440px;
+  max-width: 480px;
   transition: all 0.18s ease;
 }
 
@@ -5978,26 +6000,34 @@ input:checked + .slider:before {
 
 @media (max-width: 640px) {
   .qrcode-view-section {
-    padding: 0 !important;
+    padding: 0 14px !important;
     height: 100% !important;
     max-height: calc(100dvh - 82px) !important;
     overflow: hidden !important;
   }
   .qrcode-body,
   .qrcode-card {
-    padding: 6px 12px 8px 12px !important;
+    padding: 0 !important;
     height: calc(100% - 72px - env(safe-area-inset-bottom, 0px)) !important;
     max-height: calc(100% - 72px - env(safe-area-inset-bottom, 0px)) !important;
     margin-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
     overflow: hidden !important;
+    justify-content: flex-start !important;
+  }
+  .qrcode-url-container {
+    margin: 0 auto;
+    padding: 0;
+    flex: 1 1 0;
+    min-height: 74px;
   }
   .qr-stand-container {
     max-width: 280px;
+    margin: 0 auto;
   }
   .qr-stand-mockup {
-    height: clamp(210px, calc(100dvh - 240px - env(safe-area-inset-bottom, 0px)), 400px);
-    max-height: calc(100dvh - 230px - env(safe-area-inset-bottom, 0px));
-    max-width: min(280px, 86vw);
+    height: clamp(165px, calc(100dvh - 82px - 72px - 160px - env(safe-area-inset-bottom, 0px)), 380px);
+    max-height: calc(100dvh - 280px - env(safe-area-inset-bottom, 0px));
+    max-width: min(270px, 86vw);
   }
   .qrcode-actions-row {
     flex-direction: column;
@@ -6010,14 +6040,15 @@ input:checked + .slider:before {
 @media (max-width: 380px) {
   .qrcode-body,
   .qrcode-card {
-    padding: 4px 8px 6px 8px !important;
+    padding: 0 !important;
   }
   .qr-stand-container {
     max-width: 250px;
+    margin: 0 auto;
   }
   .qr-stand-mockup {
-    height: clamp(190px, calc(100dvh - 220px - env(safe-area-inset-bottom, 0px)), 350px);
-    max-height: calc(100dvh - 210px - env(safe-area-inset-bottom, 0px));
+    height: clamp(155px, calc(100dvh - 82px - 72px - 150px - env(safe-area-inset-bottom, 0px)), 330px);
+    max-height: calc(100dvh - 260px - env(safe-area-inset-bottom, 0px));
     max-width: min(250px, 86vw);
   }
 }
@@ -6226,23 +6257,23 @@ input:checked + .slider:before {
 }
 
 .phone-btn-action {
-  top: 42px;
-  height: 10px;
+  top: 66px;
+  height: 11px;
 }
 
 .phone-btn-vol-up {
-  top: 60px;
-  height: 23px;
+  top: 86px;
+  height: 25px;
 }
 
 .phone-btn-vol-down {
-  top: 90px;
-  height: 23px;
+  top: 118px;
+  height: 25px;
 }
 
 .phone-btn-power {
-  top: 56px;
-  height: 34px;
+  top: 84px;
+  height: 38px;
 }
 
 .theme-mockup-wrapper {
@@ -6372,9 +6403,9 @@ input:checked + .slider:before {
   font-family: var(--preview-name-font, 'Lobster'), cursive, sans-serif;
   font-size: 1.15rem;
   color: var(--preview-name-color, #991e2e);
-  -webkit-text-stroke: var(--preview-name-stroke, 1.8px #fbefe1);
-  paint-order: stroke fill;
-  transition: color 0.22s ease, -webkit-text-stroke 0.22s ease;
+  -webkit-text-stroke: none;
+  paint-order: normal;
+  transition: color 0.22s ease;
   text-align: center;
   white-space: nowrap;
   overflow: visible;
@@ -6429,7 +6460,7 @@ input:checked + .slider:before {
 .theme-mockup-dots {
   position: absolute;
   right: 7px;
-  top: 50%;
+  top: calc(50% + 18px);
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
@@ -7259,81 +7290,7 @@ input:checked + .slider:before {
   transform: scale(1.1);
 }
 
-/* Stroke Checkbox Option */
-.theme-stroke-row {
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-}
 
-.theme-checkbox-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  user-select: none;
-  padding: 4px 2px;
-}
-
-.theme-checkbox-input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
-.theme-checkbox-custom {
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  border: 1.5px solid #cbd5e1;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.18s ease;
-  flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.theme-checkbox-custom svg {
-  width: 12px;
-  height: 12px;
-  color: #ffffff;
-  opacity: 0;
-  transform: scale(0.6);
-  transition: all 0.15s ease;
-}
-
-.theme-checkbox-input:checked + .theme-checkbox-custom {
-  background: #0f172a;
-  border-color: #0f172a;
-}
-
-.theme-checkbox-input:checked + .theme-checkbox-custom svg {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.theme-checkbox-label:hover .theme-checkbox-custom {
-  border-color: #94a3b8;
-}
-
-.theme-checkbox-input:focus-visible + .theme-checkbox-custom {
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.15);
-}
-
-.theme-checkbox-text {
-  font-size: 0.88rem;
-  font-weight: 500;
-  color: #334155;
-  transition: color 0.15s ease;
-}
-
-.theme-checkbox-label:hover .theme-checkbox-text {
-  color: #0f172a;
-}
 
 /* Business Name Font Dropdown */
 .theme-font-dropdown-wrapper {

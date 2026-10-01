@@ -213,8 +213,7 @@ body {
   font-weight: 400;
   letter-spacing: 0.6px;
   color: var(--name-text-color, var(--theme-darkened-brand, #63141e));
-  -webkit-text-stroke: var(--name-stroke, 5px var(--menu-bg-color, #fbefe1));
-  paint-order: stroke fill;
+  -webkit-text-stroke: none;
   text-transform: none;
   margin: 0 auto;
   padding: 0;

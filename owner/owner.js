@@ -160,18 +160,41 @@ const drawerBrandingLink = document.getElementById("drawerBrandingLink");
 const drawerThemeLink = document.getElementById("drawerThemeLink");
 const drawerQrLink = document.getElementById("drawerQrLink");
 
+let ownerServerTimeOffset = 0;
+
+function getOwnerNow() {
+  return new Date(Date.now() + ownerServerTimeOffset);
+}
+
 function updateAccountExpiryBadge() {
   const drawerAccountExpiry = document.getElementById("drawerAccountExpiry");
   const drawerAccountExpiryText = document.getElementById("drawerAccountExpiryText");
   if (!drawerAccountExpiry || !drawerAccountExpiryText) return;
 
-  const expiryVal = currentBusiness ? (currentBusiness.approvalExpiry || currentBusiness.subscriptionExpiry) : null;
+  if (currentBusiness && currentBusiness.serverTime) {
+    ownerServerTimeOffset = new Date(currentBusiness.serverTime).getTime() - Date.now();
+  }
+
+  if (!currentBusiness || currentBusiness.approvalStatus !== "approved") {
+    drawerAccountExpiry.style.display = "none";
+    return;
+  }
+
+  const expiryVal = currentBusiness.approvalExpiry || currentBusiness.subscriptionExpiry;
   if (expiryVal) {
     const expiry = new Date(expiryVal);
     if (!isNaN(expiry.getTime())) {
-      const now = new Date();
-      const diffMs = expiry.getTime() - now.getTime();
-      const days = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      let days = typeof currentBusiness.approvalDaysLeft === "number"
+        ? currentBusiness.approvalDaysLeft
+        : Math.max(0, Math.ceil((expiry.getTime() - getOwnerNow().getTime()) / (1000 * 60 * 60 * 24)));
+
+      if (days <= 0) {
+        drawerAccountExpiryText.textContent = "Expired";
+        drawerAccountExpiryText.classList.add("is-urgent");
+        drawerAccountExpiry.style.display = "flex";
+        return;
+      }
+
       drawerAccountExpiryText.textContent = `${days} ${days === 1 ? "day" : "days"} left`;
       if (days <= 5) {
         drawerAccountExpiryText.classList.add("is-urgent");
@@ -550,6 +573,9 @@ async function checkSession() {
     const data = await res.json();
 
     if (data.success && data.authenticated && data.user) {
+      if (data.serverTime) {
+        ownerServerTimeOffset = new Date(data.serverTime).getTime() - Date.now();
+      }
       currentUser = data.user;
       currentBusiness = data.business;
 
@@ -5625,19 +5651,30 @@ async function downloadQrCode() {
           }
 
           if (canExport) {
-            const maxLogoW = Math.round(cardW * 0.72);
-            const footerAvailH = Math.max(60, cardH - qrBoxBottom - 64);
-            const maxLogoH = Math.round(footerAvailH * 0.64);
+            let drawW, drawH, logoY;
+            const logoRect = (mockupRect && qrStandLogoEl && qrStandLogoEl.style.display !== "none") ? qrStandLogoEl.getBoundingClientRect() : null;
 
-            const fitRatio = Math.min(maxLogoW / loadedImg.naturalWidth, maxLogoH / loadedImg.naturalHeight);
-            const drawW = Math.round(loadedImg.naturalWidth * fitRatio);
-            const drawH = Math.round(loadedImg.naturalHeight * fitRatio);
+            if (logoRect && logoRect.width > 0 && logoRect.height > 0) {
+              // Exact proportional size matching the on-screen preview
+              drawW = Math.round(logoRect.width * scale);
+              drawH = Math.round(logoRect.height * scale);
+              const logoCenterScreenY = (logoRect.top + logoRect.height / 2) - mockupRect.top;
+              logoY = Math.round(logoCenterScreenY * scale - (drawH / 2));
+            } else {
+              // Proportional fallback based on CSS max-width: 70% and max-height: 50% of footer
+              const footerAvailH = Math.max(60, cardH - qrBoxBottom);
+              const maxLogoW = Math.round(cardW * 0.70);
+              const maxLogoH = Math.round(footerAvailH * 0.50);
+              const fitRatio = Math.min(maxLogoW / loadedImg.naturalWidth, maxLogoH / loadedImg.naturalHeight);
+              drawW = Math.round(loadedImg.naturalWidth * fitRatio);
+              drawH = Math.round(loadedImg.naturalHeight * fitRatio);
+              logoY = Math.round(footerCenterY - (drawH / 2));
+            }
 
             const logoX = Math.round((cardW - drawW) / 2);
-            const logoY = Math.round(footerCenterY - (drawH / 2));
 
             ctx.save();
-            ctx.shadowColor = "rgba(0, 0, 0, 0.16)";
+            ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
             ctx.shadowBlur = Math.round(6 * scale);
             ctx.shadowOffsetY = Math.round(2 * scale);
             ctx.drawImage(loadedImg, logoX, logoY, drawW, drawH);
@@ -5815,14 +5852,15 @@ const themeSavePresetBtn = document.getElementById("themeSavePresetBtn");
 const themeSavePresetBtnLabel = document.getElementById("themeSavePresetBtnLabel");
 const themePaletteSlotsStatus = document.getElementById("themePaletteSlotsStatus");
 
+const MAX_CUSTOM_PRESET_SLOTS = 5;
 let savedCustomPresets = [];
 
 function loadCustomPresetsFromBusiness() {
   savedCustomPresets = [];
   if (currentBusiness && currentBusiness.branding && Array.isArray(currentBusiness.branding.customPresets)) {
     currentBusiness.branding.customPresets.forEach((p, idx) => {
-      const slot = (typeof p.slotIndex === "number" && p.slotIndex >= 0 && p.slotIndex < 10) ? p.slotIndex : idx;
-      if (slot < 10) savedCustomPresets[slot] = p;
+      const slot = (typeof p.slotIndex === "number" && p.slotIndex >= 0 && p.slotIndex < MAX_CUSTOM_PRESET_SLOTS) ? p.slotIndex : idx;
+      if (slot < MAX_CUSTOM_PRESET_SLOTS) savedCustomPresets[slot] = p;
     });
   } else {
     try {
@@ -5832,7 +5870,7 @@ function loadCustomPresetsFromBusiness() {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) {
           parsed.forEach((p, idx) => {
-            if (p && idx < 10) savedCustomPresets[idx] = p;
+            if (p && idx < MAX_CUSTOM_PRESET_SLOTS) savedCustomPresets[idx] = p;
           });
         }
       }
@@ -5842,7 +5880,7 @@ function loadCustomPresetsFromBusiness() {
 
 async function persistCustomPresets() {
   const cleanList = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < MAX_CUSTOM_PRESET_SLOTS; i++) {
     if (savedCustomPresets[i]) {
       cleanList.push(savedCustomPresets[i]);
     }
@@ -5870,16 +5908,16 @@ async function persistCustomPresets() {
 function updatePaletteSlotsStatus() {
   if (!themePaletteSlotsStatus) return;
   let count = 0;
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < MAX_CUSTOM_PRESET_SLOTS; i++) {
     if (savedCustomPresets[i]) count++;
   }
-  themePaletteSlotsStatus.textContent = `${count} of 10 slots saved`;
+  themePaletteSlotsStatus.textContent = `${count} of ${MAX_CUSTOM_PRESET_SLOTS} slots saved`;
 }
 
 function saveCurrentPresetToSlot(slotIdx) {
   if (slotIdx === undefined || slotIdx === null || slotIdx < 0) {
     let found = -1;
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < MAX_CUSTOM_PRESET_SLOTS; i++) {
       if (!savedCustomPresets[i]) {
         found = i;
         break;
@@ -5887,9 +5925,9 @@ function saveCurrentPresetToSlot(slotIdx) {
     }
     if (found === -1) {
       if (typeof showToast === "function") {
-        showToast("All 10 preset slots are full. Delete a preset to free up a slot.", "warning");
+        showToast(`All ${MAX_CUSTOM_PRESET_SLOTS} preset slots are full. Delete a preset to free up a slot.`, "warning");
       } else {
-        alert("All 10 preset slots are full. Delete a preset to free up a slot.");
+        alert(`All ${MAX_CUSTOM_PRESET_SLOTS} preset slots are full. Delete a preset to free up a slot.`);
       }
       return;
     }
@@ -5934,109 +5972,125 @@ function deleteCustomPreset(slotIdx) {
 }
 
 const THEME_PALETTES = [
-  // 5 Normal (Light / Gourmet / Artisan) Palettes
   {
-    label: "Parisian Bistro (Ruby & Linen)",
-    top: "#8B1528", // Deep Bordeaux Ruby
-    bg: "#FFFBF5",  // Warm Ivory Linen
-    name: "#FFFFFF", // Crisp White on Ruby Topbar
-    item: "#18181B", // Deep Obsidian Black
-    price: "#991B1B", // Rich Crimson Garnet
-    category: "#991B1B",
-    scroll: "#8B1528"
+    label: "Crimson & Dark Pine (Berkshire Swash)",
+    top: "#A52228",
+    bg: "#0B413B",
+    name: "#EED02D",
+    item: "#D1FFE7",
+    price: "#FFA200",
+    category: "#FFFFFF",
+    scroll: "#FFFFFF",
+    font: "Berkshire Swash",
+    hasStroke: false
   },
   {
-    label: "Kyoto Matcha (Botanical Jade)",
-    top: "#134E3F", // Deep Imperial Jade
-    bg: "#F5FBF7",  // Morning Dew Mint
-    name: "#FFFFFF", // Crisp White on Jade Topbar
-    item: "#0F2922", // Deep Pine Charcoal
-    price: "#C25E00", // Warm Caramel Amber
-    category: "#134E3F",
-    scroll: "#C25E00"
+    label: "Vintage Bourbon (Sand & Amber)",
+    top: "#6F4F2A",
+    bg: "#E1DCC1",
+    name: "#FFECA8",
+    item: "#2B2218",
+    price: "#8A3305",
+    category: "#945624",
+    scroll: "#6F481B",
+    font: "Rye",
+    hasStroke: false
   },
   {
-    label: "Amalfi Trattoria (Terracotta & Cream)",
-    top: "#C2410C", // Sun-Drenched Terracotta
-    bg: "#FFF8F0",  // Baked Biscuit Cream
-    name: "#FFFFFF", // Crisp White on Terracotta Topbar
-    item: "#1C1412", // Dark Roasted Espresso
-    price: "#9A3412", // Deep Roasted Clay
-    category: "#C2410C",
-    scroll: "#9A3412"
+    label: "Emerald Grove (Teal & Parchment)",
+    top: "#087860",
+    bg: "#FDF0DA",
+    name: "#E5FFF9",
+    item: "#1A1A1A",
+    price: "#9F2B01",
+    category: "#E66300",
+    scroll: "#6F481B",
+    font: "DM Serif Display",
+    hasStroke: false
   },
   {
-    label: "Nordic Coast (Marine Navy & Ice)",
-    top: "#0C4A6E", // Deep Marine Ocean
-    bg: "#F0F9FF",  // Sea Salt Ice Mist
-    name: "#FFFFFF", // Crisp White on Navy Topbar
-    item: "#082F49", // Deep Midnight Slate
-    price: "#BE123C", // Nordic Lingonberry Coral
-    category: "#0C4A6E",
-    scroll: "#BE123C"
+    label: "Royal Purple (Violet & Gold)",
+    top: "#4C0983",
+    bg: "#FFFFFF",
+    name: "#FFDC03",
+    item: "#1A1A1A",
+    price: "#642991",
+    category: "#EA7F00",
+    scroll: "#4C0983",
+    font: "Kaushan Script",
+    hasStroke: false
   },
   {
-    label: "Vintage Saloon (Bourbon & Rye)",
-    top: "#451A03", // Aged Bourbon Mahogany
-    bg: "#FAF3E0",  // Antique Warm Parchment
-    name: "#F59E0B", // Burnished Amber Gold
-    item: "#1F130B", // Charred Smoked Basalt
-    price: "#991B1B", // Vintage Crimson Seal
-    category: "#991B1B",
-    scroll: "#451A03",
-    font: "Rye"     // Curated Vintage Font
-  },
-
-  // 5 Dark (Luxury Noir / Midnight / Lounge) Palettes
-  {
-    label: "Caviar & Gold (Michelin Noir)",
-    top: "#18181B", // Polished Obsidian Slate
-    bg: "#09090B",  // Deep Caviar Noir
-    name: "#F59E0B", // Luminous 24K Gold
-    item: "#F4F4F5", // High-Contrast Platinum White
-    price: "#FBBF24", // Gleaming Gold Leaf
-    category: "#F59E0B",
-    scroll: "#FBBF24"
+    label: "Botanical Forest (Pine & Lime)",
+    top: "#125524",
+    bg: "#E4F4C7",
+    name: "#EED02D",
+    item: "#000000",
+    price: "#006118",
+    category: "#737F15",
+    scroll: "#206030",
+    font: "Bebas Neue",
+    hasStroke: false
   },
   {
-    label: "Tokyo Cyber (Neon Plum & Coral)",
-    top: "#4C0519", // Deep Midnight Plum
-    bg: "#0A0608",  // Shadow Noir
-    name: "#FDA4AF", // Electric Cherry Blossom
-    item: "#FFF1F2", // Pure Soft White
-    price: "#FB7185", // Vivid Neon Coral
-    category: "#FB7185",
-    scroll: "#FDA4AF"
+    label: "Midnight Charcoal (Neon Tangerine)",
+    top: "#272C2C",
+    bg: "#0C0F17",
+    name: "#FF8442",
+    item: "#E6E6E6",
+    price: "#FFA552",
+    category: "#E8D611",
+    scroll: "#A6A6A6",
+    font: "Sacramento",
+    hasStroke: false
+  },
+  {
+    label: "Ocean Azure (Marine & Ice)",
+    top: "#0285D0",
+    bg: "#0E3953",
+    name: "#FFFFFF",
+    item: "#FFFFFF",
+    price: "#6BCEFF",
+    category: "#FFC64D",
+    scroll: "#6F99B3",
+    font: "Google Sans",
+    hasStroke: false
+  },
+  {
+    label: "Velvet Rose (Berry & Plum)",
+    top: "#CA5C82",
+    bg: "#392244",
+    name: "#FFE0EB",
+    item: "#FFFFFF",
+    price: "#F99FBF",
+    category: "#FF9747",
+    scroll: "#BB778F",
+    font: "DM Serif Display",
+    hasStroke: false
+  },
+  {
+    label: "Fiesta Spice (Chili & Saffron)",
+    top: "#CB2E06",
+    bg: "#FFDA47",
+    name: "#FFFFFF",
+    item: "#000000",
+    price: "#931017",
+    category: "#B81F28",
+    scroll: "#907E6A",
+    font: "Lobster",
+    hasStroke: false
   },
   {
     label: "Emerald Speakeasy (Velvet & Brass)",
-    top: "#022C22", // Midnight Forest Velvet
-    bg: "#03140F",  // Abyssal Pine Night
-    name: "#34D399", // Luminous Mint Jade
-    item: "#F0FDF4", // Mint Dew White
-    price: "#FBBF24", // Burnished Brass Amber
+    top: "#022C22",
+    bg: "#03140F",
+    name: "#34D399",
+    item: "#F0FDF4",
+    price: "#FBBF24",
     category: "#34D399",
-    scroll: "#FBBF24"
-  },
-  {
-    label: "Royal Amethyst (Violet & Berry)",
-    top: "#3B0764", // Imperial Midnight Violet
-    bg: "#0A0410",  // Dark Blackberry Velvet
-    name: "#D8B4FE", // Radiant Lilac Glow
-    item: "#FAF5FF", // Silky Moonlit White
-    price: "#F472B6", // Electric Neon Berry
-    category: "#D8B4FE",
-    scroll: "#F472B6"
-  },
-  {
-    label: "Smoked Cast Iron (Ember Flame)",
-    top: "#1C1917", // Smoked Cast Iron
-    bg: "#0C0A09",  // Charred Charcoal Hearth
-    name: "#FB923C", // Glowing Hearth Flame
-    item: "#F5F5F4", // Bright Silver Smoke
-    price: "#F97316", // Blazing Hot Ember
-    category: "#FB923C",
-    scroll: "#F97316"
+    scroll: "#FBBF24",
+    font: "Rye",
+    hasStroke: false
   }
 ];
 
@@ -6360,6 +6414,7 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
       const swCat = swatch.getAttribute("data-category");
       const swScroll = swatch.getAttribute("data-scroll");
       const swFont = swatch.getAttribute("data-font");
+      const swStroke = swatch.getAttribute("data-has-stroke");
       const matchesMain = (
         swTop && swBg && swName &&
         swTop.toUpperCase() === currentTopColor.toUpperCase() &&
@@ -6375,7 +6430,8 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
         (!swScroll || swScroll.toUpperCase() === currentScrollPointsColor.toUpperCase())
       );
       const matchesFont = (!swFont || swFont === currentNameFont);
-      if (matchesMain && matchesItemPrice && matchesCatScroll && matchesFont) {
+      const matchesStroke = (swStroke === null || (swStroke === "true") === currentHasNameStroke);
+      if (matchesMain && matchesItemPrice && matchesCatScroll && matchesFont && matchesStroke) {
         swatch.classList.add("active");
       } else {
         swatch.classList.remove("active");
@@ -6446,6 +6502,7 @@ function renderThemeSwatches() {
     if (palette.category) card.setAttribute("data-category", palette.category);
     if (palette.scroll) card.setAttribute("data-scroll", palette.scroll);
     if (palette.font) card.setAttribute("data-font", palette.font);
+    if (palette.hasStroke !== undefined) card.setAttribute("data-has-stroke", palette.hasStroke);
     card.setAttribute("aria-label", palette.label || `Color Palette Preset ${idx + 1}`);
     card.setAttribute("title", palette.label || `Theme ${idx + 1}`);
 
@@ -6457,7 +6514,8 @@ function renderThemeSwatches() {
       (!palette.price || palette.price.toUpperCase() === currentPriceColor.toUpperCase()) &&
       (!palette.category || palette.category.toUpperCase() === currentCategoryColor.toUpperCase()) &&
       (!palette.scroll || palette.scroll.toUpperCase() === currentScrollPointsColor.toUpperCase()) &&
-      (!palette.font || palette.font === currentNameFont)
+      (!palette.font || palette.font === currentNameFont) &&
+      (palette.hasStroke === undefined || palette.hasStroke === currentHasNameStroke)
     );
     if (isMatch) {
       card.classList.add("active");
@@ -6465,14 +6523,11 @@ function renderThemeSwatches() {
 
     const barsContainer = document.createElement("span");
     barsContainer.className = "theme-swatch-bars";
-    barsContainer.style.background = `linear-gradient(to bottom, ${palette.top} 0% 20%, ${palette.bg} 20% 40%, ${palette.name} 40% 60%, ${palette.item || '#000000'} 60% 80%, ${palette.price || '#731723'} 80% 100%)`;
+    barsContainer.style.background = `linear-gradient(to bottom, ${palette.top} 0% 50%, ${palette.bg} 50% 100%)`;
 
     const colors = [
       palette.top,
-      palette.bg,
-      palette.name,
-      palette.item || "#000000",
-      palette.price || "#731723"
+      palette.bg
     ];
     colors.forEach(col => {
       const row = document.createElement("span");
@@ -6485,34 +6540,30 @@ function renderThemeSwatches() {
 
     card.addEventListener("click", () => {
       if (palette.font) {
-        currentNameFont = palette.font;
-        const fontObj = THEME_FONTS.find(f => f.id === palette.font) || THEME_FONTS[0];
-        const displaySpan = document.getElementById("themeFontSelectedName");
-        if (displaySpan) {
-          displaySpan.textContent = fontObj.name;
-          displaySpan.style.fontFamily = fontObj.family;
-        }
-        const menu = document.getElementById("themeFontDropdownMenu");
-        if (menu) {
-          menu.querySelectorAll(".theme-font-item").forEach(item => {
-            const isSel = (item.getAttribute("data-font") === palette.font);
-            item.classList.toggle("is-selected", isSel);
-            item.setAttribute("aria-selected", isSel ? "true" : "false");
-          });
-        }
-        const select = document.getElementById("themeFontSelectDropdown");
-        if (select) {
-          select.value = palette.font;
-        }
+        selectThemeFont(palette.font);
       }
-      updateThemeColorsUI(palette.top, palette.bg, palette.name, null, "swatch", palette.item, palette.price, palette.category, palette.scroll);
+      if (palette.hasStroke !== undefined) {
+        currentHasNameStroke = !!palette.hasStroke;
+        if (themeNameStrokeCheckbox) themeNameStrokeCheckbox.checked = currentHasNameStroke;
+      }
+      updateThemeColorsUI(
+        palette.top,
+        palette.bg,
+        palette.name,
+        palette.hasStroke !== undefined ? palette.hasStroke : null,
+        "swatch",
+        palette.item,
+        palette.price,
+        palette.category,
+        palette.scroll
+      );
     });
 
     themeSwatchesGrid.appendChild(card);
   });
 
-  // 10 Custom Preset Slots (2 rows of 5)
-  for (let slotIdx = 0; slotIdx < 10; slotIdx++) {
+  // 5 Custom Preset Slots (1 row of 5)
+  for (let slotIdx = 0; slotIdx < MAX_CUSTOM_PRESET_SLOTS; slotIdx++) {
     const customPreset = savedCustomPresets[slotIdx] || null;
     const card = document.createElement("button");
     card.type = "button";
@@ -6528,6 +6579,7 @@ function renderThemeSwatches() {
       if (customPreset.category) card.setAttribute("data-category", customPreset.category);
       if (customPreset.scroll) card.setAttribute("data-scroll", customPreset.scroll);
       if (customPreset.font) card.setAttribute("data-font", customPreset.font);
+      if (customPreset.hasStroke !== undefined) card.setAttribute("data-has-stroke", customPreset.hasStroke);
       card.setAttribute("aria-label", customPreset.label || `Custom Preset ${slotIdx + 1}`);
       card.setAttribute("title", `${customPreset.label || `Custom Preset ${slotIdx + 1}`} (Click to apply)`);
 
@@ -6539,7 +6591,8 @@ function renderThemeSwatches() {
         (!customPreset.price || customPreset.price.toUpperCase() === currentPriceColor.toUpperCase()) &&
         (!customPreset.category || customPreset.category.toUpperCase() === currentCategoryColor.toUpperCase()) &&
         (!customPreset.scroll || customPreset.scroll.toUpperCase() === currentScrollPointsColor.toUpperCase()) &&
-        (!customPreset.font || customPreset.font === currentNameFont)
+        (!customPreset.font || customPreset.font === currentNameFont) &&
+        (customPreset.hasStroke === undefined || customPreset.hasStroke === currentHasNameStroke)
       );
       if (isMatch) {
         card.classList.add("active");
@@ -6547,14 +6600,11 @@ function renderThemeSwatches() {
 
       const barsContainer = document.createElement("span");
       barsContainer.className = "theme-swatch-bars";
-      barsContainer.style.background = `linear-gradient(to bottom, ${customPreset.top} 0% 20%, ${customPreset.bg} 20% 40%, ${customPreset.name} 40% 60%, ${customPreset.item || '#000000'} 60% 80%, ${customPreset.price || '#731723'} 80% 100%)`;
+      barsContainer.style.background = `linear-gradient(to bottom, ${customPreset.top} 0% 50%, ${customPreset.bg} 50% 100%)`;
 
       const colors = [
         customPreset.top,
-        customPreset.bg,
-        customPreset.name,
-        customPreset.item || "#000000",
-        customPreset.price || "#731723"
+        customPreset.bg
       ];
       colors.forEach(col => {
         const row = document.createElement("span");
@@ -6599,11 +6649,12 @@ function renderThemeSwatches() {
       card.setAttribute("aria-label", `Empty Preset Slot ${slotIdx + 1}`);
       card.setAttribute("title", `Slot ${slotIdx + 1} (Empty - Click to save current colors)`);
       card.innerHTML = `
-        <svg class="theme-swatch-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        <span class="theme-swatch-empty-label">Slot ${slotIdx + 1}</span>
+        <span class="theme-swatch-empty-box">
+          <svg class="theme-swatch-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </span>
       `;
       card.addEventListener("click", () => {
         saveCurrentPresetToSlot(slotIdx);
@@ -8277,6 +8328,21 @@ document.addEventListener("selectstart", (e) => {
   }
   e.preventDefault();
 });
+
+// Automatically re-verify session and approval status when returning to app or periodically
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    checkSession();
+  }
+});
+window.addEventListener("focus", () => {
+  checkSession();
+});
+setInterval(() => {
+  if (currentUser && currentBusiness) {
+    checkSession();
+  }
+}, 60000);
 
 // Start initialization on page load
 document.addEventListener("DOMContentLoaded", () => {

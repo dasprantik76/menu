@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Righteous&family=Roboto:wght@400;500;700&family=Rye&family=Sacramento&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=446">
+  <link rel="stylesheet" href="/owner/owner.css?v=457">
   <script>
     (function() {
       try {
@@ -1150,19 +1150,10 @@
         <!-- Curated Color Swatches -->
         <div class="theme-section-block">
           <div class="theme-section-title">Color Palettes & Presets</div>
-          <div class="theme-swatches-grid" id="themeSwatchesGrid">
-            <!-- Rendered via JS: 10 Curated Presets + 10 Custom Preset Slots -->
-          </div>
-          <div class="theme-palette-actions">
-            <button type="button" class="theme-save-preset-btn" id="themeSavePresetBtn" title="Save current colors into an empty preset slot">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                <polyline points="7 3 7 8 15 8"></polyline>
-              </svg>
-              <span id="themeSavePresetBtnLabel">Save Preset</span>
-            </button>
-            <span class="theme-palette-slots-status" id="themePaletteSlotsStatus"></span>
+          <div class="theme-palettes-container">
+            <div class="theme-swatches-grid" id="themeSwatchesGrid">
+              <!-- Rendered via JS: 10 Curated Presets + 5 Custom Preset Slots -->
+            </div>
           </div>
         </div>
 
@@ -1367,6 +1358,6 @@
   </main>
 
   <script src="/owner/qrcode.min.js"></script>
-  <script src="/owner/owner.js?v=235"></script>
+  <script src="/owner/owner.js?v=243"></script>
 </body>
 </html>

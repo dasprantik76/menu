@@ -2,6 +2,7 @@ const { ObjectId } = require("mongodb");
 const { connectToDatabase } = require("../_lib/mongodb");
 const { COLLECTIONS, checkAndExpireApproval } = require("../_lib/models");
 const { getSessionUser, clearSessionCookie } = require("../_lib/auth");
+const { getTrustedDate } = require("../_lib/time");
 
 /**
  * Session Profile API
@@ -27,6 +28,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const { db } = await connectToDatabase();
+    const now = await getTrustedDate();
 
     const user = await db.collection(COLLECTIONS.USERS).findOne(
       { _id: new ObjectId(session.userId) },
@@ -50,9 +52,14 @@ module.exports = async function handler(req, res) {
       business = await checkAndExpireApproval(db, business);
     }
 
+    const daysLeft = (business && business.approvalExpiry)
+      ? Math.max(0, Math.ceil((new Date(business.approvalExpiry).getTime() - now.getTime()) / 86400000))
+      : null;
+
     return res.status(200).json({
       success: true,
       authenticated: true,
+      serverTime: now.toISOString(),
       user: {
         id: String(user._id),
         email: user.email,
@@ -70,6 +77,8 @@ module.exports = async function handler(req, res) {
         approvalStatus: business.approvalStatus,
         approvalExpiry: business.approvalExpiry,
         approvalDays: business.approvalDays,
+        approvalDaysLeft: daysLeft,
+        serverTime: now.toISOString(),
         subscriptionStatus: business.subscriptionStatus,
         subscriptionExpiry: business.subscriptionExpiry,
         enabledFeatures: business.enabledFeatures || [],

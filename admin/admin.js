@@ -205,6 +205,9 @@ async function fetchBusinesses() {
     const data = await res.json();
 
     if (data.success) {
+      if (data.serverTime) {
+        adminServerTimeOffset = new Date(data.serverTime).getTime() - Date.now();
+      }
       allBusinesses = data.businesses || [];
       renderStats();
       renderPendingTable();
@@ -217,6 +220,12 @@ async function fetchBusinesses() {
     console.error("fetchBusinesses error:", err);
     showNotification("Network error loading businesses.", "error");
   }
+}
+
+let adminServerTimeOffset = 0;
+
+function getAdminNow() {
+  return new Date(Date.now() + adminServerTimeOffset);
 }
 
 /**
@@ -238,7 +247,9 @@ async function fetchAuditLogs() {
 
 function isBusinessExpired(b) {
   if (b.approvalStatus === "suspended") return true;
-  if (b.approvalExpiry && new Date(b.approvalExpiry) < new Date()) return true;
+  if (b.approvalStatus === "pending") return false;
+  if (typeof b.isExpired === "boolean") return b.isExpired;
+  if (b.approvalExpiry && new Date(b.approvalExpiry).getTime() <= getAdminNow().getTime()) return true;
   return false;
 }
 
@@ -544,8 +555,8 @@ function renderAllBizTable() {
     let expiryHint = "";
     if (biz.approvalStatus === "approved" && biz.approvalExpiry) {
       const expiry = new Date(biz.approvalExpiry);
-      const diffDays = Math.ceil((expiry - new Date()) / 86400000);
-      if (diffDays > 0) {
+      const diffDays = typeof biz.daysLeft === "number" ? biz.daysLeft : Math.ceil((expiry.getTime() - getAdminNow().getTime()) / 86400000);
+      if (diffDays > 0 && !biz.isExpired) {
         expiryHint = `<div style="font-size:0.73rem; color:#047857; margin-top:3px; font-weight:600;">${diffDays}d active (${expiry.toLocaleDateString()})</div>`;
       } else {
         expiryHint = `<div style="font-size:0.73rem; color:#dc2626; margin-top:3px; font-weight:600;">Expired (Hold)</div>`;
@@ -772,8 +783,8 @@ function updateApprovalExpiryPreview() {
     approvalExpiryText.textContent = "EXPIRES ON : —";
     return;
   }
-  const expiryDate = new Date();
-  expiryDate.setDate(expiryDate.getDate() + days);
+  const now = getAdminNow();
+  const expiryDate = new Date(now.getTime() + days * 86400000);
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const day = expiryDate.getDate();
   const month = months[expiryDate.getMonth()];
@@ -815,7 +826,9 @@ function openBizDetailsModal(biz) {
   const itemCount = (biz.stats && biz.stats.items) || 0;
   const subStatus = biz.subscriptionStatus || (biz.subscription && biz.subscription.status) || "trial";
   const expiryDate = biz.approvalExpiry ? new Date(biz.approvalExpiry).toLocaleDateString() : null;
-  const daysLeft = biz.approvalExpiry ? Math.max(0, Math.ceil((new Date(biz.approvalExpiry) - new Date()) / 86400000)) : null;
+  const daysLeft = typeof biz.daysLeft === "number"
+    ? biz.daysLeft
+    : (biz.approvalExpiry ? Math.max(0, Math.ceil((new Date(biz.approvalExpiry).getTime() - getAdminNow().getTime()) / 86400000)) : null);
 
   const bodyEl = document.getElementById("bizDetailsModalBody");
   if (bodyEl) {

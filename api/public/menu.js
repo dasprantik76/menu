@@ -51,6 +51,9 @@ module.exports = async function handler(req, res) {
           contact: 1,
           approvalStatus: 1,
           approvalExpiry: 1,
+          approvedAt: 1,
+          lastVerifiedAt: 1,
+          updatedAt: 1,
           isPublished: 1
         }
       }

@@ -3,6 +3,7 @@ const { connectToDatabase } = require("../_lib/mongodb");
 const { COLLECTIONS, APPROVAL_STATUS, SUBSCRIPTION_STATUS, checkAndExpireApproval } = require("../_lib/models");
 const { requireAuth } = require("../_lib/auth");
 const { uploadToImageKit, deleteFromImageKit, deleteImageKitFileByUrl } = require("../_lib/imagekit");
+const { getTrustedDate } = require("../_lib/time");
 
 /**
  * Slug helper: converts string into clean lowercase URL slug
@@ -47,13 +48,23 @@ module.exports = async function handler(req, res) {
     // GET: Retrieve authenticated owner's business
     // -------------------------------------------------------------
     if (req.method === "GET") {
+      const now = await getTrustedDate();
       let business = await db.collection(COLLECTIONS.BUSINESSES).findOne({ ownerId });
       if (business) {
         business = await checkAndExpireApproval(db, business);
       }
+      const daysLeft = (business && business.approvalExpiry)
+        ? Math.max(0, Math.ceil((new Date(business.approvalExpiry).getTime() - now.getTime()) / 86400000))
+        : null;
+
       return res.status(200).json({
         success: true,
-        business: business || null
+        serverTime: now.toISOString(),
+        business: business ? {
+          ...business,
+          approvalDaysLeft: daysLeft,
+          serverTime: now.toISOString()
+        } : null
       });
     }
 

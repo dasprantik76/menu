@@ -3,6 +3,7 @@ const { connectToDatabase } = require("../_lib/mongodb");
 const { COLLECTIONS, USER_ROLES, APPROVAL_STATUS } = require("../_lib/models");
 const { requireRole } = require("../_lib/auth");
 const { logAdminAction } = require("../_lib/audit");
+const { getTrustedDate } = require("../_lib/time");
 
 /**
  * Super Admin Businesses API
@@ -32,18 +33,24 @@ module.exports = async function handler(req, res) {
     // GET: List all businesses with stats
     // -------------------------------------------------------------
     if (req.method === "GET") {
-      // Automatically expire any approved businesses whose approvalExpiry has passed
-      const now = new Date();
+      // Automatically expire any approved businesses whose approvalExpiry has passed,
+      // or where calendar rollback was detected
+      const now = await getTrustedDate();
       await db.collection(COLLECTIONS.BUSINESSES).updateMany(
         {
           approvalStatus: APPROVAL_STATUS.APPROVED,
-          approvalExpiry: { $exists: true, $ne: null, $lt: now }
+          $or: [
+            { approvalExpiry: { $exists: true, $ne: null, $lte: now } },
+            { approvedAt: { $exists: true, $ne: null, $gt: new Date(now.getTime() + 15000) } },
+            { lastVerifiedAt: { $exists: true, $ne: null, $gt: new Date(now.getTime() + 30000) } }
+          ]
         },
         {
           $set: {
             approvalStatus: APPROVAL_STATUS.PENDING,
             isPublished: false,
-            updatedAt: now
+            updatedAt: now,
+            statusReason: "Approval duration expired or device clock rollback detected."
           }
         }
       );
@@ -68,8 +75,13 @@ module.exports = async function handler(req, res) {
           ? await db.collection(COLLECTIONS.MENU_ITEMS).countDocuments({ businessId: biz._id })
           : (await db.collection(COLLECTIONS.MENU_ITEMS).find({ businessId: biz._id }).toArray()).length;
 
+        const isExpired = biz.approvalStatus !== APPROVAL_STATUS.APPROVED || (biz.approvalExpiry && new Date(biz.approvalExpiry).getTime() <= now.getTime());
+        const daysLeft = biz.approvalExpiry ? Math.max(0, Math.ceil((new Date(biz.approvalExpiry).getTime() - now.getTime()) / 86400000)) : null;
+
         return {
           ...biz,
+          isExpired,
+          daysLeft,
           owner: owner || { name: "Unknown", email: "" },
           stats: {
             categories: catCount,
@@ -80,6 +92,7 @@ module.exports = async function handler(req, res) {
 
       return res.status(200).json({
         success: true,
+        serverTime: now.toISOString(),
         businesses: enriched
       });
     }
@@ -108,18 +121,20 @@ module.exports = async function handler(req, res) {
         return res.status(404).json({ success: false, error: "Business not found." });
       }
 
+      const now = await getTrustedDate();
       const previousStatus = existing.approvalStatus;
       const updates = {
         approvalStatus,
-        updatedAt: new Date()
+        updatedAt: now
       };
 
       // Handle approval duration & auto-publish
       if (approvalStatus === APPROVAL_STATUS.APPROVED) {
         updates.isPublished = true;
         const days = Math.max(1, parseInt(approvalDays, 10) || 30);
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + days);
+        const expiryDate = new Date(now.getTime() + days * 86400000);
+        updates.approvedAt = now;
+        updates.lastVerifiedAt = now;
         updates.approvalDays = days;
         updates.approvalExpiry = expiryDate;
       } else if (approvalStatus === APPROVAL_STATUS.SUSPENDED || approvalStatus === APPROVAL_STATUS.REJECTED) {

@@ -428,9 +428,12 @@ function showView(viewElement) {
   if (stickyQrActionBar) {
     stickyQrActionBar.style.display = isQrCode ? "flex" : "none";
   }
-  if (isQrCode && typeof updateQrStandPanels === "function") {
-    requestAnimationFrame(updateQrStandPanels);
-    setTimeout(updateQrStandPanels, 60);
+  if (isQrCode) {
+    window.scrollTo(0, 0);
+    if (typeof updateQrStandPanels === "function") {
+      requestAnimationFrame(updateQrStandPanels);
+      setTimeout(updateQrStandPanels, 60);
+    }
   }
   const addCategoryBtn = document.getElementById("openAddCategoryHeaderBtn");
   const addDishBtn = document.getElementById("openAddDishBtn");

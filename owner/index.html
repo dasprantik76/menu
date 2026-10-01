@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Righteous&family=Roboto:wght@400;500;700&family=Rye&family=Sacramento&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=457">
+  <link rel="stylesheet" href="/owner/owner.css?v=478">
   <script>
     (function() {
       try {
@@ -1128,9 +1128,19 @@
       </div>
 
       <div class="theme-content">
+        <!-- Curated Color Swatches -->
+        <div class="theme-section-block">
+          <div class="theme-section-title">BUSINESS THEME COLOR</div>
+          <div class="theme-palettes-container">
+            <div class="theme-swatches-grid" id="themeSwatchesGrid">
+              <!-- Rendered via JS: 10 Curated Presets + 5 Custom Preset Slots -->
+            </div>
+          </div>
+        </div>
+
         <!-- Business Name Font -->
         <div class="theme-section-block">
-          <div class="theme-section-title">Business Name Font</div>
+          <div class="theme-section-title">BUSINESS NAME FONT</div>
           <div class="theme-font-dropdown-wrapper" id="themeFontDropdownWrapper" role="combobox" aria-expanded="false" aria-haspopup="listbox" tabindex="0">
             <div id="themeFontDropdownDisplay" class="theme-font-dropdown-display">
               <span id="themeFontSelectedName" class="theme-font-selected-name" style="font-family: 'Lobster', cursive, sans-serif;">Lobster</span>
@@ -1145,28 +1155,30 @@
               <!-- Rendered via JS -->
             </select>
           </div>
-        </div>
-
-        <!-- Curated Color Swatches -->
-        <div class="theme-section-block">
-          <div class="theme-section-title">Color Palettes & Presets</div>
-          <div class="theme-palettes-container">
-            <div class="theme-swatches-grid" id="themeSwatchesGrid">
-              <!-- Rendered via JS: 10 Curated Presets + 5 Custom Preset Slots -->
-            </div>
+          <!-- Stroke Option -->
+          <div class="theme-stroke-row">
+            <label class="theme-checkbox-label" for="themeNameStrokeCheckbox">
+              <input type="checkbox" id="themeNameStrokeCheckbox" class="theme-checkbox-input" checked>
+              <span class="theme-checkbox-custom">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </span>
+              <span class="theme-checkbox-text">Add stroke to the name</span>
+            </label>
           </div>
         </div>
 
         <!-- Custom Hex/Picker -->
         <div class="theme-section-block">
-          <div class="theme-section-title">Custom Brand Colors</div>
+          <div class="theme-section-title">CUSTOM BRAND COLORS</div>
           <div class="theme-custom-pickers-grid">
             <!-- 1. Top Bar Color -->
             <div class="theme-custom-card">
               <span class="theme-picker-field-label">Top Bar Color</span>
               <div class="theme-custom-picker-row">
-                <div class="theme-color-input-wrapper" title="Choose Top Bar Color">
-                  <input type="color" id="themeTopColorNativeInput" class="theme-color-native-input" value="#991e2e" aria-label="Top Bar Color">
+                <div class="theme-color-input-wrapper" title="Choose Top Bar Color" data-color-target="top" data-color-title="Top Bar Color" role="button" tabindex="0">
+                  <input type="color" id="themeTopColorNativeInput" class="theme-color-native-input" value="#991e2e" aria-label="Top Bar Color" tabindex="-1">
                   <span class="theme-color-indicator" id="themeTopColorIndicator"></span>
                 </div>
                 <div class="theme-hex-input-wrapper">
@@ -1180,8 +1192,8 @@
             <div class="theme-custom-card">
               <span class="theme-picker-field-label">Main Background Color</span>
               <div class="theme-custom-picker-row">
-                <div class="theme-color-input-wrapper" title="Choose Main Background Color">
-                  <input type="color" id="themeBgColorNativeInput" class="theme-color-native-input" value="#fbefe1" aria-label="Main Background Color">
+                <div class="theme-color-input-wrapper" title="Choose Main Background Color" data-color-target="bg" data-color-title="Main Background Color" role="button" tabindex="0">
+                  <input type="color" id="themeBgColorNativeInput" class="theme-color-native-input" value="#fbefe1" aria-label="Main Background Color" tabindex="-1">
                   <span class="theme-color-indicator" id="themeBgColorIndicator"></span>
                 </div>
                 <div class="theme-hex-input-wrapper">
@@ -1195,8 +1207,8 @@
             <div class="theme-custom-card">
               <span class="theme-picker-field-label">Business Name Text Color</span>
               <div class="theme-custom-picker-row">
-                <div class="theme-color-input-wrapper" title="Choose Business Name Text Color">
-                  <input type="color" id="themeNameColorNativeInput" class="theme-color-native-input" value="#63141e" aria-label="Business Name Text Color">
+                <div class="theme-color-input-wrapper" title="Choose Business Name Text Color" data-color-target="name" data-color-title="Business Name Text Color" role="button" tabindex="0">
+                  <input type="color" id="themeNameColorNativeInput" class="theme-color-native-input" value="#63141e" aria-label="Business Name Text Color" tabindex="-1">
                   <span class="theme-color-indicator" id="themeNameColorIndicator"></span>
                 </div>
                 <div class="theme-hex-input-wrapper">
@@ -1210,8 +1222,8 @@
             <div class="theme-custom-card">
               <span class="theme-picker-field-label">Menu Items Text Color</span>
               <div class="theme-custom-picker-row">
-                <div class="theme-color-input-wrapper" title="Choose Menu Items Text Color">
-                  <input type="color" id="themeItemColorNativeInput" class="theme-color-native-input" value="#000000" aria-label="Menu Items Text Color">
+                <div class="theme-color-input-wrapper" title="Choose Menu Items Text Color" data-color-target="item" data-color-title="Menu Items Text Color" role="button" tabindex="0">
+                  <input type="color" id="themeItemColorNativeInput" class="theme-color-native-input" value="#000000" aria-label="Menu Items Text Color" tabindex="-1">
                   <span class="theme-color-indicator" id="themeItemColorIndicator"></span>
                 </div>
                 <div class="theme-hex-input-wrapper">
@@ -1225,8 +1237,8 @@
             <div class="theme-custom-card">
               <span class="theme-picker-field-label">Price Color</span>
               <div class="theme-custom-picker-row">
-                <div class="theme-color-input-wrapper" title="Choose Price Color">
-                  <input type="color" id="themePriceColorNativeInput" class="theme-color-native-input" value="#731723" aria-label="Price Color">
+                <div class="theme-color-input-wrapper" title="Choose Price Color" data-color-target="price" data-color-title="Price Color" role="button" tabindex="0">
+                  <input type="color" id="themePriceColorNativeInput" class="theme-color-native-input" value="#731723" aria-label="Price Color" tabindex="-1">
                   <span class="theme-color-indicator" id="themePriceColorIndicator"></span>
                 </div>
                 <div class="theme-hex-input-wrapper">
@@ -1240,8 +1252,8 @@
             <div class="theme-custom-card">
               <span class="theme-picker-field-label">Category Title Color</span>
               <div class="theme-custom-picker-row">
-                <div class="theme-color-input-wrapper" title="Choose Category Title Color">
-                  <input type="color" id="themeCategoryColorNativeInput" class="theme-color-native-input" value="#d05a00" aria-label="Category Title Color">
+                <div class="theme-color-input-wrapper" title="Choose Category Title Color" data-color-target="category" data-color-title="Category Title Color" role="button" tabindex="0">
+                  <input type="color" id="themeCategoryColorNativeInput" class="theme-color-native-input" value="#d05a00" aria-label="Category Title Color" tabindex="-1">
                   <span class="theme-color-indicator" id="themeCategoryColorIndicator"></span>
                 </div>
                 <div class="theme-hex-input-wrapper">
@@ -1255,8 +1267,8 @@
             <div class="theme-custom-card">
               <span class="theme-picker-field-label">Scroll Points Color</span>
               <div class="theme-custom-picker-row">
-                <div class="theme-color-input-wrapper" title="Choose Scroll Points Color">
-                  <input type="color" id="themeScrollPointsColorNativeInput" class="theme-color-native-input" value="#731723" aria-label="Scroll Points Color">
+                <div class="theme-color-input-wrapper" title="Choose Scroll Points Color" data-color-target="scroll" data-color-title="Scroll Points Color" role="button" tabindex="0">
+                  <input type="color" id="themeScrollPointsColorNativeInput" class="theme-color-native-input" value="#731723" aria-label="Scroll Points Color" tabindex="-1">
                   <span class="theme-color-indicator" id="themeScrollPointsColorIndicator"></span>
                 </div>
                 <div class="theme-hex-input-wrapper">
@@ -1265,19 +1277,48 @@
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Stroke Option -->
-          <div class="theme-stroke-row">
-            <label class="theme-checkbox-label" for="themeNameStrokeCheckbox">
-              <input type="checkbox" id="themeNameStrokeCheckbox" class="theme-checkbox-input" checked>
-              <span class="theme-checkbox-custom">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </span>
-              <span class="theme-checkbox-text">Add stroke to the name</span>
-            </label>
+            <!-- On-Page Color Selector (Opens directly on the page, no modal) -->
+            <div id="onpageColorSelector" class="onpage-color-selector" style="display: none;">
+              <div class="onpage-color-selector-inner">
+                <div class="onpage-color-header">
+                  <span class="onpage-color-target-name" id="onpageColorTargetName">Select Color</span>
+                  <div class="onpage-color-header-actions">
+                    <button type="button" class="onpage-color-revert-btn" id="onpageColorRevertBtn" title="Revert to initial color">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="1 4 1 10 7 10"></polyline>
+                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                      </svg>
+                      <span>Revert</span>
+                    </button>
+                    <button type="button" class="onpage-color-done-btn" id="onpageColorDoneBtn" title="Done">Done</button>
+                  </div>
+                </div>
+
+                <!-- 2D Saturation-Brightness Canvas -->
+                <div class="color-picker-canvas-wrapper" id="colorPickerCanvasWrapper">
+                  <canvas id="colorPickerCanvas" width="320" height="140"></canvas>
+                  <div id="colorPickerThumb" class="color-picker-thumb"></div>
+                </div>
+
+                <!-- Hue Rainbow Slider -->
+                <div class="color-picker-slider-wrapper">
+                  <input type="range" id="colorPickerHueSlider" class="color-picker-hue-slider" min="0" max="360" value="0" step="1" aria-label="Hue Slider">
+                </div>
+
+                <!-- Swatches & Hex -->
+                <div class="onpage-color-bottom-row">
+                  <div class="color-picker-swatch-box" title="Initial vs Current Color">
+                    <span class="color-picker-current-swatch" id="colorPickerCurrentSwatch" title="Current Color"></span>
+                    <span class="color-picker-previous-swatch" id="colorPickerPreviousSwatch" title="Initial Color (click to revert)"></span>
+                  </div>
+                  <div class="color-picker-hex-input-group">
+                    <span class="color-picker-hex-prefix">#</span>
+                    <input type="text" id="colorPickerModalHexInput" class="color-picker-hex-input" maxlength="6" placeholder="FFFFFF" spellcheck="false" autocomplete="off" aria-label="Hex Value">
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1321,6 +1362,7 @@
 
         <!-- 4:6 Ratio QR Code Stand Mockup Container -->
         <div class="qr-stand-container">
+          <div class="qr-stand-mockup-title">PUBLIC QR-MENU</div>
           <div class="qr-stand-mockup" id="qrStandMockup">
             <div class="qr-stand-panel qr-stand-panel-top" id="qrStandPanelTop"></div>
             <div class="qr-stand-panel qr-stand-panel-bottom" id="qrStandPanelBottom"></div>
@@ -1355,9 +1397,8 @@
         </button>
       </div>
     </section>
-  </main>
 
   <script src="/owner/qrcode.min.js"></script>
-  <script src="/owner/owner.js?v=244"></script>
+  <script src="/owner/owner.js?v=252"></script>
 </body>
 </html>

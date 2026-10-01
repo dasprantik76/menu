@@ -398,6 +398,8 @@ function showView(viewElement) {
   document.documentElement.classList.toggle("pending-mode", isPending);
   document.body.classList.toggle("theme-mode", isThemeColors);
   document.documentElement.classList.toggle("theme-mode", isThemeColors);
+  document.body.classList.toggle("qrcode-mode", isQrCode);
+  document.documentElement.classList.toggle("qrcode-mode", isQrCode);
 
   [loadingView, authView, registerView, pendingView, dashboardView, importMenuView, brandingView, themeColorsView, qrCodeView].forEach(v => {
     if (v) {
@@ -405,6 +407,9 @@ function showView(viewElement) {
       v.classList.remove("fade-in-active");
     }
   });
+  if (typeof closeCustomColorPicker === "function") {
+    closeCustomColorPicker();
+  }
   if (viewElement) {
     viewElement.style.display = (viewElement === authView || viewElement === registerView || viewElement === pendingView) ? "flex" : "block";
     viewElement.classList.remove("fade-in-active");
@@ -5458,9 +5463,9 @@ async function downloadQrCode() {
     const qrBoxEl = mockup ? mockup.querySelector(".qr-stand-qr-box") : null;
     const qrGraphicEl = document.getElementById("qrCodeGraphic");
 
-    // Exact 4:6 card print resolution (1200 x 1800 px)
-    const cardW = 1200;
-    const cardH = 1800;
+    // Exact 4:6 card print resolution (4000 x 6000 px)
+    const cardW = 4000;
+    const cardH = 6000;
 
     // Determine scale directly from live on-screen card width
     const mockupRect = mockup ? mockup.getBoundingClientRect() : null;
@@ -5472,12 +5477,12 @@ async function downloadQrCode() {
     const computedSubtitleSize = subtitleEl ? parseFloat(window.getComputedStyle(subtitleEl).fontSize) : 18.4;
     const computedBizSize = bizNameEl ? parseFloat(window.getComputedStyle(bizNameEl).fontSize) : 24.8;
 
-    const titleFontSize = Math.round(computedTitleSize * scale); // ~186px
-    const subtitleFontSize = Math.round(computedSubtitleSize * scale); // ~69px
-    let bizFontSize = Math.round(computedBizSize * scale); // ~93px
+    const titleFontSize = Math.round(computedTitleSize * scale);
+    const subtitleFontSize = Math.round(computedSubtitleSize * scale);
+    let bizFontSize = Math.round(computedBizSize * scale);
 
     // Exact split position from live card
-    let splitY = 986;
+    let splitY = Math.round(cardH * (986 / 1800)); // 3287px
     if (mockupRect && qrBoxEl) {
       const qrBoxRect = qrBoxEl.getBoundingClientRect();
       if (qrBoxRect.height > 0) {
@@ -5702,8 +5707,9 @@ async function downloadQrCode() {
 
       ctx.font = `${(currentNameFont === "Google Sans") ? "700" : "400"} ${bizFontSize}px ${nameFontFamily}`;
       const bizMeasure = ctx.measureText(bizName).width;
-      if (bizMeasure > (cardW - 140)) {
-        bizFontSize = Math.floor(bizFontSize * ((cardW - 140) / bizMeasure));
+      const maxBizW = Math.round(cardW * 0.88);
+      if (bizMeasure > maxBizW) {
+        bizFontSize = Math.floor(bizFontSize * (maxBizW / bizMeasure));
         ctx.font = `${(currentNameFont === "Google Sans") ? "700" : "400"} ${bizFontSize}px ${nameFontFamily}`;
       }
 
@@ -5725,8 +5731,8 @@ async function downloadQrCode() {
       ctx.fillText(bizName, cardW / 2, footerCenterY);
     }
 
-    // 7. Export High-Quality JPG
-    const dataUrl = exportCanvas.toDataURL("image/jpeg", 0.96);
+    // 7. Export High-Quality JPG (4000 x 6000 px)
+    const dataUrl = exportCanvas.toDataURL("image/jpeg", 0.98);
     const a = document.createElement("a");
     a.download = `${slug}-qr-card.jpg`;
     a.href = dataUrl;
@@ -5873,7 +5879,7 @@ function loadCustomPresetsFromBusiness() {
   if (currentBusiness && currentBusiness.branding && Array.isArray(currentBusiness.branding.customPresets)) {
     currentBusiness.branding.customPresets.forEach((p, idx) => {
       const slot = (typeof p.slotIndex === "number" && p.slotIndex >= 0 && p.slotIndex < MAX_CUSTOM_PRESET_SLOTS) ? p.slotIndex : idx;
-      if (slot < MAX_CUSTOM_PRESET_SLOTS) savedCustomPresets[slot] = p;
+      if (slot < MAX_CUSTOM_PRESET_SLOTS && !isExactDefaultThemePalette(p)) savedCustomPresets[slot] = p;
     });
   } else if (bizId) {
     try {
@@ -5883,12 +5889,32 @@ function loadCustomPresetsFromBusiness() {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) {
           parsed.forEach((p, idx) => {
-            if (p && idx < MAX_CUSTOM_PRESET_SLOTS) savedCustomPresets[idx] = p;
+            if (p && idx < MAX_CUSTOM_PRESET_SLOTS && !isExactDefaultThemePalette(p)) savedCustomPresets[idx] = p;
           });
         }
       }
     } catch(e) {}
   }
+}
+
+function isExactDefaultThemePalette(preset) {
+  const top = (preset ? preset.top : currentTopColor) || "";
+  const bg = (preset ? preset.bg : currentBgColor) || "";
+  const name = (preset ? preset.name : currentNameColor) || "";
+  const item = (preset ? preset.item : currentItemTextColor) || "";
+  const price = (preset ? preset.price : currentPriceColor) || "";
+  const category = (preset ? preset.category : currentCategoryColor) || "";
+  const scroll = (preset ? preset.scroll : currentScrollPointsColor) || "";
+
+  return (
+    top.trim().toUpperCase() === "#991E2E" &&
+    bg.trim().toUpperCase() === "#FBEFE1" &&
+    name.trim().toUpperCase() === "#63141E" &&
+    (!item || item.trim().toUpperCase() === "#000000") &&
+    (!price || price.trim().toUpperCase() === "#731723") &&
+    (!category || category.trim().toUpperCase() === "#D05A00") &&
+    (!scroll || scroll.trim().toUpperCase() === "#731723")
+  );
 }
 
 async function persistCustomPresets() {
@@ -5929,6 +5955,15 @@ function updatePaletteSlotsStatus() {
 }
 
 function saveCurrentPresetToSlot(slotIdx) {
+  if (isExactDefaultThemePalette()) {
+    if (typeof showToast === "function") {
+      showToast("Default theme color palette cannot be saved as a preset.", "warning");
+    } else {
+      alert("Default theme color palette cannot be saved as a preset.");
+    }
+    return;
+  }
+
   if (slotIdx === undefined || slotIdx === null || slotIdx < 0) {
     let found = -1;
     for (let i = 0; i < MAX_CUSTOM_PRESET_SLOTS; i++) {
@@ -6231,32 +6266,32 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
       currentScrollPointsColor = currentPriceColor || applyBlackOverlay(currentTopColor, 0.25);
       isCustomScrollPointsColor = false;
     }
-  } else if (source === "nameNative" || source === "nameHex") {
+  } else if (source === "nameNative" || source === "nameHex" || (source === "customPicker" && activeColorTarget === "name")) {
     if (normName) {
       currentNameColor = normName;
       isCustomNameColor = true;
     }
-  } else if (source === "itemNative" || source === "itemHex") {
+  } else if (source === "itemNative" || source === "itemHex" || (source === "customPicker" && activeColorTarget === "item")) {
     if (normItem) {
       currentItemTextColor = normItem;
       isCustomItemTextColor = true;
     }
-  } else if (source === "priceNative" || source === "priceHex") {
+  } else if (source === "priceNative" || source === "priceHex" || (source === "customPicker" && activeColorTarget === "price")) {
     if (normPrice) {
       currentPriceColor = normPrice;
       isCustomPriceColor = true;
     }
-  } else if (source === "categoryNative" || source === "categoryHex") {
+  } else if (source === "categoryNative" || source === "categoryHex" || (source === "customPicker" && activeColorTarget === "category")) {
     if (normCategory) {
       currentCategoryColor = normCategory;
       isCustomCategoryColor = true;
     }
-  } else if (source === "scrollNative" || source === "scrollHex") {
+  } else if (source === "scrollNative" || source === "scrollHex" || (source === "customPicker" && activeColorTarget === "scroll")) {
     if (normScroll) {
       currentScrollPointsColor = normScroll;
       isCustomScrollPointsColor = true;
     }
-  } else if (source === "topNative" || source === "topHex") {
+  } else if (source === "topNative" || source === "topHex" || (source === "customPicker" && activeColorTarget === "top")) {
     if (!isCustomNameColor) {
       currentNameColor = applyBlackOverlay(currentTopColor, 0.25);
     }
@@ -6265,6 +6300,10 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     }
     if (!isCustomScrollPointsColor) {
       currentScrollPointsColor = applyBlackOverlay(currentTopColor, 0.25);
+    }
+  } else if (source === "bgNative" || source === "bgHex" || (source === "customPicker" && activeColorTarget === "bg")) {
+    if (!isCustomItemTextColor) {
+      currentItemTextColor = isLightColorHex(currentBgColor) ? "#000000" : "#FFFFFF";
     }
   } else if (source === "all") {
     if (normName) {
@@ -6661,7 +6700,9 @@ function renderThemeSwatches() {
       // Empty slot
       card.className = "theme-swatch-card theme-swatch-empty";
       card.setAttribute("aria-label", `Empty Preset Slot ${slotIdx + 1}`);
-      card.setAttribute("title", `Slot ${slotIdx + 1} (Empty - Click to save current colors)`);
+      card.setAttribute("title", isExactDefaultThemePalette()
+        ? "Default theme color palette cannot be saved as a preset"
+        : `Slot ${slotIdx + 1} (Empty - Click to save current colors)`);
       card.innerHTML = `
         <span class="theme-swatch-empty-box">
           <svg class="theme-swatch-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -6771,8 +6812,19 @@ function toggleThemeFontDropdown(e) {
   if (!wrapper) return;
   const isOpen = wrapper.classList.toggle("is-open");
   wrapper.setAttribute("aria-expanded", isOpen ? "true" : "false");
-  if (!isOpen) {
+  if (isOpen) {
+    const menu = document.getElementById("themeFontDropdownMenu");
+    if (menu) {
+      const selectedItem = menu.querySelector(".theme-font-item.is-selected");
+      if (selectedItem) {
+        selectedItem.scrollIntoView({ block: "nearest" });
+      }
+    }
+  } else {
     wrapper.blur();
+    if (document.activeElement && (wrapper === document.activeElement || wrapper.contains(document.activeElement))) {
+      document.activeElement.blur();
+    }
   }
 }
 
@@ -6782,6 +6834,9 @@ function closeThemeFontDropdown() {
   wrapper.classList.remove("is-open");
   wrapper.setAttribute("aria-expanded", "false");
   wrapper.blur();
+  if (document.activeElement && (wrapper === document.activeElement || wrapper.contains(document.activeElement))) {
+    document.activeElement.blur();
+  }
 }
 
 function renderThemeColorsView() {
@@ -8358,9 +8413,387 @@ setInterval(() => {
   }
 }, 60000);
 
+/* ==========================================================================
+   Custom In-App Color Selector Modal (100% Consistent Across All Devices)
+   ========================================================================== */
+let activeColorTarget = null;
+let activeColorInitialHex = "#991E2E";
+let activeColorCurrentHex = "#991E2E";
+let pickerHue = 0;
+let pickerSat = 100;
+let pickerVal = 100;
+let isDraggingPickerCanvas = false;
+let isCustomColorPickerInitialized = false;
+
+function hexToRgb(hex) {
+  let clean = (hex || "").replace("#", "").trim();
+  if (clean.length === 3) clean = clean.split("").map(c => c + c).join("");
+  if (clean.length !== 6) clean = "991E2E";
+  const num = parseInt(clean, 16);
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255
+  };
+}
+
+function rgbToHex(r, g, b) {
+  const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
+  return "#" + [clamp(r), clamp(g), clamp(b)].map(x => x.toString(16).padStart(2, "0")).join("").toUpperCase();
+}
+
+function rgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, v = max;
+  const d = max - min;
+  s = max === 0 ? 0 : d / max;
+  if (max === min) {
+    h = 0;
+  } else {
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return { h: h * 360, s: s * 100, v: v * 100 };
+}
+
+function hsvToRgb(h, s, v) {
+  h = ((h % 360) + 360) % 360;
+  const c = (v / 100) * (s / 100);
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = (v / 100) - c;
+  let r = 0, g = 0, b = 0;
+  if (h >= 0 && h < 60) { r = c; g = x; b = 0; }
+  else if (h >= 60 && h < 120) { r = x; g = c; b = 0; }
+  else if (h >= 120 && h < 180) { r = 0; g = c; b = x; }
+  else if (h >= 180 && h < 240) { r = 0; g = x; b = c; }
+  else if (h >= 240 && h < 300) { r = x; g = 0; b = c; }
+  else { r = c; g = 0; b = x; }
+  return {
+    r: Math.round((r + m) * 255),
+    g: Math.round((g + m) * 255),
+    b: Math.round((b + m) * 255)
+  };
+}
+
+function drawColorPickerCanvas() {
+  const canvas = document.getElementById("colorPickerCanvas");
+  const wrapper = document.getElementById("colorPickerCanvasWrapper");
+  if (!canvas || !wrapper) return;
+  const rect = wrapper.getBoundingClientRect();
+  const w = Math.round(rect.width || 320);
+  const h = Math.round(rect.height || 140);
+
+  if (canvas.width !== w || canvas.height !== h) {
+    canvas.width = w;
+    canvas.height = h;
+  }
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, w, h);
+
+  // Horizontal gradient: white to pure hue
+  const gradH = ctx.createLinearGradient(0, 0, w, 0);
+  gradH.addColorStop(0, "#ffffff");
+  gradH.addColorStop(1, `hsl(${Math.round(pickerHue)}, 100%, 50%)`);
+  ctx.fillStyle = gradH;
+  ctx.fillRect(0, 0, w, h);
+
+  // Vertical gradient: transparent to black
+  const gradV = ctx.createLinearGradient(0, 0, 0, h);
+  gradV.addColorStop(0, "rgba(0,0,0,0)");
+  gradV.addColorStop(1, "#000000");
+  ctx.fillStyle = gradV;
+  ctx.fillRect(0, 0, w, h);
+}
+
+function updateColorPickerThumbPosition() {
+  const wrapper = document.getElementById("colorPickerCanvasWrapper");
+  const thumb = document.getElementById("colorPickerThumb");
+  if (!wrapper || !thumb) return;
+  const rect = wrapper.getBoundingClientRect();
+  const w = rect.width || 320;
+  const h = rect.height || 140;
+  const x = (pickerSat / 100) * w;
+  const y = ((100 - pickerVal) / 100) * h;
+  thumb.style.left = x + "px";
+  thumb.style.top = y + "px";
+}
+
+function applyActiveTargetColor(hex, source = null) {
+  activeColorCurrentHex = hex.toUpperCase();
+  const currentSwatch = document.getElementById("colorPickerCurrentSwatch");
+  if (currentSwatch) currentSwatch.style.backgroundColor = activeColorCurrentHex;
+  const hexInput = document.getElementById("colorPickerModalHexInput");
+  if (hexInput && document.activeElement !== hexInput) {
+    hexInput.value = activeColorCurrentHex.replace("#", "");
+  }
+
+  // Also update active card's indicator dot and hex input live
+  const activeWrap = document.querySelector(`.theme-color-input-wrapper[data-color-target="${activeColorTarget}"]`);
+  if (activeWrap) {
+    const ind = activeWrap.querySelector(".theme-color-indicator");
+    if (ind) ind.style.backgroundColor = activeColorCurrentHex;
+    const cardHex = activeWrap.closest(".theme-custom-card")?.querySelector(".theme-hex-input");
+    if (cardHex && document.activeElement !== cardHex) {
+      cardHex.value = activeColorCurrentHex.replace("#", "");
+    }
+  }
+
+  const nativeSource = `${activeColorTarget}Native`;
+  const usedSource = source || nativeSource;
+
+  switch (activeColorTarget) {
+    case "top":
+      updateThemeColorsUI(activeColorCurrentHex, null, null, null, usedSource);
+      break;
+    case "bg":
+      updateThemeColorsUI(null, activeColorCurrentHex, null, null, usedSource);
+      break;
+    case "name":
+      updateThemeColorsUI(null, null, activeColorCurrentHex, null, usedSource);
+      break;
+    case "item":
+      updateThemeColorsUI(null, null, null, null, usedSource, activeColorCurrentHex, null, null, null);
+      break;
+    case "price":
+      updateThemeColorsUI(null, null, null, null, usedSource, null, activeColorCurrentHex, null, null);
+      break;
+    case "category":
+      updateThemeColorsUI(null, null, null, null, usedSource, null, null, activeColorCurrentHex, null);
+      break;
+    case "scroll":
+      updateThemeColorsUI(null, null, null, null, usedSource, null, null, null, activeColorCurrentHex);
+      break;
+  }
+}
+
+function getActiveTargetCurrentHex(target) {
+  switch (target) {
+    case "top": return currentTopColor || "#991E2E";
+    case "bg": return currentBgColor || "#FBEFE1";
+    case "name": return currentNameColor || "#63141E";
+    case "item": return currentItemTextColor || "#000000";
+    case "price": return currentPriceColor || "#731723";
+    case "category": return currentCategoryColor || "#D05A00";
+    case "scroll": return currentScrollPointsColor || "#731723";
+    default: return "#991E2E";
+  }
+}
+
+function setPickerFromHex(hex, updateLive = true) {
+  const rgb = hexToRgb(hex);
+  const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
+  pickerHue = hsv.h;
+  pickerSat = hsv.s;
+  pickerVal = hsv.v;
+
+  const slider = document.getElementById("colorPickerHueSlider");
+  if (slider) slider.value = Math.round(pickerHue);
+
+  drawColorPickerCanvas();
+  updateColorPickerThumbPosition();
+
+  if (updateLive) {
+    applyActiveTargetColor(rgbToHex(rgb.r, rgb.g, rgb.b));
+  } else {
+    activeColorCurrentHex = hex.toUpperCase();
+    const currentSwatch = document.getElementById("colorPickerCurrentSwatch");
+    if (currentSwatch) currentSwatch.style.backgroundColor = activeColorCurrentHex;
+    const hexInput = document.getElementById("colorPickerModalHexInput");
+    if (hexInput) hexInput.value = activeColorCurrentHex.replace("#", "");
+  }
+}
+
+function handleCanvasPointer(e) {
+  const wrapper = document.getElementById("colorPickerCanvasWrapper");
+  if (!wrapper) return;
+  const rect = wrapper.getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+  pickerSat = (x / rect.width) * 100;
+  pickerVal = 100 - (y / rect.height) * 100;
+
+  const thumb = document.getElementById("colorPickerThumb");
+  if (thumb) {
+    thumb.style.left = x + "px";
+    thumb.style.top = y + "px";
+  }
+
+  const rgb = hsvToRgb(pickerHue, pickerSat, pickerVal);
+  applyActiveTargetColor(rgbToHex(rgb.r, rgb.g, rgb.b));
+}
+
+function openCustomColorPicker(targetKey, title) {
+  const selectorEl = document.getElementById("onpageColorSelector");
+  if (activeColorTarget === targetKey && selectorEl && selectorEl.style.display !== "none") {
+    closeCustomColorPicker();
+    return;
+  }
+
+  activeColorTarget = targetKey;
+  activeColorInitialHex = getActiveTargetCurrentHex(targetKey);
+  activeColorCurrentHex = activeColorInitialHex;
+
+  const wrap = document.querySelector(`.theme-color-input-wrapper[data-color-target="${targetKey}"]`);
+  const card = wrap ? wrap.closest(".theme-custom-card") : null;
+
+  document.querySelectorAll(".theme-custom-card.is-picker-active").forEach(c => c.classList.remove("is-picker-active"));
+
+  if (card && selectorEl) {
+    card.classList.add("is-picker-active");
+    card.insertAdjacentElement("afterend", selectorEl);
+    selectorEl.style.display = "block";
+  }
+
+  const titleEl = document.getElementById("onpageColorTargetName");
+  if (titleEl) titleEl.textContent = title || "Select Color";
+
+  const prevSwatch = document.getElementById("colorPickerPreviousSwatch");
+  if (prevSwatch) {
+    prevSwatch.style.backgroundColor = activeColorInitialHex;
+    prevSwatch.setAttribute("title", `Initial color: ${activeColorInitialHex} (click to revert)`);
+  }
+
+  // If editing Business Name color, ensure business name is visible in mockup
+  if (targetKey === "name") {
+    const themeMockupLogo = document.getElementById("themeMockupLogo");
+    if (themeMockupLogo && themeMockupLogo.style.display !== "none") {
+      themeMockupLogo.style.display = "none";
+      themeMockupLogo.setAttribute("data-was-visible", "true");
+    }
+    if (themeMockupBizName) {
+      themeMockupBizName.style.display = "block";
+    }
+  }
+
+  requestAnimationFrame(() => {
+    drawColorPickerCanvas();
+    setPickerFromHex(activeColorInitialHex, false);
+    if (card && typeof card.scrollIntoView === "function") {
+      card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
+}
+
+function closeCustomColorPicker() {
+  const selectorEl = document.getElementById("onpageColorSelector");
+  if (selectorEl) selectorEl.style.display = "none";
+  document.querySelectorAll(".theme-custom-card.is-picker-active").forEach(c => c.classList.remove("is-picker-active"));
+
+  // Restore logo if it was temporarily hidden to preview name color
+  const themeMockupLogo = document.getElementById("themeMockupLogo");
+  if (themeMockupLogo && themeMockupLogo.getAttribute("data-was-visible") === "true") {
+    themeMockupLogo.style.display = "block";
+    themeMockupLogo.removeAttribute("data-was-visible");
+    if (themeMockupBizName) themeMockupBizName.style.display = "none";
+  }
+
+  activeColorTarget = null;
+}
+
+function initCustomColorPicker() {
+  const wrapper = document.getElementById("colorPickerCanvasWrapper");
+  const slider = document.getElementById("colorPickerHueSlider");
+  const hexInput = document.getElementById("colorPickerModalHexInput");
+  const doneBtn = document.getElementById("onpageColorDoneBtn");
+  const revertBtn = document.getElementById("onpageColorRevertBtn");
+  const prevSwatch = document.getElementById("colorPickerPreviousSwatch");
+
+  if (isCustomColorPickerInitialized) return;
+  isCustomColorPickerInitialized = true;
+
+  // Canvas pointer drag (mouse & touch)
+  if (wrapper) {
+    wrapper.addEventListener("pointerdown", (e) => {
+      isDraggingPickerCanvas = true;
+      try { wrapper.setPointerCapture(e.pointerId); } catch (_) {}
+      handleCanvasPointer(e);
+    });
+
+    wrapper.addEventListener("pointermove", (e) => {
+      if (isDraggingPickerCanvas) {
+        handleCanvasPointer(e);
+      }
+    });
+
+    const endDrag = (e) => {
+      if (isDraggingPickerCanvas) {
+        isDraggingPickerCanvas = false;
+        try { wrapper.releasePointerCapture(e.pointerId); } catch (_) {}
+      }
+    };
+    wrapper.addEventListener("pointerup", endDrag);
+    wrapper.addEventListener("pointercancel", endDrag);
+  }
+
+  // Hue slider
+  if (slider) {
+    slider.addEventListener("input", (e) => {
+      pickerHue = parseFloat(e.target.value) || 0;
+      drawColorPickerCanvas();
+      const rgb = hsvToRgb(pickerHue, pickerSat, pickerVal);
+      applyActiveTargetColor(rgbToHex(rgb.r, rgb.g, rgb.b));
+    });
+  }
+
+  // Hex input inside inline picker
+  if (hexInput) {
+    hexInput.addEventListener("input", (e) => {
+      const raw = e.target.value.replace(/[^0-9A-Fa-f]/g, "").slice(0, 6);
+      e.target.value = raw.toUpperCase();
+      if (raw.length === 6) {
+        setPickerFromHex("#" + raw, true);
+      }
+    });
+    hexInput.addEventListener("blur", () => {
+      hexInput.value = activeColorCurrentHex.replace("#", "");
+    });
+  }
+
+  // Revert buttons
+  const doRevert = () => {
+    if (activeColorInitialHex) {
+      setPickerFromHex(activeColorInitialHex, true);
+    }
+  };
+  if (revertBtn) revertBtn.addEventListener("click", doRevert);
+  if (prevSwatch) prevSwatch.addEventListener("click", doRevert);
+
+  // Done button
+  if (doneBtn) doneBtn.addEventListener("click", () => closeCustomColorPicker());
+
+  // Attach click to color wrappers and whole card row
+  document.querySelectorAll(".theme-custom-card").forEach(card => {
+    const wrap = card.querySelector(".theme-color-input-wrapper[data-color-target]");
+    if (!wrap) return;
+
+    const target = wrap.getAttribute("data-color-target");
+    const title = wrap.getAttribute("data-color-title");
+
+    card.addEventListener("click", (e) => {
+      if (e.target.closest(".theme-hex-input-wrapper")) return; // let user type hex directly
+      openCustomColorPicker(target, title);
+    });
+
+    wrap.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openCustomColorPicker(target, title);
+      }
+    });
+  });
+}
+
 // Start initialization on page load
 document.addEventListener("DOMContentLoaded", () => {
   checkSession();
   initStickyBarScroll();
+  initCustomColorPicker();
 });
+
 

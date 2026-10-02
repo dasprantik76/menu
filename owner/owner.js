@@ -2998,6 +2998,15 @@ function renderDishesGrid() {
     } else {
       filtered = dishes.filter(d => String(d.categoryId) === selectedCategoryId);
     }
+    filtered.sort((a, b) => {
+      const orderA = a.displayOrder ?? 0;
+      const orderB = b.displayOrder ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      if (aTime !== bTime) return bTime - aTime;
+      return String(a._id || "").localeCompare(String(b._id || ""));
+    });
   } else {
     if (currentCategoryTitle) currentCategoryTitle.textContent = "All Menu Items";
     filtered = [...filtered].sort((a, b) => {
@@ -3005,6 +3014,13 @@ function renderDishesGrid() {
       const nameB = (b.name || "").trim();
       return nameA.localeCompare(nameB, undefined, { sensitivity: "base", numeric: true });
     });
+  }
+
+  const isDragAllowed = selectedCategoryId !== null && (!dishSearchQuery || !dishSearchQuery.trim());
+  if (isDragAllowed) {
+    dishesGrid.classList.add("is-reorderable");
+  } else {
+    dishesGrid.classList.remove("is-reorderable");
   }
 
   if (dishSearchQuery && dishSearchQuery.trim()) {
@@ -3163,8 +3179,377 @@ function renderDishesGrid() {
       });
     }
 
+    if (isDragAllowed) {
+      attachDishDragListeners(card);
+    }
+
     dishesGrid.appendChild(card);
   });
+}
+
+/**
+ * Enable Touch & Hold Drag-and-Drop Reordering on Dish Row
+ * (Active in specific categories, disabled in "All menu items" filter or during search)
+ */
+function attachDishDragListeners(card) {
+  if (card.classList.contains("is-new-blank-row") || selectedCategoryId === null) {
+    return;
+  }
+
+  let pressTimer = null;
+  let pressFeedbackTimer = null;
+  let startX = 0;
+  let startY = 0;
+  let currentX = 0;
+  let currentY = 0;
+  let activeTouchId = null;
+  let isPressing = false;
+
+  function cancelPress() {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+    }
+    if (pressFeedbackTimer) {
+      clearTimeout(pressFeedbackTimer);
+      pressFeedbackTimer = null;
+    }
+    card.classList.remove("is-drag-pressing");
+    isPressing = false;
+    activeTouchId = null;
+    removeCheckListeners();
+  }
+
+  function removeCheckListeners() {
+    window.removeEventListener("touchmove", onTouchMoveCheck);
+    window.removeEventListener("touchend", onTouchEndCheck);
+    window.removeEventListener("touchcancel", onTouchEndCheck);
+    window.removeEventListener("mousemove", onMouseMoveCheck);
+    window.removeEventListener("mouseup", onMouseUpCheck);
+  }
+
+  // --- TOUCH HANDLERS (Mobile Phone & Tablet) ---
+  function onTouchStart(e) {
+    if (activeDragSession || selectedCategoryId === null) return;
+    if (e.target.closest(".switch, .dish-row-switch, .dish-avail-checkbox, .delete-dish-btn, .dish-star-btn, [contenteditable='true'], [contenteditable='plaintext-only'], .is-editing, input, button")) {
+      return;
+    }
+    if (!e.touches || e.touches.length !== 1) return;
+
+    const touch = e.touches[0];
+    activeTouchId = touch.identifier;
+    startX = currentX = touch.clientX;
+    startY = currentY = touch.clientY;
+    isPressing = true;
+
+    // Intentional touch & hold activation delay (450ms) to prevent accidental drags while scrolling
+    pressTimer = setTimeout(() => {
+      if (!isPressing) return;
+      isPressing = false;
+      removeCheckListeners();
+      startDishDrag(card, "touch", activeTouchId, currentX, currentY);
+    }, 450);
+
+    window.addEventListener("touchmove", onTouchMoveCheck, { passive: true });
+    window.addEventListener("touchend", onTouchEndCheck);
+    window.addEventListener("touchcancel", onTouchEndCheck);
+  }
+
+  function onTouchMoveCheck(e) {
+    if (!isPressing) return;
+    const touch = Array.from(e.touches || []).find(t => t.identifier === activeTouchId);
+    if (!touch) {
+      cancelPress();
+      return;
+    }
+    currentX = touch.clientX;
+    currentY = touch.clientY;
+    const dist = Math.hypot(currentX - startX, currentY - startY);
+    // If finger moves more than 8px before activation, user is scrolling the list -> cancel immediately
+    if (dist > 8) {
+      cancelPress();
+    }
+  }
+
+  function onTouchEndCheck() {
+    cancelPress();
+  }
+
+  // --- MOUSE HANDLERS (Desktop) ---
+  function onMouseDown(e) {
+    if (activeDragSession || selectedCategoryId === null) return;
+    if (e.button !== 0) return;
+    if (e.target.closest(".switch, .dish-row-switch, .dish-avail-checkbox, .delete-dish-btn, .dish-star-btn, [contenteditable='true'], [contenteditable='plaintext-only'], .is-editing, input, button")) {
+      return;
+    }
+
+    startX = currentX = e.clientX;
+    startY = currentY = e.clientY;
+    isPressing = true;
+
+    pressTimer = setTimeout(() => {
+      if (!isPressing) return;
+      isPressing = false;
+      removeCheckListeners();
+      startDishDrag(card, "mouse", null, currentX, currentY);
+    }, 380);
+
+    window.addEventListener("mousemove", onMouseMoveCheck);
+    window.addEventListener("mouseup", onMouseUpCheck);
+  }
+
+  function onMouseMoveCheck(e) {
+    if (!isPressing) return;
+    currentX = e.clientX;
+    currentY = e.clientY;
+    const dist = Math.hypot(currentX - startX, currentY - startY);
+    if (dist > 8) {
+      cancelPress();
+    }
+  }
+
+  function onMouseUpCheck() {
+    cancelPress();
+  }
+
+  card.addEventListener("touchstart", onTouchStart, { passive: true });
+  card.addEventListener("mousedown", onMouseDown);
+}
+
+function startDishDrag(card, inputType, touchId, startX, startY) {
+  if (activeDragSession || !dishesGrid || selectedCategoryId === null) return;
+
+  // Haptic feedback
+  if (navigator.vibrate) {
+    try { navigator.vibrate(40); } catch (_) {}
+  }
+
+  suppressNextClick = true;
+
+  // Use unscaled dimensions to prevent double-scaling and jumping
+  const unscaledWidth = card.offsetWidth;
+  const unscaledHeight = card.offsetHeight;
+  const rect = card.getBoundingClientRect();
+  const centerX = rect.left + (rect.width / 2);
+  const centerY = rect.top + (rect.height / 2);
+  const unscaledLeft = centerX - (unscaledWidth / 2);
+  const unscaledTop = centerY - (unscaledHeight / 2);
+
+  const grabOffsetY = startY - unscaledTop;
+  const grabOffsetX = startX - unscaledLeft;
+
+  // Create placeholder to reserve exact slot in grid with unscaled size
+  const placeholder = document.createElement("div");
+  placeholder.className = "dish-drag-placeholder";
+  placeholder.style.width = unscaledWidth + "px";
+  placeholder.style.height = unscaledHeight + "px";
+  placeholder.style.margin = "0";
+
+  dishesGrid.insertBefore(placeholder, card);
+
+  // Append to document.body so position: fixed is 100% relative to viewport coordinates
+  document.body.appendChild(card);
+
+  card.classList.remove("is-drag-pressing");
+  card.classList.add("is-drag-lifted");
+  card.style.position = "fixed";
+  card.style.top = unscaledTop + "px";
+  card.style.left = unscaledLeft + "px";
+  card.style.width = unscaledWidth + "px";
+  card.style.height = unscaledHeight + "px";
+  card.style.margin = "0";
+  card.style.zIndex = "999999";
+  card.style.boxShadow = "";
+  card.style.transform = "";
+
+  let lastClientY = startY;
+  let autoScrollRaf = null;
+
+  function doAutoScroll() {
+    const edgeThreshold = 65;
+    const maxScrollStep = 10;
+    let scrollStep = 0;
+
+    if (lastClientY < edgeThreshold) {
+      scrollStep = -Math.round((edgeThreshold - lastClientY) / 4);
+    } else if (lastClientY > window.innerHeight - edgeThreshold) {
+      scrollStep = Math.round((lastClientY - (window.innerHeight - edgeThreshold)) / 4);
+    }
+
+    if (scrollStep !== 0) {
+      window.scrollBy(0, Math.max(-maxScrollStep, Math.min(maxScrollStep, scrollStep)));
+      updateSlotAndPositions(lastClientY);
+      autoScrollRaf = requestAnimationFrame(doAutoScroll);
+    } else {
+      autoScrollRaf = null;
+    }
+  }
+
+  function updateSlotAndPositions(clientY) {
+    // Keep row directly stuck to the touch point
+    const currentTop = clientY - grabOffsetY;
+    card.style.top = currentTop + "px";
+    card.style.transform = "scale(1.035)";
+
+    const currentCardCenterY = currentTop + (unscaledHeight / 2);
+
+    const otherCards = Array.from(
+      dishesGrid.querySelectorAll(".dish-admin-card:not(.is-new-blank-row)")
+    ).filter(c => c !== card);
+
+    let targetBefore = null;
+    for (const c of otherCards) {
+      if (c === placeholder) continue;
+      const cRect = c.getBoundingClientRect();
+      const cMidY = cRect.top + (cRect.height / 2);
+      if (currentCardCenterY < cMidY) {
+        targetBefore = c;
+        break;
+      }
+    }
+
+    if (placeholder.nextSibling !== targetBefore && placeholder !== targetBefore) {
+      const allSiblings = Array.from(dishesGrid.children).filter(el => el !== placeholder && el !== card);
+      const firstTops = new Map();
+      allSiblings.forEach(el => firstTops.set(el, el.getBoundingClientRect().top));
+
+      if (targetBefore) {
+        dishesGrid.insertBefore(placeholder, targetBefore);
+      } else {
+        dishesGrid.appendChild(placeholder);
+      }
+
+      allSiblings.forEach(el => {
+        const first = firstTops.get(el);
+        const last = el.getBoundingClientRect().top;
+        const delta = first - last;
+        if (delta !== 0) {
+          el.style.transform = `translateY(${delta}px)`;
+          el.style.transition = "none";
+        }
+      });
+
+      void dishesGrid.offsetHeight;
+      requestAnimationFrame(() => {
+        allSiblings.forEach(el => {
+          el.style.transition = "transform 240ms cubic-bezier(0.2, 0, 0, 1)";
+          el.style.transform = "";
+        });
+      });
+    }
+  }
+
+  function onTouchMove(e) {
+    const touch = Array.from(e.touches || []).find(t => t.identifier === touchId);
+    if (!touch) return;
+    if (e.cancelable) e.preventDefault();
+    lastClientY = touch.clientY;
+    updateSlotAndPositions(lastClientY);
+
+    if (!autoScrollRaf) {
+      autoScrollRaf = requestAnimationFrame(doAutoScroll);
+    }
+  }
+
+  function onMouseMove(e) {
+    e.preventDefault();
+    lastClientY = e.clientY;
+    updateSlotAndPositions(lastClientY);
+
+    if (!autoScrollRaf) {
+      autoScrollRaf = requestAnimationFrame(doAutoScroll);
+    }
+  }
+
+  function onDragEnd() {
+    if (autoScrollRaf) {
+      cancelAnimationFrame(autoScrollRaf);
+      autoScrollRaf = null;
+    }
+
+    window.removeEventListener("touchmove", onTouchMove, { passive: false });
+    window.removeEventListener("touchend", onDragEnd);
+    window.removeEventListener("touchcancel", onDragEnd);
+    window.removeEventListener("mousemove", onMouseMove);
+    window.removeEventListener("mouseup", onDragEnd);
+
+    const pRect = placeholder.getBoundingClientRect();
+
+    // Smooth landing transition with dissolving shadow and scaling down
+    card.classList.remove("is-drag-lifted");
+    card.classList.add("is-landing");
+    card.style.boxShadow = "";
+    card.style.transform = "";
+    card.style.transition = "top 240ms cubic-bezier(0.2, 0, 0, 1), left 240ms cubic-bezier(0.2, 0, 0, 1)";
+    card.style.top = pRect.top + "px";
+    card.style.left = pRect.left + "px";
+
+    setTimeout(() => {
+      dishesGrid.insertBefore(card, placeholder);
+      placeholder.remove();
+
+      card.classList.remove("is-landing");
+      card.style.position = "";
+      card.style.top = "";
+      card.style.left = "";
+      card.style.width = "";
+      card.style.height = "";
+      card.style.margin = "";
+      card.style.transform = "";
+      card.style.transition = "";
+      card.style.zIndex = "";
+      card.style.boxShadow = "";
+
+      Array.from(dishesGrid.children).forEach(el => {
+        el.style.transform = "";
+        el.style.transition = "";
+      });
+
+      activeDragSession = null;
+
+      setTimeout(() => {
+        suppressNextClick = false;
+      }, 120);
+
+      const newOrderedIds = Array.from(
+        dishesGrid.querySelectorAll(".dish-admin-card:not(.is-new-blank-row)")
+      ).map(el => el.dataset.id).filter(Boolean);
+
+      // Update in-memory displayOrder for dishes
+      newOrderedIds.forEach((id, idx) => {
+        const d = dishes.find(item => String(item._id) === String(id));
+        if (d) {
+          d.displayOrder = idx;
+        }
+      });
+
+      fetch("/api/owner/items", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: newOrderedIds })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success) {
+          showNotification(data.error || "Failed to save dish order", "error");
+        }
+      })
+      .catch(err => {
+        showNotification("Network error saving dish order", "error");
+      });
+    }, 190);
+  }
+
+  if (inputType === "touch") {
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onDragEnd);
+    window.addEventListener("touchcancel", onDragEnd);
+  } else {
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onDragEnd);
+  }
+
+  activeDragSession = { card, placeholder };
 }
 
 function getCaretCharacterOffsetWithin(element) {

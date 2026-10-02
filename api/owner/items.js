@@ -148,6 +148,33 @@ module.exports = async function handler(req, res) {
     // PATCH: Update menu item (name, price, availability, featured, etc.)
     // -------------------------------------------------------------
     if (req.method === "PATCH") {
+      // Batch reorder menu items by ordered array of IDs
+      if (Array.isArray(body.order)) {
+        const bulkOps = body.order
+          .map((id, index) => {
+            try {
+              return {
+                updateOne: {
+                  filter: { _id: new ObjectId(id), businessId: business._id },
+                  update: { $set: { displayOrder: index } }
+                }
+              };
+            } catch (e) {
+              return null;
+            }
+          })
+          .filter(Boolean);
+
+        if (bulkOps.length > 0) {
+          await db.collection(COLLECTIONS.MENU_ITEMS).bulkWrite(bulkOps);
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: "Menu items reordered successfully."
+        });
+      }
+
       const { id, name, price, description, isAvailable, isFeatured, isSpecial, categoryId, displayOrder } = body;
 
       if (!id) {

@@ -51,7 +51,7 @@ module.exports = async function handler(req, res) {
 
       const items = await db.collection(COLLECTIONS.MENU_ITEMS)
         .find(query)
-        .sort({ displayOrder: 1, _id: 1 })
+        .sort({ displayOrder: 1, createdAt: -1, _id: -1 })
         .toArray();
 
       return res.status(200).json({
@@ -108,16 +108,16 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Next display order
-      const lastItem = await db.collection(COLLECTIONS.MENU_ITEMS)
-        .find({ businessId: business._id, categoryId: catObjectId })
-        .sort({ displayOrder: -1 })
-        .limit(1)
-        .toArray();
-
-      const nextOrder = (lastItem.length > 0 && typeof lastItem[0].displayOrder === "number")
-        ? lastItem[0].displayOrder + 1
-        : 0;
+      // Insert at the top of the category (displayOrder: 0), shifting existing items in this category forward
+      await db.collection(COLLECTIONS.MENU_ITEMS).updateMany(
+        {
+          businessId: business._id,
+          categoryId: catObjectId,
+          displayOrder: { $gte: 0 }
+        },
+        { $inc: { displayOrder: 1 } }
+      );
+      const nextOrder = 0;
 
       const isSpec = typeof isSpecial === "boolean" ? isSpecial : !!isFeatured;
       const newItem = {

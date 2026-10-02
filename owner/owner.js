@@ -3005,7 +3005,7 @@ function renderDishesGrid() {
       const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       if (aTime !== bTime) return bTime - aTime;
-      return String(a._id || "").localeCompare(String(b._id || ""));
+      return String(b._id || "").localeCompare(String(a._id || ""));
     });
   } else {
     if (currentCategoryTitle) currentCategoryTitle.textContent = "All Menu Items";
@@ -4614,6 +4614,13 @@ dishForm.addEventListener("submit", (e) => {
       showNotification("Network error saving dish.", "error");
     });
   } else {
+    // Shift displayOrder of existing dishes in this category forward so new dish is top
+    dishes.forEach(d => {
+      if (String(d.categoryId) === String(categoryId)) {
+        d.displayOrder = (d.displayOrder ?? 0) + 1;
+      }
+    });
+
     const tempDishId = `temp_dish_${Date.now()}`;
     const optimisticDish = {
       _id: tempDishId,
@@ -4623,6 +4630,7 @@ dishForm.addEventListener("submit", (e) => {
       isAvailable,
       isSpecial: false,
       isFeatured: false,
+      displayOrder: 0,
       createdAt: new Date().toISOString()
     };
 
@@ -4897,6 +4905,13 @@ function createBlankDishRow() {
     const creationTracker = { cancelled: false, realId: null };
     inFlightDishCreations.set(tempDishId, creationTracker);
 
+    // Shift displayOrder of existing dishes in this category forward so new dish is top
+    dishes.forEach(d => {
+      if (String(d.categoryId) === String(targetCategoryId)) {
+        d.displayOrder = (d.displayOrder ?? 0) + 1;
+      }
+    });
+
     const optimisticDish = {
       _id: tempDishId,
       categoryId: targetCategoryId,
@@ -4905,6 +4920,7 @@ function createBlankDishRow() {
       isAvailable: isAvail,
       isSpecial: isSpecial,
       isFeatured: isSpecial,
+      displayOrder: 0,
       createdAt: new Date().toISOString()
     };
 

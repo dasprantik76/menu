@@ -150,7 +150,7 @@ module.exports = async function handler(req, res) {
         isAvailable: { $ne: false },
         isVisible: { $ne: false }
       })
-      .sort({ displayOrder: 1, _id: 1 })
+      .sort({ displayOrder: 1, createdAt: -1, _id: -1 })
       .toArray();
 
     // 4. Group items under active categories to match frontend schema in exact top-to-bottom order

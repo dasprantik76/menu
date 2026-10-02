@@ -7319,6 +7319,8 @@ function setImportType(type) {
   }
 
   if (importExtractedCard) importExtractedCard.style.display = "none";
+  document.documentElement.classList.remove("ai-loading-mode");
+  document.body.classList.remove("ai-loading-mode");
   if (importMenuView) {
     importMenuView.classList.remove("preview-active");
     importMenuView.classList.remove("ai-loading-active");
@@ -7713,6 +7715,8 @@ if (parseManualMenuBtn && manualImportTextarea) {
 
     // Show deliberate AI loading screen in middle of page (minimum 5 seconds)
     const startTime = Date.now();
+    document.documentElement.classList.add("ai-loading-mode");
+    document.body.classList.add("ai-loading-mode");
     if (importMenuView) importMenuView.classList.add("ai-loading-active");
     if (importAiLoadingState) {
       importAiLoadingState.classList.remove("is-exiting");
@@ -7744,6 +7748,8 @@ if (parseManualMenuBtn && manualImportTextarea) {
       importAiLoadingState.classList.remove("is-exiting");
       importAiLoadingState.style.display = "none";
     }
+    document.documentElement.classList.remove("ai-loading-mode");
+    document.body.classList.remove("ai-loading-mode");
     if (importMenuView) importMenuView.classList.remove("ai-loading-active");
 
     if (parseError) {
@@ -8343,6 +8349,8 @@ if (importClearBtn) {
       }
       if (commitBar) commitBar.classList.remove("is-exiting");
 
+      document.documentElement.classList.remove("ai-loading-mode");
+      document.body.classList.remove("ai-loading-mode");
       if (importMenuView) {
         importMenuView.classList.remove("preview-active");
         importMenuView.classList.remove("ai-loading-active");

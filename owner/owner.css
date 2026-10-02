@@ -712,9 +712,11 @@ body:has(#importMenuView.ai-loading-active) .main-container {
   width: 100% !important;
 }
 
-/* Zero-scrolling locked viewport for QR Code View */
+/* Zero-scrolling locked viewport for QR Code View & AI Loading Screen */
 html.qrcode-mode,
-body.qrcode-mode {
+body.qrcode-mode,
+html.ai-loading-mode,
+body.ai-loading-mode {
   height: 100% !important;
   height: 100vh !important;
   height: 100dvh !important;
@@ -725,9 +727,13 @@ body.qrcode-mode {
 
 html.qrcode-mode .main-container,
 body.qrcode-mode .main-container,
-.main-container:has(#qrCodeView:not([style*="display: none"])) {
+.main-container:has(#qrCodeView:not([style*="display: none"])),
+html.ai-loading-mode .main-container,
+body.ai-loading-mode .main-container,
+.main-container:has(#importMenuView.ai-loading-active) {
   height: calc(100dvh - 82px) !important;
   max-height: calc(100dvh - 82px) !important;
+  min-height: calc(100dvh - 82px) !important;
   padding: 0 !important;
   margin: 0 auto !important;
   overflow: hidden !important;
@@ -7912,16 +7918,18 @@ body.qrcode-mode #qrCodeView {
 }
 
 #importMenuView.ai-loading-active {
-  height: calc(100vh - 64px) !important;
-  height: calc(100dvh - 64px) !important;
-  min-height: calc(100dvh - 64px) !important;
-  max-height: calc(100dvh - 64px) !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  flex: 1 !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 #importMenuView.ai-loading-active .import-body-content {
@@ -7931,9 +7939,12 @@ body.qrcode-mode #qrCodeView {
   max-width: 100% !important;
   height: 100% !important;
   min-height: 100% !important;
+  max-height: 100% !important;
+  flex: 1 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  overflow: hidden !important;
 }
 
 /* AI Loading Screen (Bold purplish gradient 'AI' text + Stars with only shining animation) */

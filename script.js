@@ -2164,8 +2164,20 @@ function updateRestaurantBranding(restaurant) {
       };
       const resolvedFont = fontMap[restaurant.branding.nameFont] || `'${restaurant.branding.nameFont}', cursive, sans-serif`;
       document.documentElement.style.setProperty("--name-font", resolvedFont);
+      const isGoogleSans = (restaurant.branding.nameFont === "Google Sans");
+      const nameWeight = isGoogleSans ? "700" : "400";
+      document.documentElement.style.setProperty("--name-font-weight", nameWeight);
+      if (brandTitle) {
+        brandTitle.style.setProperty("font-weight", nameWeight);
+        fitBrandTitleOnSingleLine(brandTitle);
+      }
     } else {
       document.documentElement.style.removeProperty("--name-font");
+      document.documentElement.style.removeProperty("--name-font-weight");
+      if (brandTitle) {
+        brandTitle.style.removeProperty("font-weight");
+        fitBrandTitleOnSingleLine(brandTitle);
+      }
     }
   }
 }

@@ -1400,6 +1400,12 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   justify-content: center;
   z-index: 200;
   padding: 20px;
+  animation: modalOverlayFadeIn 0.22s ease-out forwards;
+}
+
+@keyframes modalOverlayFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 .modal-content {
@@ -1409,7 +1415,34 @@ button, a, select, input, textarea, [role="button"], [role="tab"], .switch, labe
   width: 100%;
   padding: 28px 24px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
-  animation: viewContentFadeSlide 0.25s ease-out;
+  transform-origin: center center;
+  animation: modalContentOpenCenter 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalContentOpenCenter {
+  0% { opacity: 0; transform: scale(0.88); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.modal-overlay.closing {
+  animation: modalOverlayFadeOut 0.22s ease-in-out forwards !important;
+  pointer-events: none !important;
+}
+
+@keyframes modalOverlayFadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.modal-overlay.closing .modal-content,
+.modal-content.closing {
+  animation: modalContentCloseCenter 0.22s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
+  pointer-events: none !important;
+}
+
+@keyframes modalContentCloseCenter {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.92); }
 }
 
 .modal-header {

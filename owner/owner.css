@@ -692,7 +692,9 @@ html.theme-mode .main-container,
 body.qrcode-mode .main-container,
 html.qrcode-mode .main-container,
 .main-container:has(#themeColorsView:not([style*="display: none"])),
-.main-container:has(#qrCodeView:not([style*="display: none"])) {
+.main-container:has(#qrCodeView:not([style*="display: none"])),
+.main-container:has(#importMenuView.ai-loading-active),
+body:has(#importMenuView.ai-loading-active) .main-container {
   padding-top: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
@@ -3876,7 +3878,18 @@ body.dashboard-initial-loading .dish-search-bar-container,
 #dashboardView[style*="display: none"] .sticky-bottom-action-bar,
 #dashboardView[style*="display: none"] .sticky-add-dish-bar,
 #importMenuView[style*="display: none"] .import-action-row,
+#importMenuView[style*="display: none"] .import-commit-bar,
+#importMenuView:not(.preview-active) .import-commit-bar,
+#importMenuView.preview-active #importStickyBar,
+#importMenuView.preview-active #importManualCard,
+#importMenuView.preview-active #importUploadCard,
 #importMenuView.preview-active .import-action-row,
+#importMenuView.ai-loading-active #importStickyBar,
+#importMenuView.ai-loading-active #importManualCard,
+#importMenuView.ai-loading-active #importUploadCard,
+#importMenuView.ai-loading-active #importExtractedCard,
+#importMenuView.ai-loading-active .import-action-row,
+#importMenuView.ai-loading-active .import-commit-bar,
 #qrCodeView[style*="display: none"] #stickyQrActionBar,
 #qrCodeView[style*="display: none"] .qr-sticky-action-bar,
 #brandingView[style*="display: none"] .branding-btn-row,
@@ -3884,6 +3897,7 @@ body.dashboard-initial-loading .dish-search-bar-container,
 body.auth-mode #stickyDashboardActionBar,
 body.auth-mode .sticky-bottom-action-bar,
 body.auth-mode .import-action-row,
+body.auth-mode .import-commit-bar,
 body.auth-mode #stickyAddDishBar,
 body.auth-mode .sticky-add-dish-bar,
 body.auth-mode #stickyQrActionBar,
@@ -3893,6 +3907,7 @@ body.auth-mode .theme-btn-row,
 body.register-mode #stickyDashboardActionBar,
 body.register-mode .sticky-bottom-action-bar,
 body.register-mode .import-action-row,
+body.register-mode .import-commit-bar,
 body.register-mode #stickyAddDishBar,
 body.register-mode .sticky-add-dish-bar,
 body.register-mode #stickyQrActionBar,
@@ -3902,6 +3917,7 @@ body.register-mode .theme-btn-row,
 body.pending-mode #stickyDashboardActionBar,
 body.pending-mode .sticky-bottom-action-bar,
 body.pending-mode .import-action-row,
+body.pending-mode .import-commit-bar,
 body.pending-mode #stickyAddDishBar,
 body.pending-mode .sticky-add-dish-bar,
 body.pending-mode #stickyQrActionBar,
@@ -3913,6 +3929,16 @@ body:not(.qrcode-mode) .qr-sticky-action-bar {
   display: none !important;
 }
 
+#importMenuView.preview-active #importExtractedCard:not(.is-exiting) {
+  display: flex !important;
+  animation: importCardFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#importMenuView.preview-active .import-commit-bar:not(.is-exiting) {
+  display: flex !important;
+  animation: importBarSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Universal Sticky Bottom Action Bars (Consistent height across all pages: 76px desktop, 72px mobile) */
 .sticky-bottom-action-bar,
 .sticky-add-dish-bar,
@@ -3921,7 +3947,8 @@ body:not(.qrcode-mode) .qr-sticky-action-bar {
 .qr-sticky-action-bar,
 #stickyQrActionBar,
 .branding-btn-row,
-.theme-btn-row {
+.theme-btn-row,
+.import-commit-bar {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -4010,6 +4037,15 @@ body:not(.qrcode-mode) .qr-sticky-action-bar {
   width: 100% !important;
   max-width: 220px !important;
   padding: 0 14px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+}
+
+#parseManualMenuBtn {
+  width: 100% !important;
+  max-width: 180px !important;
+  padding: 0 18px !important;
   height: 48px !important;
   min-height: 48px !important;
   max-height: 48px !important;
@@ -4667,6 +4703,37 @@ input:checked + .slider:before {
   }
 }
 
+.modal-overlay.closing {
+  animation: modalOverlayFadeOut 0.22s ease-in-out forwards !important;
+  pointer-events: none !important;
+}
+
+@keyframes modalOverlayFadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.modal-overlay.closing .modal-content,
+.modal-content.closing {
+  animation: modalContentCloseCenter 0.22s cubic-bezier(0.25, 0.1, 0.25, 1) forwards !important;
+  pointer-events: none !important;
+}
+
+@keyframes modalContentCloseCenter {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -5083,7 +5150,8 @@ input:checked + .slider:before {
   .qr-sticky-action-bar,
   #stickyQrActionBar,
   .branding-btn-row,
-  .theme-btn-row {
+  .theme-btn-row,
+  .import-commit-bar {
     padding: 12px 16px max(12px, env(safe-area-inset-bottom, 12px)) 16px !important;
     min-height: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
     height: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
@@ -5093,10 +5161,11 @@ input:checked + .slider:before {
   .sticky-bottom-action-bar #openAddDishBtn,
   .sticky-add-dish-bar #openAddDishBtn,
   .dashboard-sticky-action-btn,
-  .import-analyze-btn,
   .branding-submit-btn,
   .theme-reset-btn,
-  .theme-save-btn {
+  .theme-save-btn,
+  .import-commit-discard-btn,
+  .import-commit-confirm-btn {
     width: 100% !important;
     max-width: calc((min(520px, 100vw - 32px) - clamp(8px, 2.5vw, 12px)) / 2) !important;
     height: 48px !important;
@@ -5116,6 +5185,15 @@ input:checked + .slider:before {
     width: 100% !important;
     max-width: min(220px, 100%) !important;
     padding: 0 14px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+  }
+
+  #parseManualMenuBtn {
+    width: 100% !important;
+    max-width: min(180px, 100%) !important;
+    padding: 0 18px !important;
     height: 48px !important;
     min-height: 48px !important;
     max-height: 48px !important;
@@ -5761,7 +5839,7 @@ body.qrcode-mode #qrCodeView {
   font-size: clamp(1rem, 3.2vh, 1.35rem);
   font-weight: 400;
   letter-spacing: 0.5px;
-  color: var(--qr-biz-name-color, #63141e);
+  color: var(--qr-biz-name-color, #ffffff);
   -webkit-text-stroke: none;
   paint-order: normal;
   text-align: center;
@@ -6413,6 +6491,7 @@ body.qrcode-mode #qrCodeView {
   position: relative;
   z-index: 2;
   font-family: var(--preview-name-font, 'Lobster'), cursive, sans-serif;
+  font-weight: var(--preview-name-font-weight, 400);
   font-size: 1.15rem;
   color: var(--preview-name-color, #991e2e);
   -webkit-text-stroke: none;
@@ -7678,6 +7757,127 @@ body.qrcode-mode #qrCodeView {
   box-sizing: border-box;
 }
 
+#importMenuView:not([style*="display: none"]) {
+  animation: importViewEntrance 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#importMenuView:not(.preview-active):not(.ai-loading-active) #importStickyBar {
+  animation: importStickyBarFadeIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#importMenuView:not(.preview-active):not(.ai-loading-active) .import-action-row {
+  animation: importBarSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.import-card,
+.import-extracted-card {
+  transform: none !important;
+  animation: importCardFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.import-card.is-entering {
+  transform: none !important;
+  animation: importCardFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+.import-card > div:not(.import-action-row),
+.import-extracted-header,
+.import-categories-container {
+  animation: importInnerContentFadeSlide 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.import-card.is-exiting,
+.import-extracted-card.is-exiting,
+.import-commit-bar.is-exiting {
+  animation: importFadeOutDown 0.2s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+}
+
+.import-ai-loading-state.is-exiting {
+  animation: aiLoadingFadeOut 0.22s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+}
+
+@keyframes importViewEntrance {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes importCardFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes importInnerContentFadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes importFadeOutDown {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes importBarSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes importStickyBarFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes aiLoadingFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes aiLoadingFadeOut {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
 .import-body-content {
   width: 100%;
   max-width: 560px;
@@ -7689,6 +7889,169 @@ body.qrcode-mode #qrCodeView {
 @media (max-width: 640px) {
   .import-body-content {
     padding: 16px 14px max(112px, calc(90px + env(safe-area-inset-bottom, 16px)));
+  }
+}
+
+#importMenuView.preview-active .import-body-content {
+  padding-top: 10px;
+}
+
+@media (max-width: 640px) {
+  #importMenuView.preview-active .import-body-content {
+    padding-top: 8px;
+  }
+}
+
+#importMenuView.ai-loading-active {
+  height: calc(100vh - 64px) !important;
+  height: calc(100dvh - 64px) !important;
+  min-height: calc(100dvh - 64px) !important;
+  max-height: calc(100dvh - 64px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+#importMenuView.ai-loading-active .import-body-content {
+  padding: 0 16px !important;
+  margin: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* AI Loading Screen (Bold purplish gradient 'AI' text + Stars with only shining animation) */
+.import-ai-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  margin: auto !important;
+  padding: 0 20px;
+  box-sizing: border-box;
+  animation: modalOverlayFadeIn 0.28s ease-out forwards;
+}
+
+.import-ai-shine-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+  filter: drop-shadow(0 4px 20px rgba(139, 92, 246, 0.25));
+}
+
+.import-ai-shine-text,
+.import-ai-shine-stars {
+  background: linear-gradient(115deg, #6d28d9 0%, #8b5cf6 28%, #ffffff 50%, #e879f9 55%, #8b5cf6 75%, #6d28d9 100%);
+  background-size: 250% 100%;
+  animation: aiShineSweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.import-ai-shine-stars {
+  display: inline-block;
+  width: 52px;
+  height: 52px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C12.5 7.5 16.5 11.5 22 12C16.5 12.5 12.5 16.5 12 22C11.5 16.5 7.5 12.5 2 12C7.5 11.5 11.5 7.5 12 2Z' fill='%23000'/%3E%3Cpath d='M5.5 2.5C5.8 4.2 7 5.4 8.7 5.7C7 6 5.8 7.2 5.5 8.9C5.2 7.2 4 6 2.3 5.7C4 5.4 5.2 4.2 5.5 2.5Z' fill='%23000'/%3E%3Cpath d='M19 16C19.2 17.2 20.1 18.1 21.3 18.3C20.1 18.5 19.2 19.4 19 20.6C18.8 19.4 17.9 18.5 16.7 18.3C17.9 18.1 18.8 17.2 19 16Z' fill='%23000'/%3E%3Cpath d='M18.5 4C18.7 4.9 19.3 5.5 20.2 5.7C19.3 5.9 18.7 6.5 18.5 7.4C18.3 6.5 17.7 5.9 16.8 5.7C17.7 5.5 18.3 4.9 18.5 4Z' fill='%23000'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C12.5 7.5 16.5 11.5 22 12C16.5 12.5 12.5 16.5 12 22C11.5 16.5 7.5 12.5 2 12C7.5 11.5 11.5 7.5 12 2Z' fill='%23000'/%3E%3Cpath d='M5.5 2.5C5.8 4.2 7 5.4 8.7 5.7C7 6 5.8 7.2 5.5 8.9C5.2 7.2 4 6 2.3 5.7C4 5.4 5.2 4.2 5.5 2.5Z' fill='%23000'/%3E%3Cpath d='M19 16C19.2 17.2 20.1 18.1 21.3 18.3C20.1 18.5 19.2 19.4 19 20.6C18.8 19.4 17.9 18.5 16.7 18.3C17.9 18.1 18.8 17.2 19 16Z' fill='%23000'/%3E%3Cpath d='M18.5 4C18.7 4.9 19.3 5.5 20.2 5.7C19.3 5.9 18.7 6.5 18.5 7.4C18.3 6.5 17.7 5.9 16.8 5.7C17.7 5.5 18.3 4.9 18.5 4Z' fill='%23000'/%3E%3C/svg%3E") no-repeat center / contain;
+  animation-delay: 0s;
+  flex-shrink: 0;
+}
+
+.import-ai-shine-text {
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+  user-select: none;
+  animation-delay: 0.16s;
+}
+
+@keyframes aiShineSweep {
+  0% {
+    background-position: 130% 0;
+  }
+  100% {
+    background-position: -70% 0;
+  }
+}
+
+.import-ai-loading-text-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.import-ai-loading-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.2px solid rgba(109, 40, 217, 0.2);
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: spinner 0.75s linear infinite;
+  -webkit-animation: spinner 0.75s linear infinite;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+@keyframes spinner {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@-webkit-keyframes spinner {
+  0% {
+    -webkit-transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+.import-ai-loading-text {
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+@media (max-width: 600px) {
+  .import-ai-shine-text {
+    font-size: 3.2rem;
+  }
+  .import-ai-shine-stars {
+    width: 42px;
+    height: 42px;
+  }
+  .import-ai-loading-spinner {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+  }
+  .import-ai-loading-text {
+    font-size: 1.15rem;
   }
 }
 
@@ -8388,12 +8751,12 @@ body.qrcode-mode #qrCodeView {
   font-size: 0.88rem;
   font-weight: 500;
   color: #334155;
-  transition: color 0.18s ease, font-weight 0.18s ease;
+  transition: color 0.18s ease;
 }
 
 .import-radio-card.active .import-radio-title {
   color: #991e2e;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 
@@ -8427,91 +8790,177 @@ body.qrcode-mode #qrCodeView {
   border: 1px solid #bbf7d0;
 }
 
-/* Extracted Preview Card */
-.import-extracted-card {
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
+/* Import Strategy Simple Dialog */
+.import-strategy-modal-card {
+  max-width: 400px;
+  width: 100%;
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+}
+
+.import-strategy-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.import-strategy-modal-title {
+  font-family: 'Google Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 auto;
+  text-align: center;
+  width: 100%;
+}
+
+.import-strategy-options {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.import-strategy-options .import-radio-card {
+  width: 100%;
+}
+
+.import-strategy-modal-btn-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.import-strategy-cancel-btn {
+  flex: 1;
+  height: 44px;
+  padding: 0 16px;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.import-strategy-cancel-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.import-strategy-confirm-btn {
+  flex: 1;
+  height: 44px;
+  padding: 0 16px;
+  font-family: 'Google Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  border-radius: 8px;
+  background-color: var(--primary, #991e2e) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(153, 30, 46, 0.28);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.import-strategy-confirm-btn:hover {
+  background-color: var(--primary-hover, #7d1724) !important;
+  box-shadow: 0 4px 14px rgba(153, 30, 46, 0.38);
+}
+
+.import-strategy-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.import-strategy-confirm-btn .btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spinner 0.6s linear infinite;
+}
+
+/* Success State View inside Dialog */
+.import-strategy-success-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 34px 20px;
+  animation: modalOverlayFadeIn 0.22s ease-out forwards;
+}
+
+.import-strategy-success-text {
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+  line-height: 1;
+}
+
+.import-strategy-success-icon {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Extracted Preview Section */
+.import-extracted-card {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .import-extracted-header {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 16px;
-}
-
-.import-extracted-title-row {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: center;
+  text-align: center;
+  padding: 0 0 2px 0;
+  margin: 0;
+  gap: 4px;
 }
 
 .import-extracted-title {
   font-family: 'Google Sans', sans-serif;
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #0f172a;
-  margin: 0;
+  text-align: center;
+  margin: 0 auto;
 }
 
-.import-summary-pill {
-  font-size: 0.76rem;
-  font-weight: 700;
-  background: #f1f5f9;
-  color: #0f172a;
-  padding: 4px 10px;
-  border-radius: 20px;
-  border: 1px solid #e2e8f0;
-}
-
-.import-extracted-subtitle {
-  font-size: 0.84rem;
+.import-extracted-category-count {
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 400;
   color: #64748b;
-  margin: 0;
-}
-
-.import-bulk-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-}
-
-.btn-text-action {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #0f172a;
-  cursor: pointer;
-  text-decoration: underline;
-  font-family: inherit;
-}
-
-.btn-text-action:hover {
-  color: #3b82f6;
-}
-
-.import-dot-separator {
-  color: #cbd5e1;
-  font-size: 0.8rem;
-}
-
-.import-add-cat-btn {
-  margin-left: auto;
-  font-size: 0.78rem;
-  padding: 5px 12px;
-  border-radius: 8px;
+  text-align: center;
+  margin: 0 auto;
+  line-height: 1.3;
 }
 
 /* Category Card in Preview */
@@ -8525,56 +8974,63 @@ body.qrcode-mode #qrCodeView {
 }
 
 .import-category-header {
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 12px 16px;
+  background: #e1cfbb;
+  background: linear-gradient(180deg, #e6d6c2 0%, #dccab4 100%);
+  border-bottom: 1px solid rgba(156, 107, 62, 0.22);
+  padding: 14px 16px 12px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
+  justify-content: center;
+  text-align: center;
+  gap: 5px;
 }
 
 .import-category-title-wrap {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 200px;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  gap: 5px;
 }
 
 .import-category-input {
   font-family: 'Google Sans', sans-serif;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #0f172a;
   text-transform: uppercase;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
-  padding: 4px 8px;
-  letter-spacing: 0.3px;
+  padding: 2px 8px;
+  letter-spacing: 0.4px;
   outline: none;
-  width: 100%;
-  max-width: 280px;
+  width: auto;
+  max-width: 90%;
+  text-align: center;
   transition: all 0.15s ease;
 }
 
 .import-category-input:focus {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.6);
   border-color: #0f172a;
   box-shadow: 0 0 0 1px #0f172a;
 }
 
 .import-category-dish-count {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: #64748b;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  padding: 2px 8px;
+  color: #78350f;
+  background: #f4eae0;
+  border: 1px solid rgba(156, 107, 62, 0.18);
+  padding: 2px 10px;
   border-radius: 12px;
   white-space: nowrap;
+  display: inline-block;
+  line-height: 1.4;
 }
 
 .import-category-actions {
@@ -8619,14 +9075,16 @@ body.qrcode-mode #qrCodeView {
 .import-dishes-list {
   display: flex;
   flex-direction: column;
+  background: #ffffff;
 }
 
 .import-dish-row {
   display: grid;
-  grid-template-columns: 28px 1fr 110px 32px;
-  gap: 10px;
+  grid-template-columns: auto 1fr auto 28px;
+  column-gap: 8px;
   align-items: center;
   padding: 10px 16px;
+  background: #ffffff;
   border-bottom: 1px solid #f1f5f9;
   transition: background 0.12s ease;
 }
@@ -8635,18 +9093,47 @@ body.qrcode-mode #qrCodeView {
   border-bottom: none;
 }
 
+.import-dish-row.is-deleting {
+  pointer-events: none;
+  animation: importDishRowDelete 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  overflow: hidden;
+}
+
+@keyframes importDishRowDelete {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+    max-height: 80px;
+    background: transparent;
+  }
+  30% {
+    opacity: 0.6;
+    transform: translateX(14px) scale(0.98);
+    background: #fef2f2;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(30px) scale(0.9);
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: 1px solid transparent;
+  }
+}
+
 .import-dish-row:hover {
-  background: #fbfcfe;
+  background: #ffffff;
 }
 
 .import-dish-row.unchecked {
-  opacity: 0.5;
-  background: #f8fafc;
+  opacity: 0.55;
+  background: #ffffff;
 }
 
 .import-dish-check {
   width: 18px;
   height: 18px;
+  margin: 0;
   accent-color: #0f172a;
   cursor: pointer;
 }
@@ -8654,76 +9141,114 @@ body.qrcode-mode #qrCodeView {
 .import-dish-fields {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  min-width: 0;
+  cursor: pointer;
 }
 
-.import-dish-name-input {
+.import-dish-name-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.import-dish-name-text {
   font-family: inherit;
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #1e293b;
-  border: 1px solid transparent;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-height: 1.35;
+  padding: 1px 0;
+}
+
+.import-dish-row .dish-note {
+  font-family: inherit;
+  font-size: 0.85em;
+  color: #64748b;
+  font-weight: 400;
+  margin-left: 3px;
+  display: inline;
+}
+
+.import-dish-row .dish-note-block {
+  display: block;
+  font-family: inherit;
+  font-size: 0.82em;
+  color: #64748b;
+  font-weight: 400;
+  line-height: 1.25;
+  margin-top: 2px;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.import-dish-name-textarea {
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
   border-radius: 6px;
   padding: 3px 6px;
-  background: transparent;
+  background: #ffffff;
   outline: none;
   width: 100%;
-}
-
-.import-dish-name-input:focus {
-  background: #ffffff;
-  border-color: #cbd5e1;
+  box-sizing: border-box;
+  resize: none;
+  line-height: 1.35;
   box-shadow: 0 0 0 1px #0f172a;
-}
-
-.import-dish-desc-input {
-  font-family: inherit;
-  font-size: 0.78rem;
-  color: #64748b;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 2px 6px;
-  background: transparent;
-  outline: none;
-  width: 100%;
-}
-
-.import-dish-desc-input:focus {
-  background: #ffffff;
-  border-color: #cbd5e1;
-  color: #334155;
 }
 
 .import-dish-price-wrap {
   display: flex;
   align-items: center;
-  position: relative;
+  justify-content: flex-end;
+  gap: 2.5px;
+  white-space: nowrap;
 }
 
 .import-dish-price-prefix {
-  position: absolute;
-  left: 8px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #64748b;
-  pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  color: #731723;
+  opacity: 0.8;
+  line-height: 1;
+  user-select: none;
 }
 
 .import-dish-price-input {
-  width: 100%;
-  padding: 5px 6px 5px 22px;
-  font-size: 0.88rem;
+  min-width: 28px;
+  padding: 2px 2px;
+  font-size: 1.05rem;
   font-weight: 700;
-  font-family: inherit;
-  color: #0f172a;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'SF Pro', sans-serif;
+  color: #731723;
+  letter-spacing: 0.5px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
   outline: none;
+  text-align: left;
+  line-height: 1;
+  -moz-appearance: textfield;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.import-dish-price-input::-webkit-outer-spin-button,
+.import-dish-price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .import-dish-price-input:focus {
-  border-color: #0f172a;
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 0 0 1px #731723;
 }
 
 .import-dish-del-btn {
@@ -8732,61 +9257,145 @@ body.qrcode-mode #qrCodeView {
   border-radius: 6px;
   border: none;
   background: none;
-  color: #94a3b8;
+  color: #ef4444;
+  font-size: 0.95rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1;
 }
 
 .import-dish-del-btn:hover {
   background: #fee2e2;
   color: #dc2626;
+  transform: scale(1.15);
 }
 
-/* Sticky Commit Bar */
+.import-dish-del-btn:active {
+  transform: scale(0.9);
+}
+
+/* Sticky Commit Bar - Consistent with all other fixed action bars */
 .import-commit-bar {
-  position: sticky;
-  bottom: 16px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  padding: 12px 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  z-index: 10;
-  backdrop-filter: blur(8px);
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 90 !important;
+  background-color: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  box-shadow: 0 -8px 26px rgba(0, 0, 0, 0.08), 0 -2px 8px rgba(0, 0, 0, 0.04) !important;
+  padding: 14px 20px max(14px, env(safe-area-inset-bottom, 14px)) 20px !important;
+  min-height: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  height: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: clamp(8px, 2.5vw, 12px) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
 }
 
-.import-commit-count {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #0f172a;
+.import-commit-info {
+  display: none !important;
 }
 
-.import-commit-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.import-commit-discard-btn {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  outline: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  border-radius: 8px !important;
+  padding: 0 clamp(8px, 2.5vw, 14px) !important;
+  font-family: 'Google Sans', sans-serif !important;
+  font-size: clamp(0.85rem, 3.6vw, 0.95rem) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1px !important;
+  cursor: pointer !important;
+  width: 100%;
+  max-width: 254px;
+  flex: 1;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+}
+
+.import-commit-discard-btn:not(:disabled):hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10), 0 2px 5px rgba(0, 0, 0, 0.05) !important;
+}
+
+.import-commit-discard-btn:not(:disabled):active {
+  background: #f1f5f9 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+.import-commit-confirm-btn {
+  background-color: var(--primary, #991e2e) !important;
+  color: #ffffff !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: 0 2px 8px rgba(153, 30, 46, 0.28), 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 8px !important;
+  padding: 0 clamp(8px, 2.5vw, 14px) !important;
+  font-family: 'Google Sans', sans-serif !important;
+  font-size: clamp(0.85rem, 3.6vw, 0.95rem) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1px !important;
+  cursor: pointer !important;
+  width: 100%;
+  max-width: 254px;
+  flex: 1;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+  transition: background-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+}
+
+.import-commit-confirm-btn:not(:disabled):hover {
+  background-color: var(--primary-hover, #7d1724) !important;
+  box-shadow: 0 4px 14px rgba(153, 30, 46, 0.38), 0 2px 5px rgba(0, 0, 0, 0.10) !important;
+}
+
+.import-commit-confirm-btn:not(:disabled):active {
+  box-shadow: 0 1px 3px rgba(153, 30, 46, 0.25) !important;
+}
+
+.import-commit-confirm-btn:disabled,
+.import-commit-confirm-btn[disabled] {
+  opacity: 0.42 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 @media (max-width: 600px) {
   .import-dish-row {
-    grid-template-columns: 24px 1fr 85px 28px;
-    gap: 6px;
+    grid-template-columns: auto 1fr auto 26px;
+    column-gap: 7px;
     padding: 8px 10px;
-  }
-  .import-commit-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  .import-commit-actions {
-    justify-content: flex-end;
   }
 }
 

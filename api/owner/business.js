@@ -385,7 +385,7 @@ module.exports = async function handler(req, res) {
           label: String(p.label || `Custom Preset ${idx + 1}`).slice(0, 50),
           top: String(p.top || "#991E2E").trim(),
           bg: String(p.bg || "#FBEFE1").trim(),
-          name: String(p.name || "#63141E").trim(),
+          name: String(p.name || "#FFFFFF").trim(),
           item: String(p.item || "#000000").trim(),
           price: String(p.price || "#731723").trim(),
           category: String(p.category || "#D05A00").trim(),

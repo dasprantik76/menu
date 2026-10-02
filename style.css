@@ -210,9 +210,9 @@ body {
   z-index: 2;
   font-family: var(--name-font, 'Lobster'), cursive, sans-serif;
   font-size: clamp(1.9rem, 6.8vw, 2.5rem);
-  font-weight: 400;
+  font-weight: var(--name-font-weight, 400);
   letter-spacing: 0.6px;
-  color: var(--name-text-color, var(--theme-darkened-brand, #63141e));
+  color: var(--name-text-color, #ffffff);
   -webkit-text-stroke: none;
   text-transform: none;
   margin: 0 auto;

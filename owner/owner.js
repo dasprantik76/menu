@@ -213,16 +213,11 @@ function updateAccountExpiryBadge() {
  */
 function updateScrollLock() {
   const dSidebar = document.getElementById("drawerSidebar");
-  const catModal = document.getElementById("categoryModal");
-  const dModal = document.getElementById("dishModal");
-  const lModal = document.getElementById("logoutModal");
-
   const isDrawerOpen = !!(dSidebar && dSidebar.classList.contains("open"));
-  const isCatModalOpen = !!(catModal && catModal.style.display === "flex");
-  const isDishModalOpen = !!(dModal && dModal.style.display === "flex");
-  const isLogoutModalOpen = !!(lModal && lModal.style.display === "flex");
+  const openModals = document.querySelectorAll(".modal-overlay");
+  const isAnyModalOpen = Array.from(openModals).some(m => m.style.display === "flex" && !m.classList.contains("closing"));
 
-  if (isDrawerOpen || isCatModalOpen || isDishModalOpen || isLogoutModalOpen) {
+  if (isDrawerOpen || isAnyModalOpen) {
     document.documentElement.classList.add("scroll-locked");
     document.body.classList.add("scroll-locked");
   } else {
@@ -1406,30 +1401,61 @@ const confirmLogoutBtn = document.getElementById("confirmLogoutBtn");
 
 function openModal(modalElement) {
   if (!modalElement) return;
-  modalElement.style.display = "flex";
+  modalElement.classList.remove("closing");
   const content = modalElement.querySelector(".modal-content");
   if (content) {
+    content.classList.remove("closing");
     content.style.animation = "none";
     void content.offsetWidth;
     content.style.animation = "";
   }
+  modalElement.style.display = "flex";
   modalElement.style.animation = "none";
   void modalElement.offsetWidth;
   modalElement.style.animation = "";
   updateScrollLock();
 }
 
+function closeModal(modalElement, callback) {
+  if (!modalElement) {
+    if (typeof callback === "function") callback();
+    return;
+  }
+  if (modalElement.style.display === "none") {
+    if (typeof callback === "function") callback();
+    return;
+  }
+  if (modalElement.classList.contains("closing")) {
+    return;
+  }
+
+  modalElement.classList.add("closing");
+  const content = modalElement.querySelector(".modal-content");
+  if (content) {
+    content.classList.add("closing");
+  }
+
+  updateScrollLock();
+
+  setTimeout(() => {
+    modalElement.classList.remove("closing");
+    if (content) {
+      content.classList.remove("closing");
+    }
+    modalElement.style.display = "none";
+    updateScrollLock();
+    if (typeof callback === "function") callback();
+  }, 220);
+}
+
 function openLogoutModal() {
-  const lm = document.getElementById("logoutModal");
+  const lm = document.getElementById("logoutModal") || logoutModal;
   if (lm) openModal(lm);
 }
 
-function closeLogoutModal() {
-  const lm = document.getElementById("logoutModal");
-  if (lm) {
-    lm.style.display = "none";
-    updateScrollLock();
-  }
+function closeLogoutModal(callback) {
+  const lm = document.getElementById("logoutModal") || logoutModal;
+  closeModal(lm, callback);
 }
 
 const deleteCategoryModal = document.getElementById("deleteCategoryModal");
@@ -1440,16 +1466,16 @@ const confirmDeleteCategoryBtn = document.getElementById("confirmDeleteCategoryB
 
 let pendingCategoryDeletion = null;
 
-function closeDeleteCategoryModal() {
-  if (deleteCategoryModal) {
-    deleteCategoryModal.style.display = "none";
-    updateScrollLock();
-  }
-  pendingCategoryDeletion = null;
+function closeDeleteCategoryModal(callback) {
+  const modal = document.getElementById("deleteCategoryModal") || deleteCategoryModal;
+  closeModal(modal, () => {
+    pendingCategoryDeletion = null;
+    if (typeof callback === "function") callback();
+  });
 }
 
 if (cancelDeleteCategoryBtn) {
-  cancelDeleteCategoryBtn.addEventListener("click", closeDeleteCategoryModal);
+  cancelDeleteCategoryBtn.addEventListener("click", () => closeDeleteCategoryModal());
 }
 
 if (confirmDeleteCategoryBtn) {
@@ -1468,17 +1494,16 @@ const selectCategoryAlertModal = document.getElementById("selectCategoryAlertMod
 const okSelectCategoryAlertBtn = document.getElementById("okSelectCategoryAlertBtn");
 
 function openSelectCategoryAlertModal() {
-  if (selectCategoryAlertModal) {
-    openModal(selectCategoryAlertModal);
+  const modal = document.getElementById("selectCategoryAlertModal") || selectCategoryAlertModal;
+  if (modal) {
+    openModal(modal);
     if (okSelectCategoryAlertBtn) okSelectCategoryAlertBtn.focus();
   }
 }
 
-function closeSelectCategoryAlertModal() {
-  if (selectCategoryAlertModal) {
-    selectCategoryAlertModal.style.display = "none";
-    updateScrollLock();
-  }
+function closeSelectCategoryAlertModal(callback) {
+  const modal = document.getElementById("selectCategoryAlertModal") || selectCategoryAlertModal;
+  closeModal(modal, callback);
 }
 
 if (okSelectCategoryAlertBtn) {
@@ -1610,12 +1635,9 @@ function openTodaySpecialInfoModal() {
   if (modal) openModal(modal);
 }
 
-function closeTodaySpecialInfoModal() {
+function closeTodaySpecialInfoModal(callback) {
   const modal = document.getElementById("todaySpecialInfoModal") || todaySpecialInfoModal;
-  if (modal) {
-    modal.style.display = "none";
-    updateScrollLock();
-  }
+  closeModal(modal, callback);
 }
 
 if (todaySpecialInfoOkBtn) {
@@ -3749,9 +3771,9 @@ function openEditCategoryModal() {
   categoryNameInput.focus();
 }
 
-function closeCategoryModal() {
-  categoryModal.style.display = "none";
-  updateScrollLock();
+function closeCategoryModal(callback) {
+  const modal = document.getElementById("categoryModal") || categoryModal;
+  closeModal(modal, callback);
 }
 
 if (categoryNameInput) {
@@ -4007,9 +4029,9 @@ function openEditDishModal(dish) {
   dishNameInput.focus();
 }
 
-function closeDishModal() {
-  dishModal.style.display = "none";
-  updateScrollLock();
+function closeDishModal(callback) {
+  const modal = document.getElementById("dishModal") || dishModal;
+  closeModal(modal, callback);
 }
 
 dishForm.addEventListener("submit", (e) => {
@@ -4768,18 +4790,19 @@ setupDishSearchInputListeners();
 // Escape key to close any active modal or drawer
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
+    const isModalActive = (m) => m && m.style.display === "flex" && !m.classList.contains("closing");
     const lm = document.getElementById("logoutModal");
-    if (selectCategoryAlertModal && selectCategoryAlertModal.style.display === "flex") {
+    if (isModalActive(selectCategoryAlertModal)) {
       closeSelectCategoryAlertModal();
-    } else if (deleteCategoryModal && deleteCategoryModal.style.display === "flex") {
+    } else if (isModalActive(deleteCategoryModal)) {
       closeDeleteCategoryModal();
-    } else if (lm && lm.style.display === "flex") {
+    } else if (isModalActive(lm)) {
       closeLogoutModal();
-    } else if (categoryModal && categoryModal.style.display === "flex") {
+    } else if (isModalActive(categoryModal)) {
       closeCategoryModal();
-    } else if (dishModal && dishModal.style.display === "flex") {
+    } else if (isModalActive(dishModal)) {
       closeDishModal();
-    } else if (todaySpecialInfoModal && todaySpecialInfoModal.style.display === "flex") {
+    } else if (isModalActive(todaySpecialInfoModal)) {
       closeTodaySpecialInfoModal();
     } else if (drawerSidebar && drawerSidebar.classList.contains("open")) {
       closeDrawer();
@@ -5291,7 +5314,7 @@ function updateQrStandPanels() {
   const bizName = (currentBusiness && currentBusiness.name) ? currentBusiness.name : "Royal Food Corner";
   const fontObj = (typeof THEME_FONTS !== "undefined" ? THEME_FONTS.find(f => f.id === currentNameFont) : null) || { family: "'Lobster', cursive, sans-serif" };
   const nameFontFamily = fontObj ? fontObj.family : "'Lobster', cursive, sans-serif";
-  const nameColor = currentNameColor || "#63141E";
+  const nameColor = currentNameColor || "#FFFFFF";
   mockup.style.setProperty("--qr-biz-name-font", nameFontFamily);
   mockup.style.setProperty("--qr-biz-name-color", nameColor);
   mockup.style.setProperty("--qr-biz-name-stroke", "none");
@@ -5697,7 +5720,7 @@ async function downloadQrCode() {
       const bizName = (currentBusiness && currentBusiness.name) ? currentBusiness.name : "Royal Food Corner";
       const fontObj = (typeof THEME_FONTS !== "undefined" ? THEME_FONTS.find(f => f.id === currentNameFont) : null) || { family: "'Lobster', cursive, sans-serif" };
       const nameFontFamily = fontObj ? fontObj.family : "'Lobster', cursive, sans-serif";
-      const nameColor = currentNameColor || "#63141E";
+      const nameColor = currentNameColor || "#FFFFFF";
 
       ctx.font = `${(currentNameFont === "Google Sans") ? "700" : "400"} ${bizFontSize}px ${nameFontFamily}`;
       const bizMeasure = ctx.measureText(bizName).width;
@@ -5894,7 +5917,7 @@ function isExactDefaultThemePalette(preset) {
   return (
     top.trim().toUpperCase() === "#991E2E" &&
     bg.trim().toUpperCase() === "#FBEFE1" &&
-    name.trim().toUpperCase() === "#63141E" &&
+    (name.trim().toUpperCase() === "#FFFFFF" || name.trim().toUpperCase() === "#63141E") &&
     (!item || item.trim().toUpperCase() === "#000000") &&
     (!price || price.trim().toUpperCase() === "#731723") &&
     (!category || category.trim().toUpperCase() === "#D05A00") &&
@@ -6132,8 +6155,8 @@ let currentTopColor = "#991E2E";
 let savedTopColor = "#991E2E";
 let currentBgColor = "#FBEFE1";
 let savedBgColor = "#FBEFE1";
-let currentNameColor = "#63141E";
-let savedNameColor = "#63141E";
+let currentNameColor = "#FFFFFF";
+let savedNameColor = "#FFFFFF";
 let isCustomNameColor = false;
 let currentItemTextColor = "#000000";
 let savedItemTextColor = "#000000";
@@ -6264,7 +6287,7 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     }
   } else if (source === "topNative" || source === "topHex" || (source === "customPicker" && activeColorTarget === "top")) {
     if (!isCustomNameColor) {
-      currentNameColor = applyBlackOverlay(currentTopColor, 0.25);
+      currentNameColor = (currentTopColor.toUpperCase() === "#991E2E") ? "#FFFFFF" : applyBlackOverlay(currentTopColor, 0.25);
     }
     if (!isCustomPriceColor) {
       currentPriceColor = applyBlackOverlay(currentTopColor, 0.25);
@@ -6280,7 +6303,7 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
     if (normName) {
       currentNameColor = normName;
     } else if (!isCustomNameColor) {
-      currentNameColor = applyBlackOverlay(currentTopColor, 0.25);
+      currentNameColor = (currentTopColor.toUpperCase() === "#991E2E") ? "#FFFFFF" : applyBlackOverlay(currentTopColor, 0.25);
     }
     if (normItem) {
       currentItemTextColor = normItem;
@@ -6309,6 +6332,9 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
   if (themeMockupBizName) {
     themeMockupBizName.style.setProperty("font-family", fontObj.family, "important");
     themeMockupBizName.style.setProperty("--preview-name-font", fontObj.family);
+    const isGoogleSans = (currentNameFont === "Google Sans");
+    themeMockupBizName.style.setProperty("font-weight", isGoogleSans ? "700" : "400", "important");
+    themeMockupBizName.style.setProperty("--preview-name-font-weight", isGoogleSans ? "700" : "400");
     themeMockupBizName.style.setProperty("color", currentNameColor, "important");
     themeMockupBizName.style.setProperty("--preview-name-color", currentNameColor);
 
@@ -6467,7 +6493,7 @@ function updateThemeColorsUI(topHex, bgHex, nameHex, strokeVal = null, source = 
   const isDefaultTheme = (
     currentTopColor.toUpperCase() === "#991E2E" &&
     currentBgColor.toUpperCase() === "#FBEFE1" &&
-    currentNameColor.toUpperCase() === "#63141E" &&
+    (currentNameColor.toUpperCase() === "#FFFFFF" || currentNameColor.toUpperCase() === "#63141E") &&
     currentItemTextColor.toUpperCase() === "#000000" &&
     currentPriceColor.toUpperCase() === "#731723" &&
     currentCategoryColor.toUpperCase() === "#D05A00" &&
@@ -6677,6 +6703,7 @@ function renderThemeFonts() {
   if (displaySpan) {
     displaySpan.textContent = currentFontObj.name;
     displaySpan.style.fontFamily = currentFontObj.family;
+    displaySpan.style.fontWeight = (currentNameFont === "Google Sans") ? "700" : "400";
   }
 
   if (select) {
@@ -6704,6 +6731,9 @@ function renderThemeFonts() {
       const label = document.createElement("span");
       label.className = "theme-font-preview";
       label.style.fontFamily = font.family;
+      if (font.id === "Google Sans") {
+        label.style.fontWeight = "700";
+      }
       label.textContent = font.name;
 
       const check = document.createElement("span");
@@ -6733,6 +6763,7 @@ function selectThemeFont(fontId) {
   if (displaySpan) {
     displaySpan.textContent = fontObj.name;
     displaySpan.style.fontFamily = fontObj.family;
+    displaySpan.style.fontWeight = (fontId === "Google Sans") ? "700" : "400";
   }
 
   const menu = document.getElementById("themeFontDropdownMenu");
@@ -6848,6 +6879,9 @@ function renderThemeColorsView() {
   if (existingName) {
     savedNameColor = existingName;
     isCustomNameColor = true;
+  } else if (savedTopColor.toUpperCase() === "#991E2E") {
+    savedNameColor = "#FFFFFF";
+    isCustomNameColor = false;
   } else {
     savedNameColor = applyBlackOverlay(savedTopColor, 0.25);
     isCustomNameColor = false;
@@ -6990,7 +7024,7 @@ async function saveThemeColors() {
     const isDef = (
       currentTopColor.toUpperCase() === "#991E2E" &&
       currentBgColor.toUpperCase() === "#FBEFE1" &&
-      currentNameColor.toUpperCase() === "#63141E" &&
+      (currentNameColor.toUpperCase() === "#FFFFFF" || currentNameColor.toUpperCase() === "#63141E") &&
       currentItemTextColor.toUpperCase() === "#000000" &&
       currentPriceColor.toUpperCase() === "#731723" &&
       currentCategoryColor.toUpperCase() === "#D05A00" &&
@@ -7209,7 +7243,7 @@ if (themeFontSelectDropdown) {
 function resetThemeColors() {
   currentTopColor = "#991E2E";
   currentBgColor = "#FBEFE1";
-  currentNameColor = "#63141E";
+  currentNameColor = "#FFFFFF";
   isCustomNameColor = false;
   currentItemTextColor = "#000000";
   isCustomItemTextColor = false;
@@ -7263,6 +7297,7 @@ const manualFileTriggerBtn = document.getElementById("manualFileTriggerBtn");
 const loadSampleTemplateBtn = document.getElementById("loadSampleTemplateBtn");
 const clearManualTextBtn = document.getElementById("clearManualTextBtn");
 const parseManualMenuBtn = document.getElementById("parseManualMenuBtn");
+const importExtractedCard = document.getElementById("importExtractedCard");
 const manualStatusMessage = document.getElementById("manualStatusMessage");
 const importManualModeAppendLabel = document.getElementById("importManualModeAppendLabel");
 const importManualModeReplaceLabel = document.getElementById("importManualModeReplaceLabel");
@@ -7284,14 +7319,23 @@ function setImportType(type) {
   }
 
   if (importExtractedCard) importExtractedCard.style.display = "none";
-  if (importMenuView) importMenuView.classList.remove("preview-active");
+  if (importMenuView) {
+    importMenuView.classList.remove("preview-active");
+    importMenuView.classList.remove("ai-loading-active");
+  }
+  if (importAiLoadingState) importAiLoadingState.style.display = "none";
 
-  if (type === "manual") {
-    if (importManualCard) importManualCard.style.display = "flex";
-    if (importUploadCard) importUploadCard.style.display = "none";
-  } else {
-    if (importManualCard) importManualCard.style.display = "none";
-    if (importUploadCard) importUploadCard.style.display = "flex";
+  const activeCard = (type === "manual") ? importManualCard : importUploadCard;
+  const inactiveCard = (type === "manual") ? importUploadCard : importManualCard;
+  if (inactiveCard) {
+    inactiveCard.style.display = "none";
+    inactiveCard.classList.remove("is-entering");
+  }
+  if (activeCard) {
+    activeCard.style.display = "flex";
+    activeCard.classList.remove("is-entering");
+    void activeCard.offsetWidth; // trigger reflow for smooth entrance
+    activeCard.classList.add("is-entering");
   }
 }
 
@@ -7315,36 +7359,6 @@ function hideManualStatus() {
     manualStatusMessage.textContent = "";
   }
 }
-
-// Synchronize strategy selection between Manual and AI cards
-const manualModeRadios = document.querySelectorAll('input[name="importManualMode"]');
-const aiModeRadios = document.querySelectorAll('input[name="importMode"]');
-
-manualModeRadios.forEach(radio => {
-  radio.addEventListener("change", (e) => {
-    if (importManualModeAppendLabel) importManualModeAppendLabel.classList.toggle("active", e.target.value === "append");
-    if (importManualModeReplaceLabel) importManualModeReplaceLabel.classList.toggle("active", e.target.value === "replace");
-    const match = document.querySelector(`input[name="importMode"][value="${e.target.value}"]`);
-    if (match) {
-      match.checked = true;
-      if (importModeAppendLabel) importModeAppendLabel.classList.toggle("active", e.target.value === "append");
-      if (importModeReplaceLabel) importModeReplaceLabel.classList.toggle("active", e.target.value === "replace");
-    }
-  });
-});
-
-aiModeRadios.forEach(radio => {
-  radio.addEventListener("change", (e) => {
-    if (importModeAppendLabel) importModeAppendLabel.classList.toggle("active", e.target.value === "append");
-    if (importModeReplaceLabel) importModeReplaceLabel.classList.toggle("active", e.target.value === "replace");
-    const match = document.querySelector(`input[name="importManualMode"][value="${e.target.value}"]`);
-    if (match) {
-      match.checked = true;
-      if (importManualModeAppendLabel) importManualModeAppendLabel.classList.toggle("active", e.target.value === "append");
-      if (importManualModeReplaceLabel) importManualModeReplaceLabel.classList.toggle("active", e.target.value === "replace");
-    }
-  });
-});
 
 // Step 1: Full AI Extraction Prompt for 1-click clipboard copy
 const AI_IMPORT_PROMPT = `Analyze the uploaded menu image(s) and extract all menu items.
@@ -7591,7 +7605,7 @@ if (manualFileInput && manualImportTextarea) {
     const reader = new FileReader();
     reader.onload = (event) => {
       manualImportTextarea.value = event.target.result || "";
-      showManualStatus(`Loaded "${file.name}" successfully. Click "Preview & Process Menu" below.`, "success");
+      showManualStatus(`Loaded "${file.name}" successfully. Click "Load Menu" below.`, "success");
     };
     reader.onerror = () => {
       showManualStatus(`Failed to read file "${file.name}".`, "error");
@@ -7683,16 +7697,57 @@ function parseManualMenuText(text) {
 }
 
 if (parseManualMenuBtn && manualImportTextarea) {
-  parseManualMenuBtn.addEventListener("click", () => {
+  parseManualMenuBtn.addEventListener("click", async () => {
     const text = manualImportTextarea.value.trim();
     if (!text) {
       showManualStatus("Please enter or paste menu items first, or click 'Load Sample'.", "error");
       return;
     }
 
-    const parsedCats = parseManualMenuText(text);
-    if (parsedCats.length === 0) {
-      showManualStatus("Could not find any items matching the required format:\n[CATEGORY NAME]\nItem Name (Sub Text) - Price", "error");
+    hideManualStatus();
+
+    // Smoothly exit current manual card before AI loading
+    if (importManualCard) importManualCard.classList.add("is-exiting");
+    await new Promise(r => setTimeout(r, 160));
+    if (importManualCard) importManualCard.classList.remove("is-exiting");
+
+    // Show deliberate AI loading screen in middle of page (minimum 5 seconds)
+    const startTime = Date.now();
+    if (importMenuView) importMenuView.classList.add("ai-loading-active");
+    if (importAiLoadingState) {
+      importAiLoadingState.classList.remove("is-exiting");
+      importAiLoadingState.style.display = "flex";
+    }
+    window.scrollTo({ top: 0, behavior: "instant" });
+
+    let parsedCats = [];
+    let parseError = null;
+
+    try {
+      parsedCats = parseManualMenuText(text);
+      if (parsedCats.length === 0) {
+        parseError = "Could not find any items matching the required format:\n[CATEGORY NAME]\nItem Name (Sub Text) - Price";
+      }
+    } catch (err) {
+      parseError = err.message || "Failed to process menu text.";
+    }
+
+    // Deliberate at least 5 second loading time for AI processing
+    const elapsed = Date.now() - startTime;
+    const remainingWait = Math.max(0, 5000 - elapsed);
+    await new Promise(resolve => setTimeout(resolve, remainingWait));
+
+    // Smoothly fade out AI loading screen before showing preview
+    if (importAiLoadingState) {
+      importAiLoadingState.classList.add("is-exiting");
+      await new Promise(resolve => setTimeout(resolve, 220));
+      importAiLoadingState.classList.remove("is-exiting");
+      importAiLoadingState.style.display = "none";
+    }
+    if (importMenuView) importMenuView.classList.remove("ai-loading-active");
+
+    if (parseError) {
+      showManualStatus(parseError, "error");
       return;
     }
 
@@ -7700,11 +7755,12 @@ if (parseManualMenuBtn && manualImportTextarea) {
     hideManualStatus();
     renderExtractedPreviewUI();
 
-    if (importExtractedCard) {
-      importExtractedCard.style.display = "block";
-      importExtractedCard.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
     if (importMenuView) importMenuView.classList.add("preview-active");
+    if (importExtractedCard) {
+      importExtractedCard.classList.remove("is-exiting");
+      importExtractedCard.style.display = "flex";
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
 
@@ -7720,8 +7776,9 @@ const analyzeMenuBtn = document.getElementById("analyzeMenuBtn");
 const analyzeMenuBtnLabel = document.getElementById("analyzeMenuBtnLabel");
 const analyzeSpinner = document.getElementById("analyzeSpinner");
 const analyzeStatusMessage = document.getElementById("analyzeStatusMessage");
-const importExtractedCard = document.getElementById("importExtractedCard");
 const extractedSummaryPill = document.getElementById("extractedSummaryPill");
+const importExtractedCategoryCount = document.getElementById("importExtractedCategoryCount");
+const importAiLoadingState = document.getElementById("importAiLoadingState");
 const importCategoriesContainer = document.getElementById("importCategoriesContainer");
 const selectAllDishesBtn = document.getElementById("selectAllDishesBtn");
 const deselectAllDishesBtn = document.getElementById("deselectAllDishesBtn");
@@ -7729,10 +7786,15 @@ const importAddCategoryBtn = document.getElementById("importAddCategoryBtn");
 const importCommitCountLabel = document.getElementById("importCommitCountLabel");
 const importClearBtn = document.getElementById("importClearBtn");
 const importConfirmBtn = document.getElementById("importConfirmBtn");
-const importConfirmBtnLabel = document.getElementById("importConfirmBtnLabel");
-const importConfirmSpinner = document.getElementById("importConfirmSpinner");
-const importModeAppendLabel = document.getElementById("importModeAppendLabel");
-const importModeReplaceLabel = document.getElementById("importModeReplaceLabel");
+const importStrategyModal = document.getElementById("importStrategyModal");
+const importStrategyFormContent = document.getElementById("importStrategyFormContent");
+const importStrategySuccessView = document.getElementById("importStrategySuccessView");
+const importDialogModeAppendLabel = document.getElementById("importDialogModeAppendLabel");
+const importDialogModeReplaceLabel = document.getElementById("importDialogModeReplaceLabel");
+const cancelImportStrategyBtn = document.getElementById("cancelImportStrategyBtn");
+const confirmImportStrategyBtn = document.getElementById("confirmImportStrategyBtn");
+const confirmImportStrategyBtnLabel = document.getElementById("confirmImportStrategyBtnLabel");
+const importDialogSpinner = document.getElementById("importDialogSpinner");
 
 let importSelectedFiles = []; // { id, name, base64, mimeType }
 let extractedCategories = []; // [{ id, name, items: [{ id, name, price, description, selected }] }]
@@ -7859,16 +7921,14 @@ function hideImportStatus() {
   analyzeStatusMessage.style.display = "none";
 }
 
-// Strategy Mode radio selection toggles
-if (importModeAppendLabel && importModeReplaceLabel) {
-  const radios = document.querySelectorAll('input[name="importMode"]');
-  radios.forEach(radio => {
-    radio.addEventListener("change", () => {
-      importModeAppendLabel.classList.toggle("active", radio.value === "append" && radio.checked);
-      importModeReplaceLabel.classList.toggle("active", radio.value === "replace" && radio.checked);
-    });
+// Strategy Mode dialog radio selection toggles
+const dialogStrategyRadios = document.querySelectorAll('input[name="importDialogStrategy"]');
+dialogStrategyRadios.forEach(radio => {
+  radio.addEventListener("change", (e) => {
+    if (importDialogModeAppendLabel) importDialogModeAppendLabel.classList.toggle("active", e.target.value === "append");
+    if (importDialogModeReplaceLabel) importDialogModeReplaceLabel.classList.toggle("active", e.target.value === "replace");
   });
-}
+});
 
 // Dropzone interactions
 if (importDropzone && menuPhotosInput) {
@@ -7991,11 +8051,11 @@ if (analyzeMenuBtn) {
       showImportStatus(`✓ Extracted ${data.totalDishes || 0} dishes across ${extractedCategories.length} categories! Review below.`, "success");
       renderExtractedPreviewUI();
 
+      if (importMenuView) importMenuView.classList.add("preview-active");
       if (importExtractedCard) {
         importExtractedCard.style.display = "flex";
-        importExtractedCard.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-      if (importMenuView) importMenuView.classList.add("preview-active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       console.error("AI Analysis Error:", err);
       showImportStatus(err.message || "Failed to analyze menu images.", "error");
@@ -8026,9 +8086,33 @@ function updateCommitCounter() {
   }
 }
 
+function parseDishName(rawName) {
+  const safe = escapeHtml(rawName || "");
+  const blockNotes = [];
+  const parsedMain = safe.replace(/\(([^)]*)\)/g, (match, inner) => {
+    const trimmedInner = inner.trim();
+    if (trimmedInner.length > 6) {
+      blockNotes.push(`(${trimmedInner})`);
+      return '';
+    } else {
+      return `<span class="dish-note">(${trimmedInner})</span>`;
+    }
+  }).replace(/\s+/g, ' ').trim();
+
+  return {
+    mainNameHtml: parsedMain || safe,
+    blockNotes: blockNotes
+  };
+}
+
 function renderExtractedPreviewUI() {
   if (!importCategoriesContainer) return;
   importCategoriesContainer.innerHTML = "";
+
+  if (importExtractedCategoryCount) {
+    const catCount = extractedCategories.length;
+    importExtractedCategoryCount.textContent = `${catCount} Categor${catCount === 1 ? "y" : "ies"} Loaded`;
+  }
 
   extractedCategories.forEach(category => {
     const card = document.createElement("div");
@@ -8051,42 +8135,12 @@ function renderExtractedPreviewUI() {
 
     const countBadge = document.createElement("span");
     countBadge.className = "import-category-dish-count";
-    countBadge.textContent = `${category.items.length} items`;
+    countBadge.textContent = `${category.items.length} ${category.items.length === 1 ? "item" : "items"}`;
 
     titleWrap.appendChild(titleInput);
     titleWrap.appendChild(countBadge);
 
-    const actions = document.createElement("div");
-    actions.className = "import-category-actions";
-
-    const addDishBtn = document.createElement("button");
-    addDishBtn.type = "button";
-    addDishBtn.className = "import-btn-icon-subtle";
-    addDishBtn.innerHTML = `<span>+ Add Dish</span>`;
-    addDishBtn.addEventListener("click", () => {
-      category.items.push({
-        id: "item_" + Math.random().toString(36).substring(2, 9),
-        name: "New Dish",
-        price: 0,
-        description: "",
-        selected: true
-      });
-      renderExtractedPreviewUI();
-    });
-
-    const delCatBtn = document.createElement("button");
-    delCatBtn.type = "button";
-    delCatBtn.className = "import-btn-icon-subtle import-btn-icon-danger";
-    delCatBtn.innerHTML = `✕ Remove Category`;
-    delCatBtn.addEventListener("click", () => {
-      extractedCategories = extractedCategories.filter(c => c.id !== category.id);
-      renderExtractedPreviewUI();
-    });
-
-    actions.appendChild(addDishBtn);
-    actions.appendChild(delCatBtn);
     header.appendChild(titleWrap);
-    header.appendChild(actions);
     card.appendChild(header);
 
     // Dishes List
@@ -8108,30 +8162,63 @@ function renderExtractedPreviewUI() {
         updateCommitCounter();
       });
 
-      // Fields (Name & Description)
+      // Fields (Dish Name)
       const fieldsWrap = document.createElement("div");
       fieldsWrap.className = "import-dish-fields";
 
-      const nameInput = document.createElement("input");
-      nameInput.type = "text";
-      nameInput.className = "import-dish-name-input";
-      nameInput.value = item.name;
-      nameInput.placeholder = "Dish name";
-      nameInput.addEventListener("input", (e) => {
-        item.name = e.target.value;
+      const nameWrap = document.createElement("div");
+      nameWrap.className = "import-dish-name-wrap";
+      nameWrap.title = "Click to edit dish name";
+
+      function renderNameDisplay() {
+        const { mainNameHtml, blockNotes } = parseDishName(item.name);
+        const blockHtml = blockNotes.length > 0
+          ? `<div class="dish-note-block">${blockNotes.join(' ')}</div>`
+          : '';
+        nameWrap.innerHTML = `
+          <div class="import-dish-name-text">${mainNameHtml}</div>
+          ${blockHtml}
+        `;
+      }
+
+      renderNameDisplay();
+
+      nameWrap.addEventListener("click", () => {
+        if (nameWrap.querySelector("textarea")) return;
+
+        const textarea = document.createElement("textarea");
+        textarea.className = "import-dish-name-textarea";
+        textarea.value = item.name;
+        textarea.rows = 1;
+        nameWrap.innerHTML = "";
+        nameWrap.appendChild(textarea);
+
+        textarea.style.height = "auto";
+        textarea.style.height = `${textarea.scrollHeight}px`;
+        textarea.focus();
+        textarea.select();
+
+        textarea.addEventListener("input", () => {
+          textarea.style.height = "auto";
+          textarea.style.height = `${textarea.scrollHeight}px`;
+          item.name = textarea.value;
+        });
+
+        textarea.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            textarea.blur();
+          }
+        });
+
+        textarea.addEventListener("blur", () => {
+          const val = textarea.value.trim();
+          if (val) item.name = val;
+          renderNameDisplay();
+        });
       });
 
-      const descInput = document.createElement("input");
-      descInput.type = "text";
-      descInput.className = "import-dish-desc-input";
-      descInput.value = item.description || "";
-      descInput.placeholder = "Optional description or ingredients...";
-      descInput.addEventListener("input", (e) => {
-        item.description = e.target.value;
-      });
-
-      fieldsWrap.appendChild(nameInput);
-      fieldsWrap.appendChild(descInput);
+      fieldsWrap.appendChild(nameWrap);
 
       // Price
       const priceWrap = document.createElement("div");
@@ -8147,8 +8234,10 @@ function renderExtractedPreviewUI() {
       priceInput.value = item.price;
       priceInput.min = "0";
       priceInput.step = "any";
+      priceInput.style.width = `${Math.max(2, String(item.price).length + 0.5)}ch`;
       priceInput.addEventListener("input", (e) => {
         item.price = Number(e.target.value) || 0;
+        priceInput.style.width = `${Math.max(2, String(e.target.value).length + 0.5)}ch`;
       });
 
       priceWrap.appendChild(prefix);
@@ -8160,9 +8249,29 @@ function renderExtractedPreviewUI() {
       delDishBtn.className = "import-dish-del-btn";
       delDishBtn.innerHTML = `✕`;
       delDishBtn.title = "Delete item";
+      delDishBtn.setAttribute("aria-label", "Delete item");
       delDishBtn.addEventListener("click", () => {
+        if (row.classList.contains("is-deleting")) return;
+        row.classList.add("is-deleting");
+
         category.items = category.items.filter(it => it.id !== item.id);
-        renderExtractedPreviewUI();
+        countBadge.textContent = `${category.items.length} ${category.items.length === 1 ? "item" : "items"}`;
+        updateCommitCounter();
+
+        setTimeout(() => {
+          if (category.items.length === 0) {
+            card.style.transition = "all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)";
+            card.style.opacity = "0";
+            card.style.transform = "scale(0.95)";
+            card.style.maxHeight = `${card.offsetHeight}px`;
+            setTimeout(() => {
+              extractedCategories = extractedCategories.filter(c => c.id !== category.id);
+              renderExtractedPreviewUI();
+            }, 250);
+          } else {
+            row.remove();
+          }
+        }, 280);
       });
 
       row.appendChild(check);
@@ -8215,33 +8324,94 @@ if (importAddCategoryBtn) {
 
 if (importClearBtn) {
   importClearBtn.addEventListener("click", () => {
-    if (confirm("Discard extracted items and reset?")) {
+    // Smooth exit for preview card and commit bar
+    if (importExtractedCard) importExtractedCard.classList.add("is-exiting");
+    const commitBar = document.querySelector(".import-commit-bar");
+    if (commitBar) commitBar.classList.add("is-exiting");
+
+    setTimeout(() => {
       extractedCategories = [];
       importSelectedFiles = [];
       if (manualImportTextarea) {
         manualImportTextarea.value = "";
       }
       renderSelectedPhotosUI();
-      if (importExtractedCard) importExtractedCard.style.display = "none";
-      if (importMenuView) importMenuView.classList.remove("preview-active");
+
+      if (importExtractedCard) {
+        importExtractedCard.classList.remove("is-exiting");
+        importExtractedCard.style.display = "none";
+      }
+      if (commitBar) commitBar.classList.remove("is-exiting");
+
+      if (importMenuView) {
+        importMenuView.classList.remove("preview-active");
+        importMenuView.classList.remove("ai-loading-active");
+      }
+      if (importAiLoadingState) importAiLoadingState.style.display = "none";
       hideImportStatus();
       hideManualStatus();
+
+      // Smooth entrance for manual card
+      if (importManualCard) {
+        importManualCard.classList.remove("is-entering");
+        void importManualCard.offsetWidth; // trigger reflow
+        importManualCard.classList.add("is-entering");
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 200);
+  });
+}
+
+// Open Strategy Dialog when 'Import to Menu' is clicked
+if (importConfirmBtn) {
+  importConfirmBtn.addEventListener("click", () => {
+    let totalSelected = 0;
+    extractedCategories.forEach(c => c.items.forEach(it => { if (it.selected) totalSelected++; }));
+
+    if (totalSelected === 0) {
+      alert("Please select at least one dish to import.");
+      return;
+    }
+
+    if (importStrategyFormContent) importStrategyFormContent.style.display = "block";
+    if (importStrategySuccessView) importStrategySuccessView.style.display = "none";
+    if (confirmImportStrategyBtn) confirmImportStrategyBtn.disabled = false;
+    if (importDialogSpinner) importDialogSpinner.style.display = "none";
+    if (confirmImportStrategyBtnLabel) confirmImportStrategyBtnLabel.textContent = "Import";
+
+    if (importStrategyModal) {
+      openModal(importStrategyModal);
     }
   });
 }
 
-// Commit Import Action
-if (importConfirmBtn) {
-  importConfirmBtn.addEventListener("click", async () => {
-    const selectedMode = (currentImportType === "manual"
-      ? document.querySelector('input[name="importManualMode"]:checked')?.value
-      : document.querySelector('input[name="importMode"]:checked')?.value) || "append";
+// Cancel Import Strategy Dialog
+if (cancelImportStrategyBtn) {
+  cancelImportStrategyBtn.addEventListener("click", () => {
+    closeModal(importStrategyModal);
+  });
+}
+
+// Close dialog when clicking outside on overlay
+if (importStrategyModal) {
+  importStrategyModal.addEventListener("click", (e) => {
+    if (e.target === importStrategyModal) {
+      closeModal(importStrategyModal);
+    }
+  });
+}
+
+// Execute Import from Strategy Dialog
+if (confirmImportStrategyBtn) {
+  confirmImportStrategyBtn.addEventListener("click", async () => {
+    const selectedMode = document.querySelector('input[name="importDialogStrategy"]:checked')?.value || "append";
 
     let totalSelected = 0;
     extractedCategories.forEach(c => c.items.forEach(it => { if (it.selected) totalSelected++; }));
 
     if (totalSelected === 0) {
       alert("Please select at least one dish to import.");
+      closeModal(importStrategyModal);
       return;
     }
 
@@ -8252,9 +8422,9 @@ if (importConfirmBtn) {
       if (!confirmReplace) return;
     }
 
-    importConfirmBtn.disabled = true;
-    if (importConfirmSpinner) importConfirmSpinner.style.display = "inline-block";
-    if (importConfirmBtnLabel) importConfirmBtnLabel.textContent = "Importing...";
+    confirmImportStrategyBtn.disabled = true;
+    if (importDialogSpinner) importDialogSpinner.style.display = "inline-block";
+    if (confirmImportStrategyBtnLabel) confirmImportStrategyBtnLabel.textContent = "Importing...";
 
     try {
       const res = await fetch("/api/owner/batch-import", {
@@ -8271,7 +8441,9 @@ if (importConfirmBtn) {
         throw new Error(data.error || "Failed to import menu items.");
       }
 
-      alert(data.message || `Successfully imported ${totalSelected} dishes!`);
+      // Show ONLY 'Success [green circle tick icon]' on the same dialog
+      if (importStrategyFormContent) importStrategyFormContent.style.display = "none";
+      if (importStrategySuccessView) importStrategySuccessView.style.display = "flex";
 
       // Reset import state
       extractedCategories = [];
@@ -8280,21 +8452,31 @@ if (importConfirmBtn) {
         manualImportTextarea.value = "";
       }
       renderSelectedPhotosUI();
-      if (importExtractedCard) importExtractedCard.style.display = "none";
-      if (importMenuView) importMenuView.classList.remove("preview-active");
       hideImportStatus();
       hideManualStatus();
 
-      // Refresh dashboard menu editor so user sees dishes immediately
+      // Refresh dashboard menu editor in background
       renderDashboardView();
-      showView(dashboardView);
+
+      // Keep dialog showing Success for 1.2 seconds, then smoothly close and return to dashboard
+      setTimeout(() => {
+        closeModal(importStrategyModal, () => {
+          if (importStrategyFormContent) importStrategyFormContent.style.display = "block";
+          if (importStrategySuccessView) importStrategySuccessView.style.display = "none";
+          if (confirmImportStrategyBtn) confirmImportStrategyBtn.disabled = false;
+          if (importDialogSpinner) importDialogSpinner.style.display = "none";
+          if (confirmImportStrategyBtnLabel) confirmImportStrategyBtnLabel.textContent = "Import";
+        });
+        if (importExtractedCard) importExtractedCard.style.display = "none";
+        if (importMenuView) importMenuView.classList.remove("preview-active");
+        showView(dashboardView);
+      }, 1200);
     } catch (err) {
       console.error("Batch Import Error:", err);
       alert(err.message || "Failed to import menu.");
-    } finally {
-      importConfirmBtn.disabled = false;
-      if (importConfirmSpinner) importConfirmSpinner.style.display = "none";
-      if (importConfirmBtnLabel) importConfirmBtnLabel.textContent = "Import to Menu";
+      confirmImportStrategyBtn.disabled = false;
+      if (importDialogSpinner) importDialogSpinner.style.display = "none";
+      if (confirmImportStrategyBtnLabel) confirmImportStrategyBtnLabel.textContent = "Import";
     }
   });
 }
@@ -8499,7 +8681,7 @@ function getActiveTargetCurrentHex(target) {
   switch (target) {
     case "top": return currentTopColor || "#991E2E";
     case "bg": return currentBgColor || "#FBEFE1";
-    case "name": return currentNameColor || "#63141E";
+    case "name": return currentNameColor || "#FFFFFF";
     case "item": return currentItemTextColor || "#000000";
     case "price": return currentPriceColor || "#731723";
     case "category": return currentCategoryColor || "#D05A00";

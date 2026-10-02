@@ -883,9 +883,23 @@ function openBizDetailsModal(biz) {
   modal.style.display = "flex";
 }
 
-function closeBizDetailsModal() {
+function closeAdminModal(modalElement, callback) {
+  if (!modalElement || modalElement.style.display === "none") {
+    if (typeof callback === "function") callback();
+    return;
+  }
+  if (modalElement.classList.contains("closing")) return;
+  modalElement.classList.add("closing");
+  setTimeout(() => {
+    modalElement.classList.remove("closing");
+    modalElement.style.display = "none";
+    if (typeof callback === "function") callback();
+  }, 220);
+}
+
+function closeBizDetailsModal(callback) {
   const modal = document.getElementById("bizDetailsModal");
-  if (modal) modal.style.display = "none";
+  closeAdminModal(modal, callback);
 }
 
 const closeBizDetailsModalBtn = document.getElementById("closeBizDetailsModalBtn");
@@ -916,8 +930,8 @@ function openApprovalModal(biz) {
   approvalModal.style.display = "flex";
 }
 
-function closeApprovalModal() {
-  if (approvalModal) approvalModal.style.display = "none";
+function closeApprovalModal(callback) {
+  closeAdminModal(approvalModal, callback);
 }
 
 if (cancelApprovalModalBtn) cancelApprovalModalBtn.addEventListener("click", closeApprovalModal);
@@ -973,12 +987,26 @@ function openSubModal(biz) {
   subModal.style.display = "flex";
 }
 
-function closeSubModal() {
-  subModal.style.display = "none";
+function closeSubModal(callback) {
+  closeAdminModal(subModal, callback);
 }
 
 closeSubModalBtn.addEventListener("click", closeSubModal);
 cancelSubModalBtn.addEventListener("click", closeSubModal);
+// Escape key listener to close modals
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    const isModalOpen = (m) => m && m.style.display === "flex" && !m.classList.contains("closing");
+    const bizModal = document.getElementById("bizDetailsModal");
+    if (isModalOpen(bizModal)) {
+      closeBizDetailsModal();
+    } else if (isModalOpen(approvalModal)) {
+      closeApprovalModal();
+    } else if (isModalOpen(subModal)) {
+      closeSubModal();
+    }
+  }
+});
 
 subForm.addEventListener("submit", async (e) => {
   e.preventDefault();

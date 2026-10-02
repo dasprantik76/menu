@@ -1490,6 +1490,38 @@ if (confirmDeleteCategoryBtn) {
   });
 }
 
+const deleteDishModal = document.getElementById("deleteDishModal");
+const deleteDishModalTitle = document.getElementById("deleteDishModalTitle");
+const deleteDishModalMsg = document.getElementById("deleteDishModalMsg");
+const cancelDeleteDishBtn = document.getElementById("cancelDeleteDishBtn");
+const confirmDeleteDishBtn = document.getElementById("confirmDeleteDishBtn");
+
+let pendingDishDeletion = null;
+
+function closeDeleteDishModal(callback) {
+  const modal = document.getElementById("deleteDishModal") || deleteDishModal;
+  closeModal(modal, () => {
+    pendingDishDeletion = null;
+    if (typeof callback === "function") callback();
+  });
+}
+
+if (cancelDeleteDishBtn) {
+  cancelDeleteDishBtn.addEventListener("click", () => closeDeleteDishModal());
+}
+
+if (confirmDeleteDishBtn) {
+  confirmDeleteDishBtn.addEventListener("click", () => {
+    if (!pendingDishDeletion) {
+      closeDeleteDishModal();
+      return;
+    }
+    const { dish } = pendingDishDeletion;
+    closeDeleteDishModal();
+    executeDishDeletion(dish);
+  });
+}
+
 const selectCategoryAlertModal = document.getElementById("selectCategoryAlertModal");
 const okSelectCategoryAlertBtn = document.getElementById("okSelectCategoryAlertBtn");
 
@@ -5051,7 +5083,27 @@ function createBlankDishRow() {
 }
 
 async function confirmDeleteDish(dish) {
-  if (!confirm(`Are you sure you want to delete dish "${dish.name}"?`)) return;
+  if (!dish) return;
+
+  const confirmMsg = `Are you sure you want to delete dish "${dish.name}"?`;
+  pendingDishDeletion = { dish };
+
+  if (deleteDishModalMsg) {
+    deleteDishModalMsg.textContent = confirmMsg;
+  }
+
+  if (deleteDishModal) {
+    openModal(deleteDishModal);
+    if (confirmDeleteDishBtn) confirmDeleteDishBtn.focus();
+  } else {
+    if (confirm(confirmMsg)) {
+      executeDishDeletion(dish);
+    }
+  }
+}
+
+async function executeDishDeletion(dish) {
+  if (!dish) return;
 
   const targetId = String(dish._id);
   const tracker = inFlightDishCreations.get(targetId);

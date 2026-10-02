@@ -2794,7 +2794,7 @@ function executeCategoryDeletion(targetCatId, catId, cat, tracker) {
  */
 function updateCategoryDropdownDisplay() {
   if (!categoryDropdownDisplay) return;
-  let displayName = "All Categories";
+  let displayName = "All Menu Items";
   if (selectedCategoryId) {
     const cat = categories.find(c => String(c._id) === String(selectedCategoryId));
     if (cat) {
@@ -2825,10 +2825,10 @@ function renderCategoryTabs() {
     categoryDropdownMenu.innerHTML = "";
   }
 
-  // "All Categories" option
+  // "All Menu Items" option
   const allOpt = document.createElement("option");
   allOpt.value = "";
-  allOpt.textContent = "All Categories";
+  allOpt.textContent = "All Menu Items";
   allOpt.selected = selectedCategoryId === null;
   categorySelectDropdown.appendChild(allOpt);
 
@@ -2836,7 +2836,7 @@ function renderCategoryTabs() {
     const allBtn = document.createElement("button");
     allBtn.type = "button";
     allBtn.className = `category-dropdown-item${selectedCategoryId === null ? " is-selected" : ""}`;
-    allBtn.textContent = "All Categories";
+    allBtn.textContent = "All Menu Items";
     allBtn.dataset.catId = "";
     allBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -2999,7 +2999,12 @@ function renderDishesGrid() {
       filtered = dishes.filter(d => String(d.categoryId) === selectedCategoryId);
     }
   } else {
-    if (currentCategoryTitle) currentCategoryTitle.textContent = "All Dishes";
+    if (currentCategoryTitle) currentCategoryTitle.textContent = "All Menu Items";
+    filtered = [...filtered].sort((a, b) => {
+      const nameA = (a.name || "").trim();
+      const nameB = (b.name || "").trim();
+      return nameA.localeCompare(nameB, undefined, { sensitivity: "base", numeric: true });
+    });
   }
 
   if (dishSearchQuery && dishSearchQuery.trim()) {
@@ -3162,36 +3167,114 @@ function renderDishesGrid() {
   });
 }
 
+function getCaretCharacterOffsetWithin(element) {
+  let caretOffset = 0;
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0);
+    const preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(element);
+    preCaretRange.setEnd(range.endContainer, range.endOffset);
+    caretOffset = preCaretRange.toString().length;
+  }
+  return caretOffset;
+}
+
+function setCaretCharacterOffsetWithin(element, offset) {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const range = document.createRange();
+  let currentOffset = 0;
+  let found = false;
+
+  function traverseNodes(node) {
+    if (found) return;
+    if (node.nodeType === Node.TEXT_NODE) {
+      const nodeLen = node.textContent.length;
+      if (currentOffset + nodeLen >= offset) {
+        const targetOffset = Math.max(0, Math.min(offset - currentOffset, nodeLen));
+        range.setStart(node, targetOffset);
+        range.setEnd(node, targetOffset);
+        found = true;
+        return;
+      }
+      currentOffset += nodeLen;
+    } else {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        traverseNodes(node.childNodes[i]);
+        if (found) return;
+      }
+    }
+  }
+
+  traverseNodes(element);
+  if (!found) {
+    range.selectNodeContents(element);
+    range.collapse(false);
+  }
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
 /**
- * Enable click-to-edit for Dish Title
+ * Enable click-to-edit for Dish Title (preserves bracket note rule in edit mode)
  */
 function attachInlineTitleEditor(titleEl, dish) {
   function startEdit() {
-    if (titleEl.classList.contains("is-editing")) return;
+    if (titleEl.getAttribute("contenteditable") === "true" || titleEl.classList.contains("is-editing")) return;
     titleEl.classList.add("is-editing");
+    const card = titleEl.closest(".dish-admin-card");
+    if (card) card.classList.add("is-editing-dish");
 
     const originalName = dish.name;
-    const input = document.createElement("input");
-    input.type = "text";
-    input.className = "dish-inline-input dish-title-input";
-    input.value = originalName;
-    input.placeholder = "Dish name";
-    input.setAttribute("aria-label", "Dish name");
+    titleEl.setAttribute("contenteditable", "plaintext-only");
+    if (titleEl.contentEditable !== "plaintext-only") {
+      titleEl.contentEditable = "true";
+    }
 
-    titleEl.textContent = "";
-    titleEl.appendChild(input);
-    input.focus();
-    input.select();
+    titleEl.setAttribute("enterkeyhint", "done");
+    titleEl.setAttribute("autocomplete", "off");
+    titleEl.setAttribute("autocorrect", "off");
+    titleEl.setAttribute("spellcheck", "false");
+    titleEl.innerHTML = formatDishName(originalName);
+    titleEl.focus();
 
-    input.addEventListener("click", (e) => e.stopPropagation());
+    // Place caret at the end without selecting all text
+    const sel = window.getSelection();
+    if (sel) {
+      const range = document.createRange();
+      range.selectNodeContents(titleEl);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    let isComposing = false;
+    function onCompositionStart() { isComposing = true; }
+    function onCompositionEnd() {
+      isComposing = false;
+      onInput();
+    }
+
+    function onInput() {
+      if (isComposing) return;
+      const offset = getCaretCharacterOffsetWithin(titleEl);
+      const text = titleEl.textContent || "";
+      titleEl.innerHTML = formatDishName(text);
+      setCaretCharacterOffsetWithin(titleEl, offset);
+    }
 
     let finished = false;
     async function commit(save) {
       if (finished) return;
       finished = true;
-      const newName = input.value.trim();
+      cleanup();
+      titleEl.removeAttribute("contenteditable");
       titleEl.classList.remove("is-editing");
+      if (card) card.classList.remove("is-editing-dish");
+      if (typeof titleEl.blur === "function") titleEl.blur();
 
+      const newName = (titleEl.textContent || "").trim();
       if (save && newName && newName !== originalName) {
         titleEl.innerHTML = formatDishName(newName);
         titleEl.setAttribute("aria-label", `Edit dish name ${escapeHtml(newName)}`);
@@ -3222,19 +3305,41 @@ function attachInlineTitleEditor(titleEl, dish) {
       }
     }
 
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
+    function onKeyDown(e) {
+      if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
         e.preventDefault();
         commit(true);
-      } else if (e.key === "Escape") {
+      } else if (e.key === "Escape" || e.keyCode === 27) {
         e.preventDefault();
         commit(false);
       }
-    });
+    }
 
-    input.addEventListener("blur", () => {
+    function onBlur() {
       commit(true);
-    });
+    }
+
+    function onPaste(e) {
+      e.preventDefault();
+      const text = ((e.clipboardData || window.clipboardData)?.getData("text/plain") || "").replace(/[\r\n]+/g, " ");
+      document.execCommand("insertText", false, text);
+    }
+
+    function cleanup() {
+      titleEl.removeEventListener("keydown", onKeyDown);
+      titleEl.removeEventListener("blur", onBlur);
+      titleEl.removeEventListener("paste", onPaste);
+      titleEl.removeEventListener("input", onInput);
+      titleEl.removeEventListener("compositionstart", onCompositionStart);
+      titleEl.removeEventListener("compositionend", onCompositionEnd);
+    }
+
+    titleEl.addEventListener("keydown", onKeyDown);
+    titleEl.addEventListener("blur", onBlur);
+    titleEl.addEventListener("paste", onPaste);
+    titleEl.addEventListener("input", onInput);
+    titleEl.addEventListener("compositionstart", onCompositionStart);
+    titleEl.addEventListener("compositionend", onCompositionEnd);
   }
 
   titleEl.addEventListener("click", startEdit);
@@ -3247,40 +3352,52 @@ function attachInlineTitleEditor(titleEl, dish) {
 }
 
 /**
- * Enable click-to-edit for Dish Price
+ * Enable click-to-edit for Dish Price (in-place contenteditable, identical to dish title)
  */
 function attachInlinePriceEditor(priceEl, dish) {
   function startEdit() {
-    if (priceEl.classList.contains("is-editing")) return;
+    if (priceEl.getAttribute("contenteditable") === "true" || priceEl.classList.contains("is-editing")) return;
     priceEl.classList.add("is-editing");
+    const card = priceEl.closest(".dish-admin-card");
+    if (card) card.classList.add("is-editing-dish");
 
     const originalPrice = dish.price;
-    const wrapper = document.createElement("div");
-    wrapper.className = "dish-price-edit-wrapper";
+    priceEl.setAttribute("contenteditable", "plaintext-only");
+    if (priceEl.contentEditable !== "plaintext-only") {
+      priceEl.contentEditable = "true";
+    }
 
-    const input = document.createElement("input");
-    input.type = "number";
-    input.className = "dish-inline-input dish-price-input";
-    input.value = originalPrice;
-    input.min = "0";
-    input.step = "any";
-    input.setAttribute("aria-label", "Dish price");
+    priceEl.setAttribute("enterkeyhint", "done");
+    priceEl.setAttribute("autocomplete", "off");
+    priceEl.setAttribute("autocorrect", "off");
+    priceEl.setAttribute("spellcheck", "false");
+    if (priceEl.textContent.trim() !== String(originalPrice)) {
+      priceEl.textContent = `${originalPrice}`;
+    }
+    priceEl.focus();
 
-    wrapper.appendChild(input);
-
-    priceEl.textContent = "";
-    priceEl.appendChild(wrapper);
-    input.focus();
-    input.select();
-
-    input.addEventListener("click", (e) => e.stopPropagation());
+    // Place caret at the end without selecting all text
+    const sel = window.getSelection();
+    if (sel) {
+      const range = document.createRange();
+      range.selectNodeContents(priceEl);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
 
     let finished = false;
     async function commit(save) {
       if (finished) return;
       finished = true;
-      const raw = parseFloat(input.value);
+      cleanup();
+      priceEl.removeAttribute("contenteditable");
       priceEl.classList.remove("is-editing");
+      if (card) card.classList.remove("is-editing-dish");
+      if (typeof priceEl.blur === "function") priceEl.blur();
+
+      const text = (priceEl.textContent || "").trim();
+      const raw = parseFloat(text);
 
       if (save && !isNaN(raw) && raw >= 0 && raw !== originalPrice) {
         dish.price = raw;
@@ -3303,23 +3420,40 @@ function attachInlinePriceEditor(priceEl, dish) {
           priceEl.textContent = `${originalPrice}`;
         }
       } else {
+        dish.price = originalPrice;
         priceEl.textContent = `${originalPrice}`;
       }
     }
 
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
+    function onKeyDown(e) {
+      if (e.key === "Enter" || e.keyCode === 13 || e.which === 13) {
         e.preventDefault();
         commit(true);
-      } else if (e.key === "Escape") {
+      } else if (e.key === "Escape" || e.keyCode === 27) {
         e.preventDefault();
         commit(false);
       }
-    });
+    }
 
-    input.addEventListener("blur", () => {
+    function onBlur() {
       commit(true);
-    });
+    }
+
+    function onPaste(e) {
+      e.preventDefault();
+      const text = ((e.clipboardData || window.clipboardData)?.getData("text/plain") || "").replace(/[^0-9.]/g, "");
+      document.execCommand("insertText", false, text);
+    }
+
+    function cleanup() {
+      priceEl.removeEventListener("keydown", onKeyDown);
+      priceEl.removeEventListener("blur", onBlur);
+      priceEl.removeEventListener("paste", onPaste);
+    }
+
+    priceEl.addEventListener("keydown", onKeyDown);
+    priceEl.addEventListener("blur", onBlur);
+    priceEl.addEventListener("paste", onPaste);
   }
 
   priceEl.addEventListener("click", startEdit);

@@ -2380,18 +2380,28 @@ window.addEventListener("resize", () => {
   }
 });
 
-// Disable right click, text selection, and drag globally
+// Disable right click, text selection, and drag globally, except in inputs
+function isInputOrEditable(el) {
+  if (!el) return false;
+  if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable) return true;
+  if (el.closest && el.closest("input, textarea, [contenteditable]")) return true;
+  return false;
+}
+
 document.addEventListener("contextmenu", (e) => {
+  if (isInputOrEditable(e.target)) return;
   e.preventDefault();
   return false;
 });
 
 document.addEventListener("selectstart", (e) => {
+  if (isInputOrEditable(e.target)) return;
   e.preventDefault();
   return false;
 });
 
 document.addEventListener("dragstart", (e) => {
+  if (isInputOrEditable(e.target)) return;
   e.preventDefault();
   return false;
 });

@@ -68,11 +68,20 @@ textarea,
 .form-input,
 .category-inline-input,
 .dish-inline-input,
-.dish-price-input {
+.dish-price-input,
+.import-manual-textarea,
+input[type="text"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="email"],
+input[type="url"],
+input[type="password"] {
   -webkit-user-select: text !important;
   -moz-user-select: text !important;
   -ms-user-select: text !important;
   user-select: text !important;
+  -webkit-touch-callout: default !important;
 }
 
 img {
@@ -97,7 +106,7 @@ img {
   color: inherit;
 }
 
-button, a, select, input, textarea, [role="button"], [role="tab"], .switch, label {
+button, a, select, [role="button"], [role="tab"], .switch, label {
   -webkit-tap-highlight-color: transparent !important;
   -webkit-touch-callout: none;
   outline: none !important;

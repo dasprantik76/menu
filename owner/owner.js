@@ -8481,29 +8481,29 @@ if (confirmImportStrategyBtn) {
   });
 }
 
-// Disable right-click context menu across the owner portal
+function isInputOrEditable(el) {
+  if (!el) return false;
+  if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") return true;
+  if (el.isContentEditable) return true;
+  if (typeof el.getAttribute === "function") {
+    const ce = el.getAttribute("contenteditable");
+    if (ce !== null && ce !== "false") return true;
+  }
+  if (el.closest) {
+    return !!el.closest("input, textarea, [contenteditable]:not([contenteditable='false']), .form-input, .category-inline-input, .dish-inline-input, .dish-price-input, .import-manual-textarea, .is-editing, .selectable-text");
+  }
+  return false;
+}
+
+// Allow native right-click context menu (copy, paste, cut, select all) on inputs & editable fields
 document.addEventListener("contextmenu", (e) => {
+  if (isInputOrEditable(e.target)) return;
   e.preventDefault();
 });
 
 // Disable text selection across owner portal except in inputs and editable fields
 document.addEventListener("selectstart", (e) => {
-  const target = e.target;
-  if (!target) return;
-  if (
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.isContentEditable ||
-    (target.closest && (
-      target.closest("input") ||
-      target.closest("textarea") ||
-      target.closest("[contenteditable='true']") ||
-      target.closest("[contenteditable='plaintext-only']") ||
-      target.closest(".is-editing")
-    ))
-  ) {
-    return;
-  }
+  if (isInputOrEditable(e.target)) return;
   e.preventDefault();
 });
 

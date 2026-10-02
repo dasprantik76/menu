@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Berkshire+Swash&family=DM+Serif+Display&family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Lobster&family=Pacifico&family=Righteous&family=Roboto:wght@400;500;700&family=Rye&family=Sacramento&family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="https://fonts.cdnfonts.com/css/sf-pro-display" rel="stylesheet">
-  <link rel="stylesheet" href="/owner/owner.css?v=513">
+  <link rel="stylesheet" href="/owner/owner.css?v=514">
   <script>
     (function() {
       try {
@@ -49,21 +49,29 @@
           if (metaEl) metaEl.setAttribute("content", "#f8f6f2");
         }
 
-        // Immediately disable right-click & text selection across owner portal
+        function isInputOrEditable(el) {
+          if (!el) return false;
+          if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") return true;
+          if (el.isContentEditable) return true;
+          if (typeof el.getAttribute === "function") {
+            var ce = el.getAttribute("contenteditable");
+            if (ce !== null && ce !== "false") return true;
+          }
+          if (el.closest) {
+            return !!el.closest("input, textarea, [contenteditable]:not([contenteditable='false']), .form-input, .category-inline-input, .dish-inline-input, .dish-price-input, .import-manual-textarea, .is-editing, .selectable-text");
+          }
+          return false;
+        }
+
+        // Allow native contextmenu (right-click / long-press copy/paste) on all input & editable fields
         document.addEventListener("contextmenu", function(e) {
+          if (isInputOrEditable(e.target)) return;
           e.preventDefault();
         });
+
+        // Allow native text selection on all input & editable fields
         document.addEventListener("selectstart", function(e) {
-          var target = e.target;
-          if (
-            target &&
-            (target.tagName === "INPUT" ||
-             target.tagName === "TEXTAREA" ||
-             target.isContentEditable ||
-             (target.closest && (target.closest("input") || target.closest("textarea") || target.closest("[contenteditable='true']") || target.closest("[contenteditable='plaintext-only']") || target.closest(".is-editing"))))
-          ) {
-            return;
-          }
+          if (isInputOrEditable(e.target)) return;
           e.preventDefault();
         });
       } catch (e) {}
@@ -1386,6 +1394,6 @@
     </section>
 
   <script src="/owner/qrcode.min.js"></script>
-  <script src="/owner/owner.js?v=281"></script>
+  <script src="/owner/owner.js?v=282"></script>
 </body>
 </html>

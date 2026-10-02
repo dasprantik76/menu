@@ -2741,7 +2741,8 @@ html.pending-mode .owner-header .brand-tag {
   box-sizing: border-box;
 }
 
-body.dashboard-initial-loading .dashboard-initial-loader {
+body.dashboard-initial-loading .dashboard-initial-loader,
+#dashboardView:has(#dashboardCentralLoader:not([style*="display: none"])) #dashboardCentralLoader {
   display: flex !important;
 }
 
@@ -2751,7 +2752,18 @@ body.dashboard-initial-loading #dishCountLabel,
 body.dashboard-initial-loading #categoryViewGroup,
 body.dashboard-initial-loading #menuViewGroup,
 body.dashboard-initial-loading #stickyDashboardActionBar,
-body.dashboard-initial-loading .sticky-add-dish-bar {
+body.dashboard-initial-loading .sticky-add-dish-bar,
+body.dashboard-initial-loading .dishes-action-row,
+body.dashboard-initial-loading .dish-search-bar-container,
+#dashboardView:has(#dashboardCentralLoader:not([style*="display: none"])) .dashboard-body-content,
+#dashboardView:has(#dashboardCentralLoader:not([style*="display: none"])) #categoriesCountLabel,
+#dashboardView:has(#dashboardCentralLoader:not([style*="display: none"])) #dishCountLabel,
+#dashboardView:has(#dashboardCentralLoader:not([style*="display: none"])) #categoryViewGroup,
+#dashboardView:has(#dashboardCentralLoader:not([style*="display: none"])) #menuViewGroup,
+#dashboardView:has(#dashboardCentralLoader:not([style*="display: none"])) #stickyDashboardActionBar,
+#dashboardView:has(#dashboardCentralLoader:not([style*="display: none"])) .sticky-add-dish-bar,
+#dashboardView:has(#dashboardCentralLoader:not([style*="display: none"])) .dishes-action-row,
+#dashboardView:has(#dashboardCentralLoader:not([style*="display: none"])) .dish-search-bar-container {
   display: none !important;
 }
 

@@ -423,7 +423,7 @@ function showView(viewElement) {
 
   const stickyActionBar = document.getElementById("stickyDashboardActionBar") || document.getElementById("stickyAddDishBar");
   if (stickyActionBar) {
-    stickyActionBar.style.display = (viewElement === dashboardView && isInitialMenuDataLoaded) ? "flex" : "none";
+    stickyActionBar.style.display = (viewElement === dashboardView && isInitialMenuDataLoaded && !isFetchingMenuData) ? "flex" : "none";
   }
   const stickyQrActionBar = document.getElementById("stickyQrActionBar");
   if (stickyQrActionBar) {
@@ -1643,13 +1643,13 @@ async function loadMenuData() {
   isFetchingMenuData = true;
   trackFetchStart();
 
-  if (!isInitialMenuDataLoaded) {
-    document.body.classList.add("dashboard-initial-loading");
-    const centralLoader = document.getElementById("dashboardCentralLoader");
-    const bodyContent = document.getElementById("dashboardBodyContent");
-    if (centralLoader) centralLoader.style.display = "flex";
-    if (bodyContent) bodyContent.style.display = "none";
-  }
+  document.body.classList.add("dashboard-initial-loading");
+  const centralLoader = document.getElementById("dashboardCentralLoader");
+  const bodyContent = document.getElementById("dashboardBodyContent");
+  const stickyActionBar = document.getElementById("stickyDashboardActionBar") || document.getElementById("stickyAddDishBar");
+  if (centralLoader) centralLoader.style.display = "flex";
+  if (bodyContent) bodyContent.style.display = "none";
+  if (stickyActionBar) stickyActionBar.style.setProperty("display", "none", "important");
 
   try {
     const [catRes, itemRes] = await Promise.all([
@@ -1767,8 +1767,10 @@ function switchDashboardView(view, force = false) {
     capsuleCategoryBtn.style.cursor = "pointer";
   }
 
-  // If still in initial loading state, do not reveal content yet (loader replaces everything below switcher)
-  if (!isInitialMenuDataLoaded) {
+  // If still in initial loading state or fetching data, do not reveal content yet (loader replaces everything below switcher)
+  if (!isInitialMenuDataLoaded || isFetchingMenuData) {
+    const stickyActionBar = document.getElementById("stickyDashboardActionBar") || document.getElementById("stickyAddDishBar");
+    if (stickyActionBar) stickyActionBar.style.setProperty("display", "none", "important");
     return;
   }
 
@@ -1917,6 +1919,7 @@ const inFlightCategoryCreations = new Map(); // tempCatId -> { cancelled: false,
 function renderCategoriesList() {
   if (!categoriesGrid) return;
   categoriesGrid.innerHTML = "";
+  if (isFetchingMenuData) return;
 
   if (categoriesCountLabel) {
     if (isFetchingMenuData && categories.length <= 1) {
@@ -2990,9 +2993,8 @@ function renderDishesGrid() {
   const menuLoader = document.getElementById("menuCenterLoader");
 
   if (isFetchingMenuData) {
-    updateDishCountDisplay("Items");
     if (emptyDishesState) emptyDishesState.style.display = "none";
-    if (menuLoader) menuLoader.style.display = "flex";
+    if (menuLoader) menuLoader.style.display = "none";
     return;
   }
 
@@ -8323,20 +8325,17 @@ document.addEventListener("selectstart", (e) => {
   e.preventDefault();
 });
 
-// Automatically re-verify session and approval status when returning to app or periodically
+// Re-verify session only if user is awaiting approval on the pending view
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") {
+  if (document.visibilityState === "visible" && currentBusiness && currentBusiness.approvalStatus === "pending") {
     checkSession();
   }
 });
 window.addEventListener("focus", () => {
-  checkSession();
-});
-setInterval(() => {
-  if (currentUser && currentBusiness) {
+  if (currentBusiness && currentBusiness.approvalStatus === "pending") {
     checkSession();
   }
-}, 60000);
+});
 
 /* ==========================================================================
    Custom In-App Color Selector Modal (100% Consistent Across All Devices)

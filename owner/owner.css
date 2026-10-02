@@ -4482,11 +4482,7 @@ body:not(.qrcode-mode) .qr-sticky-action-bar {
   flex-shrink: 0;
 }
 
-.dish-card-price,
-.dish-card-price.is-editing,
-.dish-card-price.is-editing:hover,
-.dish-card-price.is-editing:focus,
-.dish-card-price.is-editing:focus-visible {
+.dish-card-price {
   font-family: 'Google Sans', sans-serif !important;
   font-weight: 700 !important;
   font-size: 1.08rem !important;
@@ -4504,12 +4500,13 @@ body:not(.qrcode-mode) .qr-sticky-action-bar {
   box-shadow: none !important;
   transition: none !important;
   transform: none !important;
-  zoom: 1 !important;
   display: inline-block !important;
   vertical-align: middle !important;
   caret-color: #991e2e !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100% !important;
+  text-size-adjust: 100% !important;
 }
 
 .dish-card-price:not(.is-editing) {
@@ -4524,7 +4521,15 @@ body:not(.qrcode-mode) .qr-sticky-action-bar {
 .dish-card-price:hover,
 .dish-card-price:focus,
 .dish-card-price:focus-visible,
-.dish-card-price:active {
+.dish-card-price:active,
+.dish-card-price.is-editing,
+.dish-card-price.is-editing:hover,
+.dish-card-price.is-editing:focus,
+.dish-card-price.is-editing:focus-visible,
+.dish-card-price.is-editing:active {
+  font-size: inherit !important;
+  font-weight: 700 !important;
+  transform: none !important;
   background: transparent !important;
   border: none !important;
   outline: none !important;
@@ -5377,10 +5382,19 @@ input:checked + .slider:before {
   }
 
   .dish-card-price,
-  .dish-card-price.is-editing {
+  .dish-card-price.is-editing,
+  .dish-card-price:hover,
+  .dish-card-price:focus,
+  .dish-card-price:focus-visible,
+  .dish-card-price:active,
+  .dish-card-price.is-editing:hover,
+  .dish-card-price.is-editing:focus,
+  .dish-card-price.is-editing:focus-visible,
+  .dish-card-price.is-editing:active {
     font-size: 1.02rem !important;
     font-weight: 700 !important;
     min-width: 38px !important;
+    transform: none !important;
   }
 
   .dish-avail-text {

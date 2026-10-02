@@ -3753,6 +3753,7 @@ function attachInlinePriceEditor(priceEl, dish) {
     }
 
     priceEl.setAttribute("enterkeyhint", "done");
+    priceEl.setAttribute("inputmode", "decimal");
     priceEl.setAttribute("autocomplete", "off");
     priceEl.setAttribute("autocorrect", "off");
     priceEl.setAttribute("spellcheck", "false");
@@ -3777,6 +3778,7 @@ function attachInlinePriceEditor(priceEl, dish) {
       finished = true;
       cleanup();
       priceEl.removeAttribute("contenteditable");
+      priceEl.removeAttribute("inputmode");
       priceEl.classList.remove("is-editing");
       if (card) card.classList.remove("is-editing-dish");
       if (typeof priceEl.blur === "function") priceEl.blur();
